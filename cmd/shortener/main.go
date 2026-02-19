@@ -1,3 +1,31 @@
 package main
 
-func main() {}
+import (
+	"net/http"
+
+	"github.com/liebeSonne/shortlink/internal/handler"
+	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/repository"
+	"github.com/liebeSonne/shortlink/internal/service"
+)
+
+type shortLink struct {
+	id   string
+	link string
+}
+
+func main() {
+	shortLinkRepository := repository.NewMemoryShortLinkRepository()
+	shortLinkProvider := repository.NewRepositoryShortLinkProvider(shortLinkRepository)
+	shortIDGenerator := model.NewShortIDGenerator()
+	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkProvider)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", shortLinkHandler.Handle)
+
+	err := http.ListenAndServe(":8080", mux)
+	if err != nil {
+		panic(err)
+	}
+}
