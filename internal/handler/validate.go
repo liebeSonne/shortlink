@@ -23,7 +23,7 @@ func validateLink(str string) error {
 
 	u, err := url.ParseRequestURI(str)
 	if err != nil {
-		return err
+		return ErrInvalidURL
 	}
 	if u.Scheme == "" || u.Host == "" {
 		return ErrInvalidURL

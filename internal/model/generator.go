@@ -5,7 +5,7 @@ import (
 )
 
 type ShortIDGenerator interface {
-	GenerateID(size int) string
+	GenerateID(size uint) string
 }
 
 func NewShortIDGenerator() ShortIDGenerator {
@@ -18,7 +18,7 @@ type shortIDGenerator struct {
 	symbols []rune
 }
 
-func (s *shortIDGenerator) GenerateID(size int) string {
+func (s *shortIDGenerator) GenerateID(size uint) string {
 	id := make([]rune, size)
 	for i := range size {
 		index := rand.Intn(len(s.symbols) - 1)
