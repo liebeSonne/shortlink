@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/service"
@@ -32,17 +31,16 @@ type shortLinkHandler struct {
 func (h *shortLinkHandler) Handle(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		h.handleGet(w, r)
+		getShortLinkHandler(w, r, h.provider)
 	case http.MethodPost:
-		h.handlePost(w, r)
+		createShortLinkHandler(w, r, h.service)
 	default:
 		w.WriteHeader(http.StatusNotAcceptable)
 	}
 }
 
-func (h *shortLinkHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path
-	id, _ = strings.CutPrefix(id, "/")
+func getShortLinkHandler(w http.ResponseWriter, r *http.Request, provider model.ShortLinkProvider) {
+	id := r.URL.Path[1:]
 
 	err := validateShortLinkID(id)
 	if err != nil {
@@ -50,7 +48,7 @@ func (h *shortLinkHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemPtr, err := h.provider.Find(id)
+	itemPtr, err := provider.Find(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,7 +63,7 @@ func (h *shortLinkHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func (h *shortLinkHandler) handlePost(w http.ResponseWriter, r *http.Request) {
+func createShortLinkHandler(w http.ResponseWriter, r *http.Request, service service.ShortLinkService) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -79,7 +77,7 @@ func (h *shortLinkHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortLink, err := h.service.Create(link)
+	shortLink, err := service.Create(link)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
