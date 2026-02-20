@@ -6,15 +6,15 @@ import (
 
 func NewMemoryShortLinkRepository() model.ShortLinkRepository {
 	return &shortLinkRepository{
-		linksMap: make(map[model.ShortLinkID]model.ShortLink),
+		linksMap: make(map[string]model.ShortLink),
 	}
 }
 
 type shortLinkRepository struct {
-	linksMap map[model.ShortLinkID]model.ShortLink
+	linksMap map[string]model.ShortLink
 }
 
-func (s *shortLinkRepository) Get(id model.ShortLinkID) (*model.ShortLink, error) {
+func (s *shortLinkRepository) Get(id string) (*model.ShortLink, error) {
 	link, ok := s.linksMap[id]
 	if !ok {
 		return nil, nil

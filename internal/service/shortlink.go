@@ -45,11 +45,10 @@ func (s *shortLinkService) Create(url string) (model.ShortLink, error) {
 	return item, nil
 }
 
-func (s *shortLinkService) nextID() (model.ShortLinkID, error) {
+func (s *shortLinkService) nextID() (string, error) {
 	try := 0
 	for {
-		shortID := s.generator.GenerateID(model.ShortLinkSize)
-		id := model.ShortLinkID(shortID)
+		id := s.generator.GenerateID(model.ShortLinkSize)
 
 		itemPtr, err := s.repository.Get(id)
 		if err != nil {

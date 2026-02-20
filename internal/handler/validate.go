@@ -9,8 +9,8 @@ var ErrEmptyID = errors.New("empty ID")
 var ErrEmptyURL = errors.New("empty URL")
 var ErrInvalidURL = errors.New("invalid URL")
 
-func validateShortLinkID(shortLinkID string) error {
-	if len(shortLinkID) == 0 {
+func validateShortLinkID(id string) error {
+	if len(id) == 0 {
 		return ErrEmptyID
 	}
 	return nil

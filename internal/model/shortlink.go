@@ -2,15 +2,13 @@ package model
 
 const ShortLinkSize = 8
 
-type ShortLinkID string
-
 type ShortLink interface {
-	ID() ShortLinkID
+	ID() string
 	URL() string
 }
 
 func NewShortLink(
-	id ShortLinkID,
+	id string,
 	url string,
 ) ShortLink {
 	return &shortLink{
@@ -19,7 +17,7 @@ func NewShortLink(
 	}
 }
 
-func (s *shortLink) ID() ShortLinkID {
+func (s *shortLink) ID() string {
 	return s.id
 }
 func (s *shortLink) URL() string {
@@ -27,15 +25,15 @@ func (s *shortLink) URL() string {
 }
 
 type shortLink struct {
-	id  ShortLinkID
+	id  string
 	url string
 }
 
 type ShortLinkRepository interface {
-	Get(id ShortLinkID) (*ShortLink, error)
+	Get(id string) (*ShortLink, error)
 	Store(shortLink ShortLink) error
 }
 
 type ShortLinkProvider interface {
-	Get(id ShortLinkID) (*ShortLink, error)
+	Get(id string) (*ShortLink, error)
 }

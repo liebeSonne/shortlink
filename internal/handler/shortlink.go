@@ -38,7 +38,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemPtr, err := h.provider.Get(model.ShortLinkID(id))
+	itemPtr, err := h.provider.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
