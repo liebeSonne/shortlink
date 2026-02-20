@@ -71,8 +71,16 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url := fmt.Sprintf("%s://%s/%s", r.URL.Scheme, r.Host, shortLink.ID())
+	url := h.createShortLinkURL(r, shortLink.ID())
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(url))
+}
+
+func (h *shortLinkHandler) createShortLinkURL(r *http.Request, id string) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s/%s", scheme, r.Host, id)
 }

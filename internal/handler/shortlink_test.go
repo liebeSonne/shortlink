@@ -139,6 +139,7 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.on.link))
 			request.Host = "localhost"
 			request.URL.Scheme = "http"
+			request.TLS = nil
 			w := httptest.NewRecorder()
 			handler.HandleCreate(w, request)
 			res := w.Result()
