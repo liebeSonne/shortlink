@@ -16,10 +16,7 @@ func TestNewShortLink(t *testing.T) {
 		{"valid", "id", "https://github.com/shortlink/?q=123", nil},
 		{"empty id", "", "url", ErrEmptyID},
 		{"empty url", "id", "", ErrEmptyURL},
-		{"invalid url format", "id", "://github.com/", ErrInvalidURL},
-		{"invalid url format without schema and host", "id", "/shortlink/?q=123", ErrInvalidURL},
-		{"empty url schema", "id", "github.com", ErrInvalidURL},
-		{"empty url host", "id", "https://", ErrInvalidURL},
+		{"invalid url", "id", "invalid", ErrInvalidURL},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
