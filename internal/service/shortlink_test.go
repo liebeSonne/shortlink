@@ -14,66 +14,70 @@ func TestShortLinkService_Create(t *testing.T) {
 	id1 := "id1"
 	url1 := "https://localhost/1"
 
-	testCases := []struct {
-		name       string
+	type on struct {
+		url string
+	}
+	type when struct {
 		items      []model.ShortLink
-		url        string
 		generateID string
-		err        error
+	}
+	type want struct {
+		err error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
 	}{
 		{
 			"success",
-			[]model.ShortLink{},
-			url1,
-			id1,
-			nil,
+			on{url1},
+			when{[]model.ShortLink{}, id1},
+			want{nil},
 		},
 		{
 			"empty generated id",
-			[]model.ShortLink{},
-			url1,
-			"",
-			model.ErrEmptyID,
+			on{url1},
+			when{[]model.ShortLink{}, ""},
+			want{model.ErrEmptyID},
 		},
 		{
 			"empty url",
-			[]model.ShortLink{},
-			"",
-			id1,
-			model.ErrEmptyURL,
+			on{""},
+			when{[]model.ShortLink{}, id1},
+			want{model.ErrEmptyURL},
 		},
 		{
 			"invalid url",
-			[]model.ShortLink{},
-			"invalid",
-			id1,
-			model.ErrInvalidURL,
+			on{"invalid"},
+			when{[]model.ShortLink{}, id1},
+			want{model.ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
-			[]model.ShortLink{testCreateShortLink(t, id1, url1)},
-			url1,
-			id1,
-			ErrTooManyAttempts,
+			on{url1},
+			when{[]model.ShortLink{testCreateShortLink(t, id1, url1)}, id1},
+			want{ErrTooManyAttempts},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := repository.NewMemoryShortLinkRepository()
-			for _, item := range tc.items {
+			for _, item := range tc.when.items {
 				err := repo.Store(item)
 				require.NoError(t, err)
 			}
-			generator := mockOneIDGenerator{generateID: tc.generateID}
+			generator := mockOneIDGenerator{generateID: tc.when.generateID}
 			service := NewShortLinkService(repo, generator)
-			item, err := service.Create(tc.url)
-			if tc.err != nil {
+			item, err := service.Create(tc.on.url)
+			if tc.want.err != nil {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, tc.err)
+				assert.ErrorIs(t, err, tc.want.err)
 			} else {
 				require.NotNil(t, item)
-				assert.Equal(t, tc.url, item.URL())
-				assert.Equal(t, tc.generateID, item.ID())
+				assert.Equal(t, tc.on.url, item.URL())
+				assert.Equal(t, tc.when.generateID, item.ID())
 			}
 		})
 	}

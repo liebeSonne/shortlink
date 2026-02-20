@@ -21,55 +21,60 @@ func TestShortLinkRepository_Get(t *testing.T) {
 	itemWithID2AndUrl2, err := model.NewShortLink(id2, url2)
 	require.NoError(t, err)
 
-	testCases := []struct {
-		name  string
+	type on struct {
+		id string
+	}
+	type want struct {
+		item *model.ShortLink
+		err  error
+	}
+	type when struct {
 		items []model.ShortLink
-		id    string
-		want  *model.ShortLink
-		err   error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
 	}{
 		{
-			name:  "not found when no items",
-			items: []model.ShortLink{},
-			id:    id1,
-			want:  nil,
-			err:   nil,
+			"not found when no items",
+			on{id1},
+			when{[]model.ShortLink{}},
+			want{nil, nil},
 		},
 		{
-			name:  "not found when empty id",
-			items: []model.ShortLink{itemWithID1AndUrl1},
-			id:    "",
-			want:  nil,
-			err:   nil,
+			"not found when empty id",
+			on{""},
+			when{[]model.ShortLink{itemWithID1AndUrl1}},
+			want{nil, nil},
 		},
 		{
-			name:  "found by id",
-			items: []model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2},
-			id:    id2,
-			want:  &itemWithID2AndUrl2,
-			err:   nil,
+			"found by id",
+			on{id2},
+			when{[]model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2}},
+			want{&itemWithID2AndUrl2, nil},
 		},
 		{
-			name:  "found last by id",
-			items: []model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2, itemWithID1AndUrl2},
-			id:    id1,
-			want:  &itemWithID1AndUrl2,
-			err:   nil,
+			"found last by id",
+			on{id1},
+			when{[]model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2, itemWithID1AndUrl2}},
+			want{&itemWithID1AndUrl2, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
-			for _, item := range tc.items {
+			for _, item := range tc.when.items {
 				err := repo.Store(item)
 				assert.NoError(t, err)
 			}
-			itemPtr, err := repo.Get(tc.id)
-			if tc.err != nil {
-				assert.ErrorIs(t, err, tc.err)
+			itemPtr, err := repo.Get(tc.on.id)
+			if tc.want.err != nil {
+				assert.ErrorIs(t, err, tc.want.err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.want, itemPtr)
+				assert.Equal(t, tc.want.item, itemPtr)
 			}
 		})
 	}
