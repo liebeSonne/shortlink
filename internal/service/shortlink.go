@@ -35,7 +35,10 @@ func (s *shortLinkService) Create(url string) (model.ShortLink, error) {
 		return nil, err
 	}
 
-	item := model.NewShortLink(id, url)
+	item, err := model.NewShortLink(id, url)
+	if err != nil {
+		return nil, err
+	}
 
 	err = s.repository.Store(item)
 	if err != nil {

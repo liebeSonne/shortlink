@@ -11,17 +11,24 @@ func TestNewShortLink(t *testing.T) {
 		name string
 		id   string
 		url  string
+		err  error
 	}{
-		{"empty", "", ""},
-		{"empty id", "", "url"},
-		{"empty url", "id", ""},
-		{"uri", "id", "https://github.com/shortlink/"},
+		{"valid", "id", "https://github.com/shortlink/?q=123", nil},
+		{"empty id", "", "url", ErrEmptyID},
+		{"empty url", "id", "", ErrEmptyURL},
+		{"invalid url format", "id", "://github.com/", ErrInvalidURL},
+		{"invalid url format without schema and host", "id", "/shortlink/?q=123", ErrInvalidURL},
+		{"empty url schema", "id", "github.com", ErrInvalidURL},
+		{"empty url host", "id", "https://", ErrInvalidURL},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			item := NewShortLink(tc.id, tc.url)
-			assert.Equal(t, tc.id, item.ID())
-			assert.Equal(t, tc.url, item.URL())
+			item, err := NewShortLink(tc.id, tc.url)
+			assert.ErrorIs(t, tc.err, err)
+			if tc.err == nil {
+				assert.Equal(t, tc.id, item.ID())
+				assert.Equal(t, tc.url, item.URL())
+			}
 		})
 	}
 }

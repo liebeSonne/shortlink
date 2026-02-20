@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,9 +33,8 @@ type shortLinkHandler struct {
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[1:]
 
-	err := validateShortLinkID(id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if id == "" {
+		http.Error(w, "empty id", http.StatusBadRequest)
 		return
 	}
 
@@ -61,14 +61,12 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	link := string(body)
 
-	err = validateLink(link)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	shortLink, err := h.service.Create(link)
 	if err != nil {
+		if errors.Is(err, model.ErrInvalidURL) || errors.Is(err, model.ErrEmptyURL) || errors.Is(err, model.ErrEmptyID) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

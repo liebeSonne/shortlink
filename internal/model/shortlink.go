@@ -10,11 +10,19 @@ type ShortLink interface {
 func NewShortLink(
 	id string,
 	url string,
-) ShortLink {
+) (ShortLink, error) {
+	err := validateShortLinkID(id)
+	if err != nil {
+		return nil, err
+	}
+	err = validateLink(url)
+	if err != nil {
+		return nil, err
+	}
 	return &shortLink{
 		id:  id,
 		url: url,
-	}
+	}, nil
 }
 
 func (s *shortLink) ID() string {
