@@ -48,7 +48,7 @@ func getShortLinkHandler(w http.ResponseWriter, r *http.Request, provider model.
 		return
 	}
 
-	itemPtr, err := provider.Find(id)
+	itemPtr, err := provider.Get(model.ShortLinkID(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

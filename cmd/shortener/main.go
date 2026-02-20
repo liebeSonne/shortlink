@@ -16,10 +16,9 @@ type shortLink struct {
 
 func main() {
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
-	shortLinkProvider := repository.NewRepositoryShortLinkProvider(shortLinkRepository)
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkProvider)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", shortLinkHandler.Handle)

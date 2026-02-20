@@ -30,29 +30,40 @@ type shortLinkService struct {
 }
 
 func (s *shortLinkService) Create(url string) (model.ShortLink, error) {
-	var id model.ShortLinkID
-
-	try := 0
-	for {
-		shortID := s.generator.GenerateID(model.ShortLinkSize)
-		id = model.ShortLinkID(shortID)
-
-		_, err := s.repository.Get(id)
-
-		if !errors.Is(err, model.ErrNotFound) {
-			try++
-			if try > maxTry {
-				return nil, ErrTooManyAttempts
-			}
-			continue
-		}
-		break
+	id, err := s.nextID()
+	if err != nil {
+		return nil, err
 	}
 
 	item := model.NewShortLink(id, url)
-	err := s.repository.Store(item)
+
+	err = s.repository.Store(item)
 	if err != nil {
 		return item, err
 	}
+
 	return item, nil
+}
+
+func (s *shortLinkService) nextID() (model.ShortLinkID, error) {
+	try := 0
+	for {
+		shortID := s.generator.GenerateID(model.ShortLinkSize)
+		id := model.ShortLinkID(shortID)
+
+		itemPtr, err := s.repository.Get(id)
+		if err != nil {
+			return "", err
+		}
+
+		if itemPtr == nil {
+			return id, nil
+		}
+
+		try++
+		if try > maxTry {
+			return id, ErrTooManyAttempts
+		}
+		continue
+	}
 }

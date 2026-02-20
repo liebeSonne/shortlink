@@ -1,9 +1,5 @@
 package model
 
-import "errors"
-
-var ErrNotFound = errors.New("short link not found")
-
 const ShortLinkSize = 8
 
 type ShortLinkID string
@@ -36,10 +32,10 @@ type shortLink struct {
 }
 
 type ShortLinkRepository interface {
-	Get(id ShortLinkID) (ShortLink, error)
+	Get(id ShortLinkID) (*ShortLink, error)
 	Store(shortLink ShortLink) error
 }
 
 type ShortLinkProvider interface {
-	Find(id string) (*ShortLink, error)
+	Get(id ShortLinkID) (*ShortLink, error)
 }
