@@ -10,7 +10,8 @@ import (
 )
 
 type ShortLinkHandler interface {
-	Handle(w http.ResponseWriter, r *http.Request)
+	HandleGet(w http.ResponseWriter, r *http.Request)
+	HandleCreate(w http.ResponseWriter, r *http.Request)
 }
 
 func NewShortLinkHandler(
@@ -28,18 +29,7 @@ type shortLinkHandler struct {
 	provider model.ShortLinkProvider
 }
 
-func (h *shortLinkHandler) Handle(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		getShortLinkHandler(w, r, h.provider)
-	case http.MethodPost:
-		createShortLinkHandler(w, r, h.service)
-	default:
-		w.WriteHeader(http.StatusNotAcceptable)
-	}
-}
-
-func getShortLinkHandler(w http.ResponseWriter, r *http.Request, provider model.ShortLinkProvider) {
+func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[1:]
 
 	err := validateShortLinkID(id)
@@ -48,7 +38,7 @@ func getShortLinkHandler(w http.ResponseWriter, r *http.Request, provider model.
 		return
 	}
 
-	itemPtr, err := provider.Get(model.ShortLinkID(id))
+	itemPtr, err := h.provider.Get(model.ShortLinkID(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +53,7 @@ func getShortLinkHandler(w http.ResponseWriter, r *http.Request, provider model.
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func createShortLinkHandler(w http.ResponseWriter, r *http.Request, service service.ShortLinkService) {
+func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -77,7 +67,7 @@ func createShortLinkHandler(w http.ResponseWriter, r *http.Request, service serv
 		return
 	}
 
-	shortLink, err := service.Create(link)
+	shortLink, err := h.service.Create(link)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
