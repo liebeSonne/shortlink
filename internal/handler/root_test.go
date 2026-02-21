@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,12 @@ import (
 )
 
 func TestRootHandler_Handle(t *testing.T) {
-	mockHandler := &mockShortLinkHandler{code: http.StatusOK, getResponse: "get", postResponse: "post"}
+	mockHandler := &mockShortLinkHandler{
+		t:            t,
+		code:         http.StatusOK,
+		getResponse:  "get",
+		postResponse: "post",
+	}
 
 	type want struct {
 		code int
@@ -67,6 +71,7 @@ func TestRootHandler_Handle(t *testing.T) {
 }
 
 type mockShortLinkHandler struct {
+	t            *testing.T
 	code         int
 	getResponse  string
 	postResponse string
@@ -75,16 +80,10 @@ type mockShortLinkHandler struct {
 func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(m.code)
 	_, err := w.Write([]byte(m.getResponse))
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		return
-	}
+	require.NoError(m.t, err)
 }
 func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(m.code)
 	_, err := w.Write([]byte(m.postResponse))
-	if err != nil {
-		fmt.Printf("error: %v", err)
-		return
-	}
+	require.NoError(m.t, err)
 }
