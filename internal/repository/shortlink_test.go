@@ -14,11 +14,11 @@ func TestShortLinkRepository_Get(t *testing.T) {
 	id2 := "id1"
 	url1 := "https://localhost/1"
 	url2 := "https://localhost/2"
-	itemWithID1AndUrl1, err := model.NewShortLink(id1, url1)
+	itemWithID1AndURL1, err := model.NewShortLink(id1, url1)
 	require.NoError(t, err)
-	itemWithID1AndUrl2, err := model.NewShortLink(id1, url2)
+	itemWithID1AndURL2, err := model.NewShortLink(id1, url2)
 	require.NoError(t, err)
-	itemWithID2AndUrl2, err := model.NewShortLink(id2, url2)
+	itemWithID2AndURL2, err := model.NewShortLink(id2, url2)
 	require.NoError(t, err)
 
 	type on struct {
@@ -46,20 +46,20 @@ func TestShortLinkRepository_Get(t *testing.T) {
 		{
 			"not found when empty id",
 			on{""},
-			when{[]model.ShortLink{itemWithID1AndUrl1}},
+			when{[]model.ShortLink{itemWithID1AndURL1}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
 			on{id2},
-			when{[]model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2}},
-			want{&itemWithID2AndUrl2, nil},
+			when{[]model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2}},
+			want{&itemWithID2AndURL2, nil},
 		},
 		{
 			"found last by id",
 			on{id1},
-			when{[]model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2, itemWithID1AndUrl2}},
-			want{&itemWithID1AndUrl2, nil},
+			when{[]model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2, itemWithID1AndURL2}},
+			want{&itemWithID1AndURL2, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -85,11 +85,11 @@ func TestShortLinkRepository_Store(t *testing.T) {
 	id2 := "id1"
 	url1 := "https://localhost/1"
 	url2 := "https://localhost/2"
-	itemWithID1AndUrl1, err := model.NewShortLink(id1, url1)
+	itemWithID1AndURL1, err := model.NewShortLink(id1, url1)
 	require.NoError(t, err)
-	itemWithID1AndUrl2, err := model.NewShortLink(id1, url2)
+	itemWithID1AndURL2, err := model.NewShortLink(id1, url2)
 	require.NoError(t, err)
-	itemWithID2AndUrl2, err := model.NewShortLink(id2, url2)
+	itemWithID2AndURL2, err := model.NewShortLink(id2, url2)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -97,9 +97,9 @@ func TestShortLinkRepository_Store(t *testing.T) {
 		items []model.ShortLink
 		err   error
 	}{
-		{"correct store items", []model.ShortLink{itemWithID1AndUrl1, itemWithID2AndUrl2}, nil},
-		{"correct store with eq id", []model.ShortLink{itemWithID1AndUrl1, itemWithID1AndUrl2}, nil},
-		{"correct store with eq url", []model.ShortLink{itemWithID2AndUrl2, itemWithID1AndUrl2}, nil},
+		{"correct store items", []model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2}, nil},
+		{"correct store with eq id", []model.ShortLink{itemWithID1AndURL1, itemWithID1AndURL2}, nil},
+		{"correct store with eq url", []model.ShortLink{itemWithID2AndURL2, itemWithID1AndURL2}, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
