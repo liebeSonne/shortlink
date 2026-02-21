@@ -69,6 +69,12 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.HandleGet(w, request)
 			res := w.Result()
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Printf("error closing body: %v", err)
+				}
+			}(res.Body)
 
 			require.Equal(t, tc.want.code, res.StatusCode)
 
@@ -143,16 +149,16 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.HandleCreate(w, request)
 			res := w.Result()
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Printf("error closing body: %v", err)
+				}
+			}(res.Body)
 
 			require.Equal(t, tc.want.code, res.StatusCode)
 
 			if tc.want.code == http.StatusCreated {
-				defer func(Body io.ReadCloser) {
-					err := Body.Close()
-					if err != nil {
-						fmt.Printf("error: %v", err)
-					}
-				}(res.Body)
 				resBody, err := io.ReadAll(res.Body)
 
 				require.NoError(t, err)
