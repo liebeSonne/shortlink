@@ -41,12 +41,12 @@ func TestRootHandler_Handle(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.Handle(w, request)
 			res := w.Result()
-			defer func(Body io.ReadCloser) {
-				err := Body.Close()
+			defer func() {
+				err := res.Body.Close()
 				if err != nil {
 					fmt.Printf("error closing body: %v", err)
 				}
-			}(res.Body)
+			}()
 
 			require.Equal(t, tc.want.code, res.StatusCode)
 
