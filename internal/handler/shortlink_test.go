@@ -70,9 +70,7 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			handler.HandleGet(w, request)
 			res := w.Result()
 			err := res.Body.Close()
-			if err != nil {
-				fmt.Printf("error closing body: %v", err)
-			}
+			require.NoError(t, err)
 
 			require.Equal(t, tc.want.code, res.StatusCode)
 
@@ -149,9 +147,7 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			res := w.Result()
 			defer func() {
 				err := res.Body.Close()
-				if err != nil {
-					fmt.Printf("error closing body: %v", err)
-				}
+				require.NoError(t, err)
 			}()
 
 			require.Equal(t, tc.want.code, res.StatusCode)

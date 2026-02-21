@@ -43,9 +43,7 @@ func TestRootHandler_Handle(t *testing.T) {
 			res := w.Result()
 			defer func() {
 				err := res.Body.Close()
-				if err != nil {
-					fmt.Printf("error closing body: %v", err)
-				}
+				require.NoError(t, err)
 			}()
 
 			require.Equal(t, tc.want.code, res.StatusCode)
