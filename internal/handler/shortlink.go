@@ -74,7 +74,11 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	url := h.createShortLinkURL(r, shortLink.ID())
 
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(url))
+	_, err = w.Write([]byte(url))
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
 }
 
 func (h *shortLinkHandler) createShortLinkURL(r *http.Request, id string) string {

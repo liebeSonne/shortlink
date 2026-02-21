@@ -147,7 +147,12 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			require.Equal(t, tc.want.code, res.StatusCode)
 
 			if tc.want.code == http.StatusCreated {
-				defer res.Body.Close()
+				defer func(Body io.ReadCloser) {
+					err := Body.Close()
+					if err != nil {
+						fmt.Printf("error: %v", err)
+					}
+				}(res.Body)
 				resBody, err := io.ReadAll(res.Body)
 
 				require.NoError(t, err)

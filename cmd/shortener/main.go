@@ -9,11 +9,6 @@ import (
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
-type shortLink struct {
-	id   string
-	link string
-}
-
 func main() {
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
 	shortIDGenerator := model.NewShortIDGenerator()

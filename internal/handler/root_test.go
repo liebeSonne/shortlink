@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -44,7 +45,12 @@ func TestRootHandler_Handle(t *testing.T) {
 			require.Equal(t, tc.want.code, res.StatusCode)
 
 			if tc.want.code != http.StatusNotAcceptable {
-				defer res.Body.Close()
+				defer func(Body io.ReadCloser) {
+					err := Body.Close()
+					if err != nil {
+						fmt.Printf("error: %v", err)
+					}
+				}(res.Body)
 				resBody, err := io.ReadAll(res.Body)
 
 				wantResponse := ""
@@ -70,9 +76,17 @@ type mockShortLinkHandler struct {
 
 func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(m.code)
-	w.Write([]byte(m.getResponse))
+	_, err := w.Write([]byte(m.getResponse))
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
 }
 func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(m.code)
-	w.Write([]byte(m.postResponse))
+	_, err := w.Write([]byte(m.postResponse))
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
 }
