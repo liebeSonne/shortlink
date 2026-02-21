@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -62,7 +63,15 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := &mockProvider{url: tc.when.link, err: tc.when.err}
+			provider := new(mockProvider)
+			if tc.when.err == nil && tc.when.link != nil {
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(tc.on.id).On("URL").Return(*tc.when.link)
+				provider.On("Get", tc.on.id).Return(mockItem, tc.when.err)
+			} else {
+				provider.On("Get", tc.on.id).Return(nil, tc.when.err)
+			}
+
 			handler := NewShortLinkHandler(new(mockService), provider)
 
 			request := httptest.NewRequest(http.MethodGet, "/"+tc.on.id, nil)
@@ -135,7 +144,15 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			service := &mockService{id: tc.when.id, err: tc.when.err}
+			var item model.ShortLink
+			if tc.when.err == nil {
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(tc.when.id).On("URL").Return(link1)
+				item = mockItem
+			}
+			service := new(mockService)
+			service.On("Create", tc.on.link).Return(item, tc.when.err)
+
 			handler := NewShortLinkHandler(service, new(mockProvider))
 
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.on.link))
@@ -164,46 +181,38 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 }
 
 type mockService struct {
-	id  string
-	err error
+	mock.Mock
 }
 
 func (m *mockService) Create(url string) (model.ShortLink, error) {
-	if m.err != nil {
-		return nil, m.err
+	args := m.Called(url)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
 	}
-	return &mockShortLink{id: m.id, url: url}, nil
+	return args.Get(0).(model.ShortLink), args.Error(1)
 }
 
 type mockProvider struct {
-	url *string
-	err error
+	mock.Mock
 }
 
-func (m *mockProvider) Get(id string) (*model.ShortLink, error) {
-	if m.err != nil {
-		return nil, m.err
+func (m *mockProvider) Get(id string) (model.ShortLink, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
 	}
-	if m.url != nil {
-		item := testNewMockShortLink(id, *m.url)
-		return &item, nil
-	}
-	return nil, nil
-}
-
-func testNewMockShortLink(id, url string) model.ShortLink {
-	return &mockShortLink{id: id, url: url}
+	return args.Get(0).(model.ShortLink), args.Error(1)
 }
 
 type mockShortLink struct {
-	id  string
-	url string
+	mock.Mock
 }
 
 func (m *mockShortLink) ID() string {
-	return m.id
+	args := m.Called()
+	return args.String(0)
 }
-
 func (m *mockShortLink) URL() string {
-	return m.url
+	args := m.Called()
+	return args.String(0)
 }

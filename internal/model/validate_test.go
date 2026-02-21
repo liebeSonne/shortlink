@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_validateShortLinkID(t *testing.T) {
@@ -46,7 +47,7 @@ func Test_validateLink(t *testing.T) {
 			if tc.err == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})

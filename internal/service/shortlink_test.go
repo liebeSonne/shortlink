@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -11,14 +12,15 @@ import (
 )
 
 func TestShortLinkService_Create(t *testing.T) {
-	id1 := "id1"
-	url1 := "https://localhost/1"
-
+	type itemData struct {
+		id  string
+		url string
+	}
 	type on struct {
 		url string
 	}
 	type when struct {
-		items      []model.ShortLink
+		items      []itemData
 		generateID string
 	}
 	type want struct {
@@ -32,32 +34,35 @@ func TestShortLinkService_Create(t *testing.T) {
 	}{
 		{
 			"success",
-			on{url1},
-			when{[]model.ShortLink{}, id1},
+			on{"https://localhost/1"},
+			when{[]itemData{}, "id1"},
 			want{nil},
 		},
 		{
 			"empty generated id",
-			on{url1},
-			when{[]model.ShortLink{}, ""},
+			on{"https://localhost/1"},
+			when{[]itemData{}, ""},
 			want{model.ErrEmptyID},
 		},
 		{
 			"empty url",
 			on{""},
-			when{[]model.ShortLink{}, id1},
+			when{[]itemData{}, "id1"},
 			want{model.ErrEmptyURL},
 		},
 		{
 			"invalid url",
 			on{"invalid"},
-			when{[]model.ShortLink{}, id1},
+			when{[]itemData{}, "id1"},
 			want{model.ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
-			on{url1},
-			when{[]model.ShortLink{testCreateShortLink(t, id1, url1)}, id1},
+			on{"https://localhost/1"},
+			when{
+				[]itemData{{"id1", "https://localhost/1"}},
+				"id1",
+			},
 			want{ErrTooManyAttempts},
 		},
 	}
@@ -65,14 +70,20 @@ func TestShortLinkService_Create(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := repository.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
-				err := repo.Store(item)
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
+
+				err := repo.Store(mockItem)
 				require.NoError(t, err)
 			}
-			generator := mockOneIDGenerator{generateID: tc.when.generateID}
+
+			generator := new(mockOneIDGenerator)
+			generator.On("GenerateID", mock.Anything).Return(tc.when.generateID)
+
 			service := NewShortLinkService(repo, generator)
 			item, err := service.Create(tc.on.url)
 			if tc.want.err != nil {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
 			} else {
 				require.NotNil(t, item)
@@ -84,15 +95,23 @@ func TestShortLinkService_Create(t *testing.T) {
 }
 
 type mockOneIDGenerator struct {
-	generateID string
+	mock.Mock
 }
 
-func (m mockOneIDGenerator) GenerateID(_ uint) string {
-	return m.generateID
+func (m *mockOneIDGenerator) GenerateID(size uint) string {
+	args := m.Called(size)
+	return args.String(0)
 }
 
-func testCreateShortLink(t *testing.T, id string, url string) model.ShortLink {
-	item, err := model.NewShortLink(id, url)
-	require.NoError(t, err)
-	return item
+type mockShortLink struct {
+	mock.Mock
+}
+
+func (m *mockShortLink) ID() string {
+	args := m.Called()
+	return args.String(0)
+}
+func (m *mockShortLink) URL() string {
+	args := m.Called()
+	return args.String(0)
 }

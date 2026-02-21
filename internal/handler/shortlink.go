@@ -38,17 +38,17 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemPtr, err := h.provider.Get(id)
+	item, err := h.provider.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if itemPtr == nil {
+	if item == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	url := (*itemPtr).URL()
+	url := item.URL()
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -68,6 +68,10 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if shortLink == nil {
+		http.Error(w, "not created", http.StatusInternalServerError)
 		return
 	}
 

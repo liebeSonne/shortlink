@@ -53,12 +53,12 @@ func (s *shortLinkService) nextID() (string, error) {
 	for {
 		id := s.generator.GenerateID(model.ShortLinkSize)
 
-		itemPtr, err := s.repository.Get(id)
+		item, err := s.repository.Get(id)
 		if err != nil {
 			return "", err
 		}
 
-		if itemPtr == nil {
+		if item == nil {
 			return id, nil
 		}
 

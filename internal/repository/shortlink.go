@@ -14,12 +14,12 @@ type shortLinkRepository struct {
 	linksMap map[string]model.ShortLink
 }
 
-func (s *shortLinkRepository) Get(id string) (*model.ShortLink, error) {
+func (s *shortLinkRepository) Get(id string) (model.ShortLink, error) {
 	link, ok := s.linksMap[id]
 	if !ok {
 		return nil, nil
 	}
-	return &link, nil
+	return link, nil
 }
 
 func (s *shortLinkRepository) Store(shortLink model.ShortLink) error {

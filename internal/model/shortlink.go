@@ -38,10 +38,10 @@ type shortLink struct {
 }
 
 type ShortLinkRepository interface {
-	Get(id string) (*ShortLink, error)
+	Get(id string) (ShortLink, error)
 	Store(shortLink ShortLink) error
 }
 
 type ShortLinkProvider interface {
-	Get(id string) (*ShortLink, error)
+	Get(id string) (ShortLink, error)
 }

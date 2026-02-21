@@ -4,32 +4,24 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/liebeSonne/shortlink/internal/model"
 )
 
 func TestShortLinkRepository_Get(t *testing.T) {
-	id1 := "id1"
-	id2 := "id1"
-	url1 := "https://localhost/1"
-	url2 := "https://localhost/2"
-	itemWithID1AndURL1, err := model.NewShortLink(id1, url1)
-	require.NoError(t, err)
-	itemWithID1AndURL2, err := model.NewShortLink(id1, url2)
-	require.NoError(t, err)
-	itemWithID2AndURL2, err := model.NewShortLink(id2, url2)
-	require.NoError(t, err)
-
+	type itemData struct {
+		id  string
+		url string
+	}
 	type on struct {
 		id string
 	}
 	type want struct {
-		item *model.ShortLink
+		item *itemData
 		err  error
 	}
 	type when struct {
-		items []model.ShortLink
+		items []itemData
 	}
 	testCases := []struct {
 		name string
@@ -39,75 +31,91 @@ func TestShortLinkRepository_Get(t *testing.T) {
 	}{
 		{
 			"not found when no items",
-			on{id1},
-			when{[]model.ShortLink{}},
+			on{"id1"},
+			when{[]itemData{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty id",
 			on{""},
-			when{[]model.ShortLink{itemWithID1AndURL1}},
+			when{[]itemData{{"id1", "url1"}}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
-			on{id2},
-			when{[]model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2}},
-			want{&itemWithID2AndURL2, nil},
+			on{"id2"},
+			when{[]itemData{{"id1", "url1"}, {"id2", "url2"}}},
+			want{&itemData{"id2", "url2"}, nil},
 		},
 		{
 			"found last by id",
-			on{id1},
-			when{[]model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2, itemWithID1AndURL2}},
-			want{&itemWithID1AndURL2, nil},
+			on{"id1"},
+			when{[]itemData{{"id1", "url1"}, {"id2", "url2"}, {"id1", "url2"}}},
+			want{&itemData{"id1", "url2"}, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
-				err := repo.Store(item)
-				assert.NoError(t, err)
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
+
+				err := repo.Store(mockItem)
+				require.NoError(t, err)
 			}
-			itemPtr, err := repo.Get(tc.on.id)
+			item, err := repo.Get(tc.on.id)
 			if tc.want.err != nil {
 				assert.ErrorIs(t, err, tc.want.err)
 			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.want.item, itemPtr)
+				require.NoError(t, err)
+				if tc.want.item != nil {
+					require.NotNil(t, item)
+					assert.Equal(t, tc.want.item.id, item.ID())
+					assert.Equal(t, tc.want.item.url, item.URL())
+				}
 			}
 		})
 	}
 }
 
 func TestShortLinkRepository_Store(t *testing.T) {
-	id1 := "id1"
-	id2 := "id1"
-	url1 := "https://localhost/1"
-	url2 := "https://localhost/2"
-	itemWithID1AndURL1, err := model.NewShortLink(id1, url1)
-	require.NoError(t, err)
-	itemWithID1AndURL2, err := model.NewShortLink(id1, url2)
-	require.NoError(t, err)
-	itemWithID2AndURL2, err := model.NewShortLink(id2, url2)
-	require.NoError(t, err)
-
+	type itemData struct {
+		id  string
+		url string
+	}
 	testCases := []struct {
 		name  string
-		items []model.ShortLink
+		items []itemData
 		err   error
 	}{
-		{"correct store items", []model.ShortLink{itemWithID1AndURL1, itemWithID2AndURL2}, nil},
-		{"correct store with eq id", []model.ShortLink{itemWithID1AndURL1, itemWithID1AndURL2}, nil},
-		{"correct store with eq url", []model.ShortLink{itemWithID2AndURL2, itemWithID1AndURL2}, nil},
+		{"correct store items", []itemData{{"id1", "url1"}, {"id2", "url2"}}, nil},
+		{"correct store with eq id", []itemData{{"id1", "url1"}, {"id1", "url2"}}, nil},
+		{"correct store with eq url", []itemData{{"id2", "url2"}, {"id1", "url2"}}, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.items {
-				err := repo.Store(item)
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
+
+				err := repo.Store(mockItem)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})
 	}
+}
+
+type mockShortLink struct {
+	mock.Mock
+}
+
+func (m *mockShortLink) ID() string {
+	args := m.Called()
+	return args.String(0)
+}
+func (m *mockShortLink) URL() string {
+	args := m.Called()
+	return args.String(0)
 }

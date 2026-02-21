@@ -8,16 +8,29 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRootHandler_Handle(t *testing.T) {
-	mockHandler := &mockShortLinkHandler{
-		t:            t,
-		code:         http.StatusOK,
-		getResponse:  "get",
-		postResponse: "post",
-	}
+	codeGetResult := http.StatusOK
+	codePostResult := http.StatusOK
+	getResponse := "get"
+	postResponse := "get"
+
+	mockHandler := new(mockShortLinkHandler)
+	mockHandler.On("HandleGet", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		w := args.Get(0).(http.ResponseWriter)
+		w.WriteHeader(codeGetResult)
+		_, err := w.Write([]byte(getResponse))
+		require.NoError(t, err)
+	}).Return()
+	mockHandler.On("HandleCreate", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		w := args.Get(0).(http.ResponseWriter)
+		w.WriteHeader(codePostResult)
+		_, err := w.Write([]byte(postResponse))
+		require.NoError(t, err)
+	}).Return()
 
 	type want struct {
 		code int
@@ -27,8 +40,8 @@ func TestRootHandler_Handle(t *testing.T) {
 		method string
 		want   want
 	}{
-		{"get handler", http.MethodGet, want{mockHandler.code}},
-		{"post handler", http.MethodPost, want{mockHandler.code}},
+		{"get handler", http.MethodGet, want{codeGetResult}},
+		{"post handler", http.MethodPost, want{codePostResult}},
 		{"not acceptable head", http.MethodHead, want{http.StatusNotAcceptable}},
 		{"not acceptable pur", http.MethodPut, want{http.StatusNotAcceptable}},
 		{"not acceptable patch", http.MethodPatch, want{http.StatusNotAcceptable}},
@@ -57,10 +70,10 @@ func TestRootHandler_Handle(t *testing.T) {
 
 				wantResponse := ""
 				if tc.method == http.MethodGet {
-					wantResponse = mockHandler.getResponse
+					wantResponse = getResponse
 				}
 				if tc.method == http.MethodPost {
-					wantResponse = mockHandler.postResponse
+					wantResponse = postResponse
 				}
 
 				require.NoError(t, err)
@@ -71,19 +84,12 @@ func TestRootHandler_Handle(t *testing.T) {
 }
 
 type mockShortLinkHandler struct {
-	t            *testing.T
-	code         int
-	getResponse  string
-	postResponse string
+	mock.Mock
 }
 
-func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(m.code)
-	_, err := w.Write([]byte(m.getResponse))
-	require.NoError(m.t, err)
+func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
 }
-func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(m.code)
-	_, err := w.Write([]byte(m.postResponse))
-	require.NoError(m.t, err)
+func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
 }
