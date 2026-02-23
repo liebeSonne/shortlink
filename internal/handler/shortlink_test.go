@@ -3,12 +3,12 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -74,18 +74,29 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 
 			handler := NewShortLinkHandler(new(mockService), provider)
 
-			request := httptest.NewRequest(http.MethodGet, "/"+tc.on.id, nil)
-			w := httptest.NewRecorder()
-			handler.HandleGet(w, request)
-			res := w.Result()
-			err := res.Body.Close()
-			require.NoError(t, err)
+			r := chi.NewRouter()
+			r.Get("/", handler.HandleGet)
+			r.Get("/{id}", handler.HandleGet)
 
-			require.Equal(t, tc.want.code, res.StatusCode)
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			resp, err := client.R().
+				Get(srv.URL + "/" + tc.on.id)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
 
 			if tc.want.code == http.StatusTemporaryRedirect && tc.want.location != nil {
-				location := w.Header().Get("Location")
-				assert.Equal(t, *tc.want.location, location)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "auto redirect is disabled")
+
+				locationURL := resp.Header().Get("Location")
+				assert.Equal(t, *tc.want.location, locationURL)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -103,7 +114,8 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 		err error
 	}
 	type want struct {
-		code int
+		code     int
+		linkPath string
 	}
 	testCases := []struct {
 		name string
@@ -114,31 +126,31 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 		{
 			"success create",
 			on{link1},
-			want{http.StatusCreated},
+			want{http.StatusCreated, "/" + id1},
 			when{id1, nil},
 		},
 		{
 			"error in service",
 			on{link1},
-			want{http.StatusInternalServerError},
+			want{http.StatusInternalServerError, ""},
 			when{"", errors.New("some service error")},
 		},
 		{
 			"error empty url",
 			on{link1},
-			want{http.StatusBadRequest},
+			want{http.StatusBadRequest, ""},
 			when{"", model.ErrEmptyURL},
 		},
 		{
 			"error empty id",
 			on{link1},
-			want{http.StatusBadRequest},
+			want{http.StatusBadRequest, ""},
 			when{"", model.ErrEmptyID},
 		},
 		{
 			"error invalid url",
 			on{link1},
-			want{http.StatusBadRequest},
+			want{http.StatusBadRequest, ""},
 			when{"", model.ErrInvalidURL},
 		},
 	}
@@ -155,26 +167,25 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 
 			handler := NewShortLinkHandler(service, new(mockProvider))
 
-			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tc.on.link))
-			request.Host = "localhost"
-			request.URL.Scheme = "http"
-			request.TLS = nil
-			w := httptest.NewRecorder()
-			handler.HandleCreate(w, request)
-			res := w.Result()
-			defer func() {
-				err := res.Body.Close()
-				require.NoError(t, err)
-			}()
+			r := chi.NewRouter()
+			r.Post("/", handler.HandleCreate)
 
-			require.Equal(t, tc.want.code, res.StatusCode)
+			srv := httptest.NewServer(r)
+			defer srv.Close()
 
-			if tc.want.code == http.StatusCreated {
-				resBody, err := io.ReadAll(res.Body)
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
 
-				require.NoError(t, err)
-				wantURL := fmt.Sprintf("%s://%s/%s", request.URL.Scheme, request.Host, tc.when.id)
-				assert.Equal(t, wantURL, string(resBody))
+			resp, err := client.R().
+				SetBody(tc.on.link).
+				Post(srv.URL + "/")
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+			if tc.want.linkPath != "" {
+				wantURL := srv.URL + tc.want.linkPath
+				assert.Equal(t, wantURL, string(resp.Body()))
 			}
 		})
 	}
@@ -212,6 +223,7 @@ func (m *mockShortLink) ID() string {
 	args := m.Called()
 	return args.String(0)
 }
+
 func (m *mockShortLink) URL() string {
 	args := m.Called()
 	return args.String(0)

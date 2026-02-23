@@ -1,14 +1,17 @@
 package handler
 
-import "net/http"
+import (
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+)
 
-type RootHandler interface {
-	Handle(w http.ResponseWriter, r *http.Request)
+type RootRouter interface {
+	Router() chi.Router
 }
 
-func NewRootHandler(
+func NewRootRouter(
 	shortLinkHandler ShortLinkHandler,
-) RootHandler {
+) RootRouter {
 	return &rootHandler{
 		shortLinkHandler: shortLinkHandler,
 	}
@@ -18,13 +21,14 @@ type rootHandler struct {
 	shortLinkHandler ShortLinkHandler
 }
 
-func (h *rootHandler) Handle(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.shortLinkHandler.HandleGet(w, r)
-	case http.MethodPost:
-		h.shortLinkHandler.HandleCreate(w, r)
-	default:
-		w.WriteHeader(http.StatusNotAcceptable)
-	}
+func (h *rootHandler) Router() chi.Router {
+	r := chi.NewRouter()
+
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Get("/{id}", h.shortLinkHandler.HandleGet)
+	r.Post("/", h.shortLinkHandler.HandleCreate)
+
+	return r
 }

@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
@@ -31,7 +33,7 @@ type shortLinkHandler struct {
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[1:]
+	id := chi.URLParam(r, "id")
 
 	if id == "" {
 		http.Error(w, "empty id", http.StatusBadRequest)

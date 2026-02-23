@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"io"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ func TestRootHandler_Handle(t *testing.T) {
 	codeGetResult := http.StatusOK
 	codePostResult := http.StatusOK
 	getResponse := "get"
-	postResponse := "get"
+	postResponse := "post"
 
 	mockHandler := new(mockShortLinkHandler)
 	mockHandler.On("HandleGet", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -34,50 +34,44 @@ func TestRootHandler_Handle(t *testing.T) {
 
 	type want struct {
 		code int
+		body string
 	}
 	testCases := []struct {
 		name   string
 		method string
+		path   string
 		want   want
 	}{
-		{"get handler", http.MethodGet, want{codeGetResult}},
-		{"post handler", http.MethodPost, want{codePostResult}},
-		{"not acceptable head", http.MethodHead, want{http.StatusNotAcceptable}},
-		{"not acceptable pur", http.MethodPut, want{http.StatusNotAcceptable}},
-		{"not acceptable patch", http.MethodPatch, want{http.StatusNotAcceptable}},
-		{"not acceptable connect", http.MethodConnect, want{http.StatusNotAcceptable}},
-		{"not acceptable delete", http.MethodDelete, want{http.StatusNotAcceptable}},
-		{"not acceptable options", http.MethodOptions, want{http.StatusNotAcceptable}},
-		{"not acceptable trace", http.MethodTrace, want{http.StatusNotAcceptable}},
+		{"get handler", http.MethodGet, "/123", want{codeGetResult, getResponse}},
+		{"post handler", http.MethodPost, "/", want{codePostResult, postResponse}},
+		{"not head handler", http.MethodHead, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable pur", http.MethodPut, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable patch", http.MethodPatch, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable connect", http.MethodConnect, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable delete", http.MethodDelete, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable options", http.MethodOptions, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"not acceptable trace", http.MethodTrace, "/", want{http.StatusMethodNotAllowed, ""}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := NewRootHandler(mockHandler)
+			router := NewRootRouter(mockHandler)
 
-			request := httptest.NewRequest(tc.method, "/", strings.NewReader(""))
-			w := httptest.NewRecorder()
-			handler.Handle(w, request)
-			res := w.Result()
-			defer func() {
-				err := res.Body.Close()
-				require.NoError(t, err)
-			}()
+			srv := httptest.NewServer(router.Router())
+			defer srv.Close()
 
-			require.Equal(t, tc.want.code, res.StatusCode)
+			client := resty.New()
 
-			if tc.want.code != http.StatusNotAcceptable {
-				resBody, err := io.ReadAll(res.Body)
+			req := client.R()
+			req.Method = tc.method
+			req.URL = srv.URL + tc.path
 
-				wantResponse := ""
-				if tc.method == http.MethodGet {
-					wantResponse = getResponse
-				}
-				if tc.method == http.MethodPost {
-					wantResponse = postResponse
-				}
+			resp, err := req.Send()
+			require.NoError(t, err)
 
-				require.NoError(t, err)
-				assert.Equal(t, wantResponse, string(resBody))
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+
+			if tc.want.body != "" {
+				assert.Equal(t, tc.want.body, string(resp.Body()))
 			}
 		})
 	}

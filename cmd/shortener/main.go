@@ -14,12 +14,9 @@ func main() {
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository)
-	rootHandler := handler.NewRootHandler(shortLinkHandler)
+	rootRouter := handler.NewRootRouter(shortLinkHandler)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", rootHandler.Handle)
-
-	err := http.ListenAndServe(":8080", mux)
+	err := http.ListenAndServe(":8080", rootRouter.Router())
 	if err != nil {
 		panic(err)
 	}
