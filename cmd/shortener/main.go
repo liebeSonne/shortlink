@@ -24,7 +24,7 @@ func main() {
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, conf.URLAddress)
-	rootRouter := handler.NewRootRouter(shortLinkHandler)
+	rootRouter := handler.NewRootRouter(shortLinkHandler, conf.EnableLogs)
 
 	err = http.ListenAndServe(conf.ServerAddress, rootRouter.Router())
 	if err != nil {

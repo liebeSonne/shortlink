@@ -30,6 +30,7 @@ func parseFlags(config *config.Config) error {
 
 	fs.Var(&serverAddress, "a", "address and port to run server")
 	urlAddress := fs.String("b", defaultURLAddress, "address and port for output short url")
+	enableLogs := fs.Bool("l", false, "enable output logs")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -37,8 +38,11 @@ func parseFlags(config *config.Config) error {
 		return err
 	}
 
-	config.ServerAddress = serverAddress.String()
-	config.URLAddress = *urlAddress
+	if config != nil {
+		config.ServerAddress = serverAddress.String()
+		config.URLAddress = *urlAddress
+		config.EnableLogs = *enableLogs
+	}
 
 	return nil
 }
