@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 type RootRouter interface {
@@ -23,9 +22,6 @@ type rootHandler struct {
 
 func (h *rootHandler) Router() chi.Router {
 	r := chi.NewRouter()
-
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
 
 	r.Get("/{id}", h.shortLinkHandler.HandleGet)
 	r.Post("/", h.shortLinkHandler.HandleCreate)

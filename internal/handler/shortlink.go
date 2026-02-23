@@ -20,16 +20,19 @@ type ShortLinkHandler interface {
 func NewShortLinkHandler(
 	service service.ShortLinkService,
 	provider model.ShortLinkProvider,
+	urlAddress string,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
-		service:  service,
-		provider: provider,
+		service:    service,
+		provider:   provider,
+		urlAddress: urlAddress,
 	}
 }
 
 type shortLinkHandler struct {
-	service  service.ShortLinkService
-	provider model.ShortLinkProvider
+	service    service.ShortLinkService
+	provider   model.ShortLinkProvider
+	urlAddress string
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +80,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url := h.createShortLinkURL(r, shortLink.ID())
+	url := h.createShortLinkURL(shortLink.ID())
 
 	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write([]byte(url))
@@ -87,10 +90,6 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (h *shortLinkHandler) createShortLinkURL(r *http.Request, id string) string {
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	return fmt.Sprintf("%s://%s/%s", scheme, r.Host, id)
+func (h *shortLinkHandler) createShortLinkURL(id string) string {
+	return fmt.Sprintf("%s/%s", h.urlAddress, id)
 }

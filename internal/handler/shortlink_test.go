@@ -72,7 +72,8 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 				provider.On("Get", tc.on.id).Return(nil, tc.when.err)
 			}
 
-			handler := NewShortLinkHandler(new(mockService), provider)
+			urlAddress := "http://localhost:8080"
+			handler := NewShortLinkHandler(new(mockService), provider, urlAddress)
 
 			r := chi.NewRouter()
 			r.Get("/", handler.HandleGet)
@@ -165,7 +166,8 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			service := new(mockService)
 			service.On("Create", tc.on.link).Return(item, tc.when.err)
 
-			handler := NewShortLinkHandler(service, new(mockProvider))
+			urlAddress := "http://localhost:8080"
+			handler := NewShortLinkHandler(service, new(mockProvider), urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
@@ -184,7 +186,7 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 
 			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
 			if tc.want.linkPath != "" {
-				wantURL := srv.URL + tc.want.linkPath
+				wantURL := urlAddress + tc.want.linkPath
 				assert.Equal(t, wantURL, string(resp.Body()))
 			}
 		})
