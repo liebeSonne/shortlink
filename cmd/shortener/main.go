@@ -17,7 +17,6 @@ func main() {
 	err := parseFlags(&conf)
 	if err != nil {
 		log.Fatalf("error parsing flags: %s", err.Error())
-		return
 	}
 
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
