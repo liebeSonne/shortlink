@@ -21,7 +21,7 @@ type shortIDGenerator struct {
 func (s *shortIDGenerator) GenerateID(size uint) string {
 	id := make([]rune, size)
 	for i := range size {
-		index := rand.Intn(len(s.symbols) - 1)
+		index := rand.Intn(len(s.symbols))
 		id[i] = s.symbols[index]
 	}
 	return string(id)
