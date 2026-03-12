@@ -25,9 +25,7 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
 		if !isDefault {
-			if _, ok := tagNameToEnvName[tag]; ok {
-				delete(tagNameToEnvName, tag)
-			}
+			delete(tagNameToEnvName, tag)
 		}
 	}
 
