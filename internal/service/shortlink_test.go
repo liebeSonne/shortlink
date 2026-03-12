@@ -85,11 +85,13 @@ func TestShortLinkService_Create(t *testing.T) {
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
-			} else {
-				require.NotNil(t, item)
-				assert.Equal(t, tc.on.url, item.URL())
-				assert.Equal(t, tc.when.generateID, item.ID())
+				return
 			}
+
+			require.NoError(t, err)
+			require.NotNil(t, item)
+			assert.Equal(t, tc.on.url, item.URL())
+			assert.Equal(t, tc.when.generateID, item.ID())
 		})
 	}
 }

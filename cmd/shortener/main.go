@@ -11,18 +11,19 @@ import (
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
-func main() {
-	conf := config.Config{}
+const appID = "shortlink"
+const envPrefix = ""
 
-	err := parseFlags(&conf)
+func main() {
+	conf, err := config.LoadConfig(appID, envPrefix)
 	if err != nil {
-		log.Fatalf("error parsing flags: %s", err.Error())
+		log.Fatalf("error get config: %s", err.Error())
 	}
 
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, conf.URLAddress)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, conf.BaseURL)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, conf.EnableLogs)
 
 	err = http.ListenAndServe(conf.ServerAddress, rootRouter.Router())

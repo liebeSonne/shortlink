@@ -66,14 +66,16 @@ func TestShortLinkRepository_Get(t *testing.T) {
 			}
 			item, err := repo.Get(tc.on.id)
 			if tc.want.err != nil {
+				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
-			} else {
-				require.NoError(t, err)
-				if tc.want.item != nil {
-					require.NotNil(t, item)
-					assert.Equal(t, tc.want.item.id, item.ID())
-					assert.Equal(t, tc.want.item.url, item.URL())
-				}
+				return
+			}
+
+			require.NoError(t, err)
+			if tc.want.item != nil {
+				require.NotNil(t, item)
+				assert.Equal(t, tc.want.item.id, item.ID())
+				assert.Equal(t, tc.want.item.url, item.URL())
 			}
 		})
 	}
