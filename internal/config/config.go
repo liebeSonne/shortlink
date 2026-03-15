@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	LogLevelDebug string = "debug"
-	LogLevelInfo         = "info"
-	LogLevelWarn         = "warn"
-	LogLevelError        = "error"
-	LogLevelPanic        = "panic"
-	LogLevelFatal        = "fatal"
+	LogLevelDebug = "debug"
+	LogLevelInfo  = "info"
+	LogLevelWarn  = "warn"
+	LogLevelError = "error"
+	LogLevelPanic = "panic"
+	LogLevelFatal = "fatal"
 )
 
 const (
