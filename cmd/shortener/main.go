@@ -17,29 +17,18 @@ const appID = "shortlink"
 const envPrefix = ""
 
 func main() {
-	conf, err := config.LoadConfig(appID, envPrefix)
-	if err != nil {
-		log.Fatalf("error get config: %s", err.Error())
-	}
-
-	loggerLevel, ok := configToLoggerLogLevelMap[conf.LogLevel]
-	if !ok {
-		log.Fatalf("unknown log level: %s", conf.LogLevel)
-	}
-	logger, err := applogger.NewZapLogger(loggerLevel, os.Stderr)
-	if err != nil {
-		log.Fatalf("error init logger: %s", err.Error())
-	}
+	cfg := initConfig()
+	logger := initLogger(cfg)
 
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, conf.BaseURL)
-	rootRouter := handler.NewRootRouter(shortLinkHandler, conf.EnableLogs)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
+	rootRouter := handler.NewRootRouter(shortLinkHandler, cfg.EnableLogs)
 	router := handler.LoggingMiddleware(rootRouter.Router(), logger)
 
-	logger.Infow("starting server", "addr", conf.ServerAddress)
-	err = http.ListenAndServe(conf.ServerAddress, router)
+	logger.Infow("starting server", "addr", cfg.ServerAddress)
+	err := http.ListenAndServe(cfg.ServerAddress, router)
 	if err != nil {
 		logger.Fatalw("error starting server", "error", err)
 	}
@@ -52,4 +41,24 @@ var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
 	config.LogLevelError: applogger.ErrorLevel,
 	config.LogLevelFatal: applogger.FatalLevel,
 	config.LogLevelPanic: applogger.PanicLevel,
+}
+
+func initConfig() config.Config {
+	cfg, err := config.LoadConfig(appID, envPrefix)
+	if err != nil {
+		log.Fatalf("error get config: %s", err.Error())
+	}
+	return cfg
+}
+
+func initLogger(cfg config.Config) applogger.Logger {
+	loggerLevel, ok := configToLoggerLogLevelMap[cfg.LogLevel]
+	if !ok {
+		log.Fatalf("unknown log level: %s", cfg.LogLevel)
+	}
+	logger, err := applogger.NewZapLogger(loggerLevel, os.Stderr)
+	if err != nil {
+		log.Fatalf("error init logger: %s", err.Error())
+	}
+	return logger
 }
