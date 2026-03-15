@@ -7,18 +7,34 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
-const DefaultBaseURL = "http://localhost:8080"
-const DefaultServerAddress = ":8080"
-const DefaultEnableLogs = false
+const (
+	LogLevelDebug string = "debug"
+	LogLevelInfo         = "info"
+	LogLevelWarn         = "warn"
+	LogLevelError        = "error"
+	LogLevelPanic        = "panic"
+	LogLevelFatal        = "fatal"
+)
 
-const ServerAddressEnvName = "SERVER_ADDRESS"
-const BaseURLEnvName = "BASE_URL"
-const EnableLogsEnvName = "ENABLE_LOGS"
+const (
+	DefaultBaseURL       = "http://localhost:8080"
+	DefaultServerAddress = ":8080"
+	DefaultEnableLogs    = false
+	DefaultLogLevel      = LogLevelInfo
+)
+
+const (
+	ServerAddressEnvName = "SERVER_ADDRESS"
+	BaseURLEnvName       = "BASE_URL"
+	EnableLogsEnvName    = "ENABLE_LOGS"
+	LogLevelEnvName      = "LOG_LEVEL"
+)
 
 type Config struct {
 	ServerAddress string `env:"SERVER_ADDRESS" default:":8080"`
 	BaseURL       string `env:"BASE_URL" default:"http://localhost:8080"`
 	EnableLogs    bool   `env:"ENABLE_LOGS" default:"false"`
+	LogLevel      string `env:"LOG_LEVEL" default:"info"`
 }
 
 func ParseEnv(prefix string, cfg *Config) error {

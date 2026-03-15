@@ -33,6 +33,7 @@ func TestParseEnv(t *testing.T) {
 				ServerAddress: DefaultServerAddress,
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      DefaultLogLevel,
 			}, nil},
 		},
 		{
@@ -45,6 +46,7 @@ func TestParseEnv(t *testing.T) {
 				ServerAddress: "127.0.0.1:8888",
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      DefaultLogLevel,
 			}, nil},
 		},
 		{
@@ -57,6 +59,7 @@ func TestParseEnv(t *testing.T) {
 				ServerAddress: DefaultServerAddress,
 				BaseURL:       "http://127.0.0.1:8888",
 				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      DefaultLogLevel,
 			}, nil},
 		},
 		{
@@ -69,6 +72,7 @@ func TestParseEnv(t *testing.T) {
 				ServerAddress: DefaultServerAddress,
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    true,
+				LogLevel:      DefaultLogLevel,
 			}, nil},
 		},
 		{
@@ -81,6 +85,20 @@ func TestParseEnv(t *testing.T) {
 				ServerAddress: DefaultServerAddress,
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    false,
+				LogLevel:      DefaultLogLevel,
+			}, nil},
+		},
+		{
+			"log level",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", LogLevelEnvName): LogLevelError,
+			}},
+			want{Config{
+				ServerAddress: DefaultServerAddress,
+				BaseURL:       DefaultBaseURL,
+				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      LogLevelError,
 			}, nil},
 		},
 		{
@@ -90,11 +108,13 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8888",
 				getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
+				getEnvNameWithPrefix("", LogLevelEnvName):      LogLevelError,
 			}},
 			want{Config{
 				ServerAddress: "127.0.0.1:8888",
 				BaseURL:       "http://127.0.0.2:8000",
 				EnableLogs:    true,
+				LogLevel:      LogLevelError,
 			}, nil},
 		},
 		{
@@ -104,11 +124,13 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", ServerAddressEnvName): "127.0.0.1:8888",
 				getEnvNameWithPrefix("APP_ID", BaseURLEnvName):       "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("APP_ID", EnableLogsEnvName):    "true",
+				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):      LogLevelError,
 			}},
 			want{Config{
 				ServerAddress: "127.0.0.1:8888",
 				BaseURL:       "http://127.0.0.2:8000",
 				EnableLogs:    true,
+				LogLevel:      LogLevelError,
 			}, nil},
 		},
 	}

@@ -32,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: DefaultServerAddress,
 					BaseURL:       DefaultBaseURL,
 					EnableLogs:    DefaultEnableLogs,
+					LogLevel:      DefaultLogLevel,
 				},
 				nil,
 			},
@@ -45,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", ServerAddressEnvName): "127.0.0.1:8787",
 					getEnvNameWithPrefix("prefix", BaseURLEnvName):       "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("prefix", EnableLogsEnvName):    "true",
+					getEnvNameWithPrefix("prefix", LogLevelEnvName):      "error",
 				},
 			},
 			want{
@@ -52,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: "127.0.0.1:8787",
 					BaseURL:       "http://127.0.0.2:8888",
 					EnableLogs:    true,
+					LogLevel:      "error",
 				},
 				nil,
 			},
@@ -65,6 +68,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8787",
 					getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):      "error",
 				},
 			},
 			want{
@@ -72,6 +76,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: "127.0.0.1:8787",
 					BaseURL:       "http://127.0.0.2:8888",
 					EnableLogs:    true,
+					LogLevel:      "error",
 				},
 				nil,
 			},
@@ -80,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 			"from flags",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888", "-l", "true"},
+				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888", "-l=true", "-ll", "error"},
 				map[string]string{},
 			},
 			want{
@@ -88,6 +93,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: "127.0.0.1:8787",
 					BaseURL:       "http://127.0.0.2:8888",
 					EnableLogs:    true,
+					LogLevel:      "error",
 				},
 				nil,
 			},
@@ -100,6 +106,7 @@ func TestLoadConfig(t *testing.T) {
 				map[string]string{
 					getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.10:7777",
 					getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):      "error",
 				},
 			},
 			want{
@@ -107,6 +114,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: "127.0.0.10:7777",
 					BaseURL:       "http://127.0.0.2:8888",
 					EnableLogs:    true,
+					LogLevel:      "error",
 				},
 				nil,
 			},
@@ -119,6 +127,7 @@ func TestLoadConfig(t *testing.T) {
 				map[string]string{
 					getEnvNameWithPrefix("", BaseURLEnvName):    "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("", EnableLogsEnvName): "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):   "error",
 				},
 			},
 			want{
@@ -126,6 +135,7 @@ func TestLoadConfig(t *testing.T) {
 					ServerAddress: "127.0.0.1:8787",
 					BaseURL:       "http://127.0.0.2:8888",
 					EnableLogs:    true,
+					LogLevel:      "error",
 				},
 				nil,
 			},
@@ -172,6 +182,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 	serverAddress1 := "10.10.10.10:1111"
 	baseURL1 := "http://127.0.0.1:2222"
 	enableLogsTrue := true
+	logLevel1 := LogLevelError
 
 	type on struct {
 		fCfg     flagsConfig
@@ -187,33 +198,38 @@ func TestMergeFlagsConfig(t *testing.T) {
 	}{
 		{
 			"empty env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{}},
 			want{Config{}},
 		},
 		{
 			"server address env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{ServerAddressEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{ServerAddressEnvName}},
 			want{Config{ServerAddress: serverAddress1}},
 		},
 		{
 			"base url env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{BaseURLEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{BaseURLEnvName}},
 			want{Config{BaseURL: baseURL1}},
 		},
 		{
 			"enable logs env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{EnableLogsEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{EnableLogsEnvName}},
 			want{Config{EnableLogs: enableLogsTrue}},
 		},
 		{
 			"unknown env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{"unknown"}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{"unknown"}},
 			want{Config{}},
 		},
 		{
 			"server address and base url and enable logs env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue}, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
 			want{Config{ServerAddress: serverAddress1, BaseURL: baseURL1, EnableLogs: enableLogsTrue}},
+		},
+		{
+			"log level env name",
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1}, []string{LogLevelEnvName}},
+			want{Config{LogLevel: logLevel1}},
 		},
 	}
 

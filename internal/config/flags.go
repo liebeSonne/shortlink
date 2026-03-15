@@ -10,9 +10,12 @@ import (
 	"strings"
 )
 
-const ServerAddressFlagName = "a"
-const BaseURLFlagName = "b"
-const EnableLogsFlagName = "l"
+const (
+	ServerAddressFlagName = "a"
+	BaseURLFlagName       = "b"
+	EnableLogsFlagName    = "l"
+	LogLevelFlagName      = "ll"
+)
 
 var ErrInvalidFlagValue = errors.New("invalid flag value")
 var ErrInvalidDefaultServerAddress = errors.New("invalid default server address")
@@ -21,6 +24,7 @@ type flagsConfig struct {
 	ServerAddress *string
 	BaseURL       *string
 	EnableLogs    *bool
+	LogLevel      *string
 }
 
 func parseFlags(appID string, config *Config) error {
@@ -40,6 +44,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.EnableLogs != nil {
 			config.EnableLogs = *flagsConf.EnableLogs
 		}
+		if flagsConf.LogLevel != nil {
+			config.LogLevel = *flagsConf.LogLevel
+		}
 	}
 
 	return nil
@@ -58,6 +65,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	fs.Var(&serverAddress, ServerAddressFlagName, "address and port to run server")
 	baseURL := fs.String(BaseURLFlagName, DefaultBaseURL, "address and port for output short url")
 	enableLogs := fs.Bool(EnableLogsFlagName, DefaultEnableLogs, "enable output logs")
+	logLevel := fs.String(LogLevelFlagName, DefaultLogLevel, "log level")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -74,6 +82,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			ServerAddressFlagName: false,
 			BaseURLFlagName:       false,
 			EnableLogsFlagName:    false,
+			LogLevelFlagName:      false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -90,11 +99,15 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[EnableLogsFlagName]; ok && isSet {
 			config.EnableLogs = enableLogs
 		}
+		if isSet, ok := isSetFlagMap[LogLevelFlagName]; ok && isSet {
+			config.LogLevel = logLevel
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
 		config.BaseURL = baseURL
 		config.EnableLogs = enableLogs
+		config.LogLevel = logLevel
 	}
 
 	return nil

@@ -22,7 +22,10 @@ func main() {
 		log.Fatalf("error get config: %s", err.Error())
 	}
 
-	loggerLevel := applogger.DebugLevel
+	loggerLevel, ok := configToLoggerLogLevelMap[conf.LogLevel]
+	if !ok {
+		log.Fatalf("unknown log level: %s", conf.LogLevel)
+	}
 	logger, err := applogger.NewZapLogger(loggerLevel, os.Stderr)
 	if err != nil {
 		log.Fatalf("error init logger: %s", err.Error())
@@ -40,4 +43,13 @@ func main() {
 	if err != nil {
 		logger.Fatalw("error starting server", "error", err)
 	}
+}
+
+var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
+	config.LogLevelDebug: applogger.InfoLevel,
+	config.LogLevelInfo:  applogger.InfoLevel,
+	config.LogLevelWarn:  applogger.WarnLevel,
+	config.LogLevelError: applogger.ErrorLevel,
+	config.LogLevelFatal: applogger.FatalLevel,
+	config.LogLevelPanic: applogger.PanicLevel,
 }
