@@ -9,6 +9,8 @@ import (
 )
 
 func TestParseEnv(t *testing.T) {
+	appLog := "app.log"
+
 	type on struct {
 		prefix string
 	}
@@ -34,6 +36,7 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
+				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -47,6 +50,7 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
+				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -60,6 +64,7 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       "http://127.0.0.1:8888",
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
+				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -73,6 +78,7 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    true,
 				LogLevel:      DefaultLogLevel,
+				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -86,6 +92,7 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    false,
 				LogLevel:      DefaultLogLevel,
+				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -99,6 +106,21 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      LogLevelError,
+				LogFile:       nil,
+			}, nil},
+		},
+		{
+			"log file",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", LogFileEnvName): appLog,
+			}},
+			want{Config{
+				ServerAddress: DefaultServerAddress,
+				BaseURL:       DefaultBaseURL,
+				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      DefaultLogLevel,
+				LogFile:       &appLog,
 			}, nil},
 		},
 		{
@@ -109,12 +131,14 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
 				getEnvNameWithPrefix("", LogLevelEnvName):      LogLevelError,
+				getEnvNameWithPrefix("", LogFileEnvName):       appLog,
 			}},
 			want{Config{
 				ServerAddress: "127.0.0.1:8888",
 				BaseURL:       "http://127.0.0.2:8000",
 				EnableLogs:    true,
 				LogLevel:      LogLevelError,
+				LogFile:       &appLog,
 			}, nil},
 		},
 		{
@@ -125,12 +149,14 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", BaseURLEnvName):       "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("APP_ID", EnableLogsEnvName):    "true",
 				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):      LogLevelError,
+				getEnvNameWithPrefix("APP_ID", LogFileEnvName):       appLog,
 			}},
 			want{Config{
 				ServerAddress: "127.0.0.1:8888",
 				BaseURL:       "http://127.0.0.2:8000",
 				EnableLogs:    true,
 				LogLevel:      LogLevelError,
+				LogFile:       &appLog,
 			}, nil},
 		},
 	}

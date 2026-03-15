@@ -22,6 +22,7 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 		prefix + BaseURLEnvName:       BaseURLEnvName,
 		prefix + EnableLogsEnvName:    EnableLogsEnvName,
 		prefix + LogLevelEnvName:      LogLevelEnvName,
+		prefix + LogFileEnvName:       LogFileEnvName,
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
@@ -73,6 +74,10 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 		case LogLevelEnvName:
 			if fCfg.LogLevel != nil {
 				cfg.LogLevel = *fCfg.LogLevel
+			}
+		case LogFileEnvName:
+			if fCfg.LogFile != nil && *fCfg.LogFile != "" {
+				cfg.LogFile = fCfg.LogFile
 			}
 		}
 	}

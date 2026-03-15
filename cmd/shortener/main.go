@@ -1,12 +1,14 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
+	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -17,9 +19,23 @@ const appID = "shortlink"
 const envPrefix = ""
 
 func main() {
-	cfg := initConfig()
-	logger := initLogger(cfg)
+	closer := internalio.MultiCloser{}
+	defer func() {
+		closeErr := closer.Close()
+		if closeErr != nil {
+			log.Fatalf("error closing closer: %v", closeErr)
+		}
+	}()
 
+	cfg := initConfig()
+	logger := initLogger(cfg, &closer)
+
+	err := runApp(cfg, logger)
+
+	logger.Fatalw("error starting server", "error", err)
+}
+
+func runApp(cfg config.Config, logger applogger.Logger) (err error) {
 	shortLinkRepository := repository.NewMemoryShortLinkRepository()
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
@@ -28,10 +44,7 @@ func main() {
 	router := handler.LoggingMiddleware(rootRouter.Router(), logger)
 
 	logger.Infow("starting server", "addr", cfg.ServerAddress)
-	err := http.ListenAndServe(cfg.ServerAddress, router)
-	if err != nil {
-		logger.Fatalw("error starting server", "error", err)
-	}
+	return http.ListenAndServe(cfg.ServerAddress, router)
 }
 
 var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
@@ -51,14 +64,34 @@ func initConfig() config.Config {
 	return cfg
 }
 
-func initLogger(cfg config.Config) applogger.Logger {
+func initLogger(cfg config.Config, closer *internalio.MultiCloser) applogger.Logger {
 	loggerLevel, ok := configToLoggerLogLevelMap[cfg.LogLevel]
 	if !ok {
 		log.Fatalf("unknown log level: %s", cfg.LogLevel)
 	}
-	logger, err := applogger.NewZapLogger(loggerLevel, os.Stderr)
+
+	logWriter := initLogWriter(cfg, closer)
+
+	logger, err := applogger.NewZapLogger(loggerLevel, logWriter)
 	if err != nil {
 		log.Fatalf("error init logger: %s", err.Error())
 	}
 	return logger
+}
+
+func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer {
+	if cfg.LogFile != nil && *cfg.LogFile != "" {
+		file, err := os.OpenFile(*cfg.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+		closer.AddCloser(internalio.CloserFunc(
+			func() error {
+				return file.Close()
+			},
+		))
+		return file
+	}
+
+	return os.Stderr
 }

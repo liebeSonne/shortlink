@@ -15,6 +15,7 @@ const (
 	BaseURLFlagName       = "b"
 	EnableLogsFlagName    = "l"
 	LogLevelFlagName      = "ll"
+	LogFileFlagEnv        = "lf"
 )
 
 var ErrInvalidFlagValue = errors.New("invalid flag value")
@@ -25,6 +26,7 @@ type flagsConfig struct {
 	BaseURL       *string
 	EnableLogs    *bool
 	LogLevel      *string
+	LogFile       *string
 }
 
 func parseFlags(appID string, config *Config) error {
@@ -47,6 +49,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.LogLevel != nil {
 			config.LogLevel = *flagsConf.LogLevel
 		}
+		if flagsConf.LogFile != nil {
+			config.LogFile = flagsConf.LogFile
+		}
 	}
 
 	return nil
@@ -66,6 +71,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	baseURL := fs.String(BaseURLFlagName, DefaultBaseURL, "address and port for output short url")
 	enableLogs := fs.Bool(EnableLogsFlagName, DefaultEnableLogs, "enable output logs")
 	logLevel := fs.String(LogLevelFlagName, DefaultLogLevel, "log level")
+	logFile := fs.String(LogFileFlagEnv, "", "log file")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -83,6 +89,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			BaseURLFlagName:       false,
 			EnableLogsFlagName:    false,
 			LogLevelFlagName:      false,
+			LogFileFlagEnv:        false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -102,12 +109,20 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[LogLevelFlagName]; ok && isSet {
 			config.LogLevel = logLevel
 		}
+		if isSet, ok := isSetFlagMap[LogFileFlagEnv]; ok && isSet {
+			if logFile != nil && *logFile != "" {
+				config.LogFile = logFile
+			}
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
 		config.BaseURL = baseURL
 		config.EnableLogs = enableLogs
 		config.LogLevel = logLevel
+		if logFile != nil && *logFile != "" {
+			config.LogFile = logFile
+		}
 	}
 
 	return nil
