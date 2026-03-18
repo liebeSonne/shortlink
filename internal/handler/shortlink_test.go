@@ -106,6 +106,7 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	id1 := "id1"
 	link1 := "https://localhost/123"
+	urlAddress := "http://localhost:8080"
 
 	type on struct {
 		link string
@@ -166,7 +167,6 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			service := new(mockService)
 			service.On("Create", tc.on.link).Return(item, tc.when.err)
 
-			urlAddress := "http://localhost:8080"
 			handler := NewShortLinkHandler(service, new(mockProvider), urlAddress)
 
 			r := chi.NewRouter()
@@ -188,6 +188,103 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			if tc.want.linkPath != "" {
 				wantURL := urlAddress + tc.want.linkPath
 				assert.Equal(t, wantURL, string(resp.Body()))
+			}
+		})
+	}
+}
+
+func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
+	id1 := "id1"
+	link1 := "https://localhost/123"
+	urlAddress := "http://localhost:8080"
+
+	type on struct {
+		body string
+	}
+	type when struct {
+		id  string
+		err error
+	}
+	type want struct {
+		code int
+		body string
+	}
+	testCases := []struct {
+		name string
+		on   on
+		want want
+		when when
+	}{
+		{
+			"success create",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusCreated, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
+			when{id1, nil},
+		},
+		{
+			"error in service",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusInternalServerError, ""},
+			when{"", errors.New("some service error")},
+		},
+		{
+			"error empty url",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusBadRequest, ""},
+			when{"", model.ErrEmptyURL},
+		},
+		{
+			"error empty id",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusBadRequest, ""},
+			when{"", model.ErrEmptyID},
+		},
+		{
+			"error invalid url",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusBadRequest, ""},
+			when{"", model.ErrInvalidURL},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var item model.ShortLink
+			if tc.when.err == nil {
+				mockItem := new(mockShortLink)
+				mockItem.On("ID").Return(tc.when.id).On("URL").Return(link1)
+				item = mockItem
+			}
+			service := new(mockService)
+			service.On("Create", mock.Anything).Return(item, tc.when.err)
+
+			handler := NewShortLinkHandler(service, new(mockProvider), urlAddress)
+
+			r := chi.NewRouter()
+			r.Post("/api/shorten", handler.HandleCreateShorten)
+
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			req := client.R()
+			req.Method = resty.MethodPost
+			req.URL = srv.URL + "/api/shorten"
+
+			if len(tc.on.body) > 0 {
+				req.SetHeader("Content-Type", "application/json")
+				req.SetBody(tc.on.body)
+			}
+
+			resp, err := req.Send()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+
+			if tc.want.body != "" {
+				assert.JSONEq(t, tc.want.body, string(resp.Body()))
+				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			}
 		})
 	}

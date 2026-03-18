@@ -14,7 +14,7 @@ import (
 
 func TestRootHandler_Handle(t *testing.T) {
 	codeGetResult := http.StatusOK
-	codePostResult := http.StatusOK
+	codePostResult := http.StatusCreated
 	getResponse := "get"
 	postResponse := "post"
 
@@ -26,6 +26,12 @@ func TestRootHandler_Handle(t *testing.T) {
 		require.NoError(t, err)
 	}).Return()
 	mockHandler.On("HandleCreate", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		w := args.Get(0).(http.ResponseWriter)
+		w.WriteHeader(codePostResult)
+		_, err := w.Write([]byte(postResponse))
+		require.NoError(t, err)
+	}).Return()
+	mockHandler.On("HandleCreateShorten", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codePostResult)
 		_, err := w.Write([]byte(postResponse))
@@ -44,6 +50,7 @@ func TestRootHandler_Handle(t *testing.T) {
 	}{
 		{"get handler", http.MethodGet, "/123", want{codeGetResult, getResponse}},
 		{"post handler", http.MethodPost, "/", want{codePostResult, postResponse}},
+		{"post api shorten handler", http.MethodPost, "/api/shorten", want{codePostResult, postResponse}},
 		{"not head handler", http.MethodHead, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"not acceptable pur", http.MethodPut, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"not acceptable patch", http.MethodPatch, "/", want{http.StatusMethodNotAllowed, ""}},
@@ -85,5 +92,9 @@ func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 	m.Called(w, r)
 }
 func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
+}
+
+func (m *mockShortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
 	m.Called(w, r)
 }

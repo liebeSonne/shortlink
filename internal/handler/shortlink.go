@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 type ShortLinkHandler interface {
 	HandleGet(w http.ResponseWriter, r *http.Request)
 	HandleCreate(w http.ResponseWriter, r *http.Request)
+	HandleCreateShorten(w http.ResponseWriter, r *http.Request)
 }
 
 func NewShortLinkHandler(
@@ -45,7 +47,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.provider.Get(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.responseError(w, err)
 		return
 	}
 	if item == nil {
@@ -61,18 +63,14 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.responseError(w, err)
 		return
 	}
 	link := string(body)
 
 	shortLink, err := h.service.Create(link)
 	if err != nil {
-		if errors.Is(err, model.ErrInvalidURL) || errors.Is(err, model.ErrEmptyURL) || errors.Is(err, model.ErrEmptyID) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.responseError(w, err)
 		return
 	}
 	if shortLink == nil {
@@ -90,6 +88,53 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
+	var request ShortenRequest
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&request)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	shortLink, err := h.service.Create(request.URL)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+	if shortLink == nil {
+		http.Error(w, "not created", http.StatusInternalServerError)
+		return
+	}
+
+	url := h.createShortLinkURL(shortLink.ID())
+
+	resp := ShortenResponse{
+		Result: url,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	enc := json.NewEncoder(w)
+	err = enc.Encode(resp)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+}
+
 func (h *shortLinkHandler) createShortLinkURL(id string) string {
 	return fmt.Sprintf("%s/%s", h.urlAddress, id)
+}
+
+func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
+	if err == nil {
+		return
+	}
+	if errors.Is(err, model.ErrInvalidURL) || errors.Is(err, model.ErrEmptyURL) || errors.Is(err, model.ErrEmptyID) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
