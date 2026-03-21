@@ -51,7 +51,7 @@ func runApp(cfg config.Config, logger applogger.Logger) (err error) {
 	if err != nil {
 		return err
 	}
-	router = handler.LoggingMiddleware(rootRouter.Router(), logger)
+	router = handler.LoggingMiddleware(router, logger)
 
 	logger.Infow("starting server", "addr", cfg.ServerAddress)
 	return http.ListenAndServe(cfg.ServerAddress, router)
