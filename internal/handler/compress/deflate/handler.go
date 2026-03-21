@@ -19,31 +19,28 @@ func NewDeflateHandlerMiddleware(h http.Handler, contentTypes *[]string) http.Ha
 			})
 		}
 
-		if !allowedContentType {
-			h.ServeHTTP(w, r)
-			return
-		}
-
 		writer := w
 
-		acceptGzip := slices.ContainsFunc(r.Header.Values("Accept-Encoding"), func(s string) bool {
-			return strings.Contains(s, "deflate")
-		})
+		if allowedContentType {
+			acceptGzip := slices.ContainsFunc(r.Header.Values("Accept-Encoding"), func(s string) bool {
+				return strings.Contains(s, "deflate")
+			})
 
-		if acceptGzip {
-			cw, err := NewDeflateWriter(writer)
-			if err != nil {
-				fmt.Printf("error creating deflate writer: %v\n", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			defer func() {
-				err := cw.Close()
+			if acceptGzip {
+				cw, err := NewDeflateWriter(writer)
 				if err != nil {
-					fmt.Printf("error closing deflate writer: %v\n", err)
+					fmt.Printf("error creating deflate writer: %v\n", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
-			}()
-			writer = cw
+				defer func() {
+					err := cw.Close()
+					if err != nil {
+						fmt.Printf("error closing deflate writer: %v\n", err)
+					}
+				}()
+				writer = cw
+			}
 		}
 
 		contentEncoding := slices.ContainsFunc(r.Header.Values("Content-Encoding"), func(s string) bool {
