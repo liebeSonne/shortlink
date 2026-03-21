@@ -24,19 +24,21 @@ const (
 )
 
 const (
-	ServerAddressEnvName = "SERVER_ADDRESS"
-	BaseURLEnvName       = "BASE_URL"
-	EnableLogsEnvName    = "ENABLE_LOGS"
-	LogLevelEnvName      = "LOG_LEVEL"
-	LogFileEnvName       = "LOG_FILE"
+	ServerAddressEnvName   = "SERVER_ADDRESS"
+	BaseURLEnvName         = "BASE_URL"
+	EnableLogsEnvName      = "ENABLE_LOGS"
+	LogLevelEnvName        = "LOG_LEVEL"
+	LogFileEnvName         = "LOG_FILE"
+	FileStoragePathEnvName = "FILE_STORAGE_PATH"
 )
 
 type Config struct {
-	ServerAddress string  `env:"SERVER_ADDRESS" default:":8080"`
-	BaseURL       string  `env:"BASE_URL" default:"http://localhost:8080"`
-	EnableLogs    bool    `env:"ENABLE_LOGS" default:"false"`
-	LogLevel      string  `env:"LOG_LEVEL" default:"info"`
-	LogFile       *string `env:"LOG_FILE" default:""`
+	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080"`
+	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080"`
+	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false"`
+	LogLevel        string  `env:"LOG_LEVEL" default:"info"`
+	LogFile         *string `env:"LOG_FILE" default:""`
+	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:""`
 }
 
 func ParseEnv(prefix string, cfg *Config) error {

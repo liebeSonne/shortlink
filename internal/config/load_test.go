@@ -9,7 +9,8 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	appLog := "app.log"
+	appLog1 := "app.log"
+	fileStoragePath1 := "./file/path"
 
 	type when struct {
 		appID     string
@@ -35,7 +36,6 @@ func TestLoadConfig(t *testing.T) {
 					BaseURL:       DefaultBaseURL,
 					EnableLogs:    DefaultEnableLogs,
 					LogLevel:      DefaultLogLevel,
-					LogFile:       nil,
 				},
 				nil,
 			},
@@ -46,20 +46,22 @@ func TestLoadConfig(t *testing.T) {
 				"app_id", "prefix",
 				[]string{},
 				map[string]string{
-					getEnvNameWithPrefix("prefix", ServerAddressEnvName): "127.0.0.1:8787",
-					getEnvNameWithPrefix("prefix", BaseURLEnvName):       "http://127.0.0.2:8888",
-					getEnvNameWithPrefix("prefix", EnableLogsEnvName):    "true",
-					getEnvNameWithPrefix("prefix", LogLevelEnvName):      "error",
-					getEnvNameWithPrefix("prefix", LogFileEnvName):       appLog,
+					getEnvNameWithPrefix("prefix", ServerAddressEnvName):   "127.0.0.1:8787",
+					getEnvNameWithPrefix("prefix", BaseURLEnvName):         "http://127.0.0.2:8888",
+					getEnvNameWithPrefix("prefix", EnableLogsEnvName):      "true",
+					getEnvNameWithPrefix("prefix", LogLevelEnvName):        "error",
+					getEnvNameWithPrefix("prefix", LogFileEnvName):         appLog1,
+					getEnvNameWithPrefix("prefix", FileStoragePathEnvName): fileStoragePath1,
 				},
 			},
 			want{
 				Config{
-					ServerAddress: "127.0.0.1:8787",
-					BaseURL:       "http://127.0.0.2:8888",
-					EnableLogs:    true,
-					LogLevel:      "error",
-					LogFile:       &appLog,
+					ServerAddress:   "127.0.0.1:8787",
+					BaseURL:         "http://127.0.0.2:8888",
+					EnableLogs:      true,
+					LogLevel:        "error",
+					LogFile:         &appLog1,
+					FileStoragePath: &fileStoragePath1,
 				},
 				nil,
 			},
@@ -70,20 +72,22 @@ func TestLoadConfig(t *testing.T) {
 				"app_id", "",
 				[]string{},
 				map[string]string{
-					getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8787",
-					getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8888",
-					getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
-					getEnvNameWithPrefix("", LogLevelEnvName):      "error",
-					getEnvNameWithPrefix("", LogFileEnvName):       appLog,
+					getEnvNameWithPrefix("", ServerAddressEnvName):   "127.0.0.1:8787",
+					getEnvNameWithPrefix("", BaseURLEnvName):         "http://127.0.0.2:8888",
+					getEnvNameWithPrefix("", EnableLogsEnvName):      "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
+					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
+					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
 				},
 			},
 			want{
 				Config{
-					ServerAddress: "127.0.0.1:8787",
-					BaseURL:       "http://127.0.0.2:8888",
-					EnableLogs:    true,
-					LogLevel:      "error",
-					LogFile:       &appLog,
+					ServerAddress:   "127.0.0.1:8787",
+					BaseURL:         "http://127.0.0.2:8888",
+					EnableLogs:      true,
+					LogLevel:        "error",
+					LogFile:         &appLog1,
+					FileStoragePath: &fileStoragePath1,
 				},
 				nil,
 			},
@@ -92,16 +96,24 @@ func TestLoadConfig(t *testing.T) {
 			"from flags",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888", "-l=true", "-ll", "error", "-lf", appLog},
+				[]string{
+					"-a", "127.0.0.1:8787",
+					"-b", "http://127.0.0.2:8888",
+					"-l=true",
+					"-ll", "error",
+					"-lf", appLog1,
+					"-f", fileStoragePath1,
+				},
 				map[string]string{},
 			},
 			want{
 				Config{
-					ServerAddress: "127.0.0.1:8787",
-					BaseURL:       "http://127.0.0.2:8888",
-					EnableLogs:    true,
-					LogLevel:      "error",
-					LogFile:       &appLog,
+					ServerAddress:   "127.0.0.1:8787",
+					BaseURL:         "http://127.0.0.2:8888",
+					EnableLogs:      true,
+					LogLevel:        "error",
+					LogFile:         &appLog1,
+					FileStoragePath: &fileStoragePath1,
 				},
 				nil,
 			},
@@ -112,19 +124,21 @@ func TestLoadConfig(t *testing.T) {
 				"", "",
 				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
 				map[string]string{
-					getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.10:7777",
-					getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
-					getEnvNameWithPrefix("", LogLevelEnvName):      "error",
-					getEnvNameWithPrefix("", LogFileEnvName):       appLog,
+					getEnvNameWithPrefix("", ServerAddressEnvName):   "127.0.0.10:7777",
+					getEnvNameWithPrefix("", EnableLogsEnvName):      "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
+					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
+					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
 				},
 			},
 			want{
 				Config{
-					ServerAddress: "127.0.0.10:7777",
-					BaseURL:       "http://127.0.0.2:8888",
-					EnableLogs:    true,
-					LogLevel:      "error",
-					LogFile:       &appLog,
+					ServerAddress:   "127.0.0.10:7777",
+					BaseURL:         "http://127.0.0.2:8888",
+					EnableLogs:      true,
+					LogLevel:        "error",
+					LogFile:         &appLog1,
+					FileStoragePath: &fileStoragePath1,
 				},
 				nil,
 			},
@@ -135,19 +149,21 @@ func TestLoadConfig(t *testing.T) {
 				"", "",
 				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
 				map[string]string{
-					getEnvNameWithPrefix("", BaseURLEnvName):    "http://127.0.0.2:8888",
-					getEnvNameWithPrefix("", EnableLogsEnvName): "true",
-					getEnvNameWithPrefix("", LogLevelEnvName):   "error",
-					getEnvNameWithPrefix("", LogFileEnvName):    appLog,
+					getEnvNameWithPrefix("", BaseURLEnvName):         "http://127.0.0.2:8888",
+					getEnvNameWithPrefix("", EnableLogsEnvName):      "true",
+					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
+					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
+					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
 				},
 			},
 			want{
 				Config{
-					ServerAddress: "127.0.0.1:8787",
-					BaseURL:       "http://127.0.0.2:8888",
-					EnableLogs:    true,
-					LogLevel:      "error",
-					LogFile:       &appLog,
+					ServerAddress:   "127.0.0.1:8787",
+					BaseURL:         "http://127.0.0.2:8888",
+					EnableLogs:      true,
+					LogLevel:        "error",
+					LogFile:         &appLog1,
+					FileStoragePath: &fileStoragePath1,
 				},
 				nil,
 			},
@@ -196,6 +212,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 	enableLogsTrue := true
 	logLevel1 := LogLevelError
 	logFile1 := "app.log"
+	fileStoragePath1 := "./file/path"
 
 	type on struct {
 		fCfg     flagsConfig
@@ -211,43 +228,48 @@ func TestMergeFlagsConfig(t *testing.T) {
 	}{
 		{
 			"empty env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{}},
 			want{Config{}},
 		},
 		{
 			"server address env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{ServerAddressEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{ServerAddressEnvName}},
 			want{Config{ServerAddress: serverAddress1}},
 		},
 		{
 			"base url env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{BaseURLEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{BaseURLEnvName}},
 			want{Config{BaseURL: baseURL1}},
 		},
 		{
 			"enable logs env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{EnableLogsEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{EnableLogsEnvName}},
 			want{Config{EnableLogs: enableLogsTrue}},
 		},
 		{
 			"unknown env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{"unknown"}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{"unknown"}},
 			want{Config{}},
 		},
 		{
 			"server address and base url and enable logs env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
 			want{Config{ServerAddress: serverAddress1, BaseURL: baseURL1, EnableLogs: enableLogsTrue}},
 		},
 		{
 			"log level env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{LogLevelEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{LogLevelEnvName}},
 			want{Config{LogLevel: logLevel1}},
 		},
 		{
 			"log file env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1}, []string{LogFileEnvName}},
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{LogFileEnvName}},
 			want{Config{LogFile: &logFile1}},
+		},
+		{
+			"file path storage env name",
+			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{FileStoragePathEnvName}},
+			want{Config{FileStoragePath: &fileStoragePath1}},
 		},
 	}
 

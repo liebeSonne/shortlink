@@ -10,6 +10,7 @@ import (
 
 func TestParseEnv(t *testing.T) {
 	appLog := "app.log"
+	fileStoragePath := "file/path"
 
 	type on struct {
 		prefix string
@@ -36,7 +37,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -50,7 +50,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -64,7 +63,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       "http://127.0.0.1:8888",
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      DefaultLogLevel,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -78,7 +76,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    true,
 				LogLevel:      DefaultLogLevel,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -92,7 +89,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    false,
 				LogLevel:      DefaultLogLevel,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -106,7 +102,6 @@ func TestParseEnv(t *testing.T) {
 				BaseURL:       DefaultBaseURL,
 				EnableLogs:    DefaultEnableLogs,
 				LogLevel:      LogLevelError,
-				LogFile:       nil,
 			}, nil},
 		},
 		{
@@ -124,39 +119,57 @@ func TestParseEnv(t *testing.T) {
 			}, nil},
 		},
 		{
+			"file storage path",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath,
+			}},
+			want{Config{
+				ServerAddress:   DefaultServerAddress,
+				BaseURL:         DefaultBaseURL,
+				EnableLogs:      DefaultEnableLogs,
+				LogLevel:        DefaultLogLevel,
+				FileStoragePath: &fileStoragePath,
+			}, nil},
+		},
+		{
 			"all env",
 			on{""},
 			when{map[string]string{
-				getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8888",
-				getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8000",
-				getEnvNameWithPrefix("", EnableLogsEnvName):    "true",
-				getEnvNameWithPrefix("", LogLevelEnvName):      LogLevelError,
-				getEnvNameWithPrefix("", LogFileEnvName):       appLog,
+				getEnvNameWithPrefix("", ServerAddressEnvName):   "127.0.0.1:8888",
+				getEnvNameWithPrefix("", BaseURLEnvName):         "http://127.0.0.2:8000",
+				getEnvNameWithPrefix("", EnableLogsEnvName):      "true",
+				getEnvNameWithPrefix("", LogLevelEnvName):        LogLevelError,
+				getEnvNameWithPrefix("", LogFileEnvName):         appLog,
+				getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath,
 			}},
 			want{Config{
-				ServerAddress: "127.0.0.1:8888",
-				BaseURL:       "http://127.0.0.2:8000",
-				EnableLogs:    true,
-				LogLevel:      LogLevelError,
-				LogFile:       &appLog,
+				ServerAddress:   "127.0.0.1:8888",
+				BaseURL:         "http://127.0.0.2:8000",
+				EnableLogs:      true,
+				LogLevel:        LogLevelError,
+				LogFile:         &appLog,
+				FileStoragePath: &fileStoragePath,
 			}, nil},
 		},
 		{
 			"with prefix",
 			on{"app_id"},
 			when{map[string]string{
-				getEnvNameWithPrefix("APP_ID", ServerAddressEnvName): "127.0.0.1:8888",
-				getEnvNameWithPrefix("APP_ID", BaseURLEnvName):       "http://127.0.0.2:8000",
-				getEnvNameWithPrefix("APP_ID", EnableLogsEnvName):    "true",
-				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):      LogLevelError,
-				getEnvNameWithPrefix("APP_ID", LogFileEnvName):       appLog,
+				getEnvNameWithPrefix("APP_ID", ServerAddressEnvName):   "127.0.0.1:8888",
+				getEnvNameWithPrefix("APP_ID", BaseURLEnvName):         "http://127.0.0.2:8000",
+				getEnvNameWithPrefix("APP_ID", EnableLogsEnvName):      "true",
+				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):        LogLevelError,
+				getEnvNameWithPrefix("APP_ID", LogFileEnvName):         appLog,
+				getEnvNameWithPrefix("APP_ID", FileStoragePathEnvName): fileStoragePath,
 			}},
 			want{Config{
-				ServerAddress: "127.0.0.1:8888",
-				BaseURL:       "http://127.0.0.2:8000",
-				EnableLogs:    true,
-				LogLevel:      LogLevelError,
-				LogFile:       &appLog,
+				ServerAddress:   "127.0.0.1:8888",
+				BaseURL:         "http://127.0.0.2:8000",
+				EnableLogs:      true,
+				LogLevel:        LogLevelError,
+				LogFile:         &appLog,
+				FileStoragePath: &fileStoragePath,
 			}, nil},
 		},
 	}

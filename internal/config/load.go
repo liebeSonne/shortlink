@@ -18,11 +18,12 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 	prefix := getEnvNameWithPrefix(envPrefix, "")
 
 	tagNameToEnvName := map[string]string{
-		prefix + ServerAddressEnvName: ServerAddressEnvName,
-		prefix + BaseURLEnvName:       BaseURLEnvName,
-		prefix + EnableLogsEnvName:    EnableLogsEnvName,
-		prefix + LogLevelEnvName:      LogLevelEnvName,
-		prefix + LogFileEnvName:       LogFileEnvName,
+		prefix + ServerAddressEnvName:   ServerAddressEnvName,
+		prefix + BaseURLEnvName:         BaseURLEnvName,
+		prefix + EnableLogsEnvName:      EnableLogsEnvName,
+		prefix + LogLevelEnvName:        LogLevelEnvName,
+		prefix + LogFileEnvName:         LogFileEnvName,
+		prefix + FileStoragePathEnvName: FileStoragePathEnvName,
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
@@ -78,6 +79,10 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 		case LogFileEnvName:
 			if fCfg.LogFile != nil && *fCfg.LogFile != "" {
 				cfg.LogFile = fCfg.LogFile
+			}
+		case FileStoragePathEnvName:
+			if fCfg.FileStoragePath != nil && *fCfg.FileStoragePath != "" {
+				cfg.FileStoragePath = fCfg.FileStoragePath
 			}
 		}
 	}

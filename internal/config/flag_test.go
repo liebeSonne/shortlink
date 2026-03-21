@@ -9,47 +9,46 @@ import (
 )
 
 func TestParseFlags(t *testing.T) {
-	defaultConf := Config{
-		ServerAddress: "10.10.10.10:1111",
-		BaseURL:       "127.2.2.2:2222",
-	}
+	appLog1 := "app.log"
+	fileStoragePath1 := "./file/path"
 
 	type want struct {
-		serverAddress string
-		baseURL       string
-		enableLog     bool
-		logLevel      string
-		err           error
+		cfg Config
+		err error
 	}
 	testCases := []struct {
 		name string
 		args []string
 		want want
 	}{
-		{"default args", []string{}, want{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -a flag", []string{"-a", "10.0.0.1:8000"}, want{"10.0.0.1:8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set --a flag", []string{"--a", "10.0.0.1:8000"}, want{"10.0.0.1:8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -b flag", []string{"-b", "10.0.0.1:8000"}, want{DefaultServerAddress, "10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set --a flag with empty address", []string{"--a", ":8000"}, want{":8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set --b flag", []string{"--b", "10.0.0.1:8000"}, want{DefaultServerAddress, "10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -b flag with schema", []string{"-b", "http://10.0.0.1:8000"}, want{DefaultServerAddress, "http://10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -b flag with string", []string{"-b", "some-string"}, want{DefaultServerAddress, "some-string", DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -a and -b flag", []string{"-a", "10.0.0.2:8081", "-b", "http://127.0.0.2:8082"}, want{"10.0.0.2:8081", "http://127.0.0.2:8082", DefaultEnableLogs, DefaultLogLevel, nil}},
-		{"set -b and -a flag", []string{"-b", "http://127.0.0.2:8082", "-a", "10.0.0.2:8081"}, want{"10.0.0.2:8081", "http://127.0.0.2:8082", DefaultEnableLogs, DefaultLogLevel, nil}},
+		{"default args", []string{}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -a flag", []string{"-a", "10.0.0.1:8000"}, want{Config{"10.0.0.1:8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set --a flag", []string{"--a", "10.0.0.1:8000"}, want{Config{"10.0.0.1:8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -b flag", []string{"-b", "10.0.0.1:8000"}, want{Config{DefaultServerAddress, "10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set --a flag with empty address", []string{"--a", ":8000"}, want{Config{":8000", DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set --b flag", []string{"--b", "10.0.0.1:8000"}, want{Config{DefaultServerAddress, "10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -b flag with schema", []string{"-b", "http://10.0.0.1:8000"}, want{Config{DefaultServerAddress, "http://10.0.0.1:8000", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -b flag with string", []string{"-b", "some-string"}, want{Config{DefaultServerAddress, "some-string", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -a and -b flag", []string{"-a", "10.0.0.2:8081", "-b", "http://127.0.0.2:8082"}, want{Config{"10.0.0.2:8081", "http://127.0.0.2:8082", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set -b and -a flag", []string{"-b", "http://127.0.0.2:8082", "-a", "10.0.0.2:8081"}, want{Config{"10.0.0.2:8081", "http://127.0.0.2:8082", DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
 		{"set -a flag with invalid value", []string{"-a", "invalid value"}, want{err: ErrInvalidFlagValue}},
 		{"set -a flag with invalid format", []string{"-a", "10.0.0.1:8080:abc"}, want{err: ErrInvalidFlagValue}},
 		{"set -a flag with empty port", []string{"-a", "10.0.0.1:"}, want{err: ErrInvalidFlagValue}},
 		{"set -a flag with invalid port", []string{"-a", "10.0.0.1:abc"}, want{err: ErrInvalidFlagValue}},
-		{"set -l flag", []string{"-l=true"}, want{DefaultServerAddress, DefaultBaseURL, true, DefaultLogLevel, nil}},
-		{"set -ll flag", []string{"-ll", "error"}, want{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "error", nil}},
-		{"set --ll flag", []string{"--ll", "error"}, want{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "error", nil}},
-		{"set --ll flag empty", []string{"--ll", ""}, want{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "", nil}},
-		{"set --ll flag custom value", []string{"--ll", "custom value"}, want{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "custom value", nil}},
+		{"set -l flag", []string{"-l=true"}, want{Config{DefaultServerAddress, DefaultBaseURL, true, DefaultLogLevel, nil, nil}, nil}},
+		{"set -ll flag", []string{"-ll", "error"}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "error", nil, nil}, nil}},
+		{"set --ll flag", []string{"--ll", "error"}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "error", nil, nil}, nil}},
+		{"set --ll flag empty", []string{"--ll", ""}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "", nil, nil}, nil}},
+		{"set --ll flag custom value", []string{"--ll", "custom value"}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, "custom value", nil, nil}, nil}},
+		{"set -lf flag", []string{"-lf", appLog1}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, &appLog1, nil}, nil}},
+		{"set -lf flag empty", []string{"-lf", ""}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set --lf flag", []string{"--lf", appLog1}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, &appLog1, nil}, nil}},
+		{"set -f flag", []string{"-f", fileStoragePath1}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, &fileStoragePath1}, nil}},
+		{"set -f flag empty", []string{"-f", ""}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, nil}, nil}},
+		{"set --f flag", []string{"--f", fileStoragePath1}, want{Config{DefaultServerAddress, DefaultBaseURL, DefaultEnableLogs, DefaultLogLevel, nil, &fileStoragePath1}, nil}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			conf := defaultConf
-
 			appID := "test"
 			oldArgs := os.Args
 			args := []string{appID}
@@ -59,6 +58,7 @@ func TestParseFlags(t *testing.T) {
 				os.Args = oldArgs
 			}()
 
+			conf := Config{}
 			err := parseFlags(appID, &conf)
 
 			if tc.want.err != nil {
@@ -68,8 +68,7 @@ func TestParseFlags(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tc.want.serverAddress, conf.ServerAddress)
-			assert.Equal(t, tc.want.baseURL, conf.BaseURL)
+			assert.Equal(t, tc.want.cfg, conf)
 		})
 	}
 }
@@ -79,11 +78,20 @@ func TestParseFlagsConfig(t *testing.T) {
 	baseURL1 := "http://127.0.0.1:2222"
 	enableLogsTrue := true
 	logLevel1 := LogLevelError
+	appLog1 := "app.log"
+	fileStoragePath1 := "./file/path"
 
 	defaultServerAddress := DefaultServerAddress
 	defaultBaseURL := DefaultBaseURL
 	defaultEnableLogs := DefaultEnableLogs
 	defaultLogLevel := DefaultLogLevel
+
+	defaultFlagConfig := flagsConfig{
+		ServerAddress: &defaultServerAddress,
+		BaseURL:       &defaultBaseURL,
+		EnableLogs:    &defaultEnableLogs,
+		LogLevel:      &defaultLogLevel,
+	}
 
 	type when struct {
 		args []string
@@ -139,6 +147,30 @@ func TestParseFlagsConfig(t *testing.T) {
 			want{flagsConfig{LogLevel: &logLevel1}, nil},
 		},
 		{
+			"set -lf flag and just if set",
+			when{[]string{"-lf", appLog1}},
+			on{true},
+			want{flagsConfig{LogFile: &appLog1}, nil},
+		},
+		{
+			"set -lf flag empty and just if set",
+			when{[]string{"-lf", ""}},
+			on{true},
+			want{flagsConfig{LogFile: nil}, nil},
+		},
+		{
+			"set -f flag and just if set",
+			when{[]string{"-f", fileStoragePath1}},
+			on{true},
+			want{flagsConfig{FileStoragePath: &fileStoragePath1}, nil},
+		},
+		{
+			"set -f flag empty and just if set",
+			when{[]string{"-f", ""}},
+			on{true},
+			want{flagsConfig{FileStoragePath: nil}, nil},
+		},
+		{
 			"set -a flag with invalid value and just if set",
 			when{[]string{"-a", "invalid value"}},
 			on{true},
@@ -173,7 +205,7 @@ func TestParseFlagsConfig(t *testing.T) {
 			"empty args and not just if set",
 			when{[]string{}},
 			on{false},
-			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &defaultEnableLogs, LogLevel: &defaultLogLevel}, nil},
+			want{defaultFlagConfig, nil},
 		},
 		{
 			"set -a flag and not just if set",
@@ -192,6 +224,30 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-l=true"}},
 			on{false},
 			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &enableLogsTrue, LogLevel: &defaultLogLevel}, nil},
+		},
+		{
+			"set -lf flag and not just if set",
+			when{[]string{"-lf", appLog1}},
+			on{false},
+			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &defaultEnableLogs, LogLevel: &defaultLogLevel, LogFile: &appLog1}, nil},
+		},
+		{
+			"set -lf flag empty and not just if set",
+			when{[]string{"-lf", ""}},
+			on{false},
+			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &defaultEnableLogs, LogLevel: &defaultLogLevel, LogFile: nil}, nil},
+		},
+		{
+			"set -f flag and not just if set",
+			when{[]string{"-f", fileStoragePath1}},
+			on{false},
+			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &defaultEnableLogs, LogLevel: &defaultLogLevel, FileStoragePath: &fileStoragePath1}, nil},
+		},
+		{
+			"set -f flag empty and not just if set",
+			when{[]string{"-f", ""}},
+			on{false},
+			want{flagsConfig{ServerAddress: &defaultServerAddress, BaseURL: &defaultBaseURL, EnableLogs: &defaultEnableLogs, LogLevel: &defaultLogLevel, FileStoragePath: nil}, nil},
 		},
 		{
 			"set -a -b -l flags and not just if set",

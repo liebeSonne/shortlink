@@ -11,22 +11,24 @@ import (
 )
 
 const (
-	ServerAddressFlagName = "a"
-	BaseURLFlagName       = "b"
-	EnableLogsFlagName    = "l"
-	LogLevelFlagName      = "ll"
-	LogFileFlagEnv        = "lf"
+	ServerAddressFlagName   = "a"
+	BaseURLFlagName         = "b"
+	EnableLogsFlagName      = "l"
+	LogLevelFlagName        = "ll"
+	LogFileFlagName         = "lf"
+	FileStoragePathFlagName = "f"
 )
 
 var ErrInvalidFlagValue = errors.New("invalid flag value")
 var ErrInvalidDefaultServerAddress = errors.New("invalid default server address")
 
 type flagsConfig struct {
-	ServerAddress *string
-	BaseURL       *string
-	EnableLogs    *bool
-	LogLevel      *string
-	LogFile       *string
+	ServerAddress   *string
+	BaseURL         *string
+	EnableLogs      *bool
+	LogLevel        *string
+	LogFile         *string
+	FileStoragePath *string
 }
 
 func parseFlags(appID string, config *Config) error {
@@ -52,6 +54,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.LogFile != nil {
 			config.LogFile = flagsConf.LogFile
 		}
+		if flagsConf.FileStoragePath != nil {
+			config.FileStoragePath = flagsConf.FileStoragePath
+		}
 	}
 
 	return nil
@@ -71,7 +76,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	baseURL := fs.String(BaseURLFlagName, DefaultBaseURL, "address and port for output short url")
 	enableLogs := fs.Bool(EnableLogsFlagName, DefaultEnableLogs, "enable output logs")
 	logLevel := fs.String(LogLevelFlagName, DefaultLogLevel, "log level")
-	logFile := fs.String(LogFileFlagEnv, "", "log file")
+	logFile := fs.String(LogFileFlagName, "", "log file")
+	fileStoragePath := fs.String(FileStoragePathFlagName, "", "file storage path")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -85,11 +91,12 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 
 	if justIfSet {
 		isSetFlagMap := map[string]bool{
-			ServerAddressFlagName: false,
-			BaseURLFlagName:       false,
-			EnableLogsFlagName:    false,
-			LogLevelFlagName:      false,
-			LogFileFlagEnv:        false,
+			ServerAddressFlagName:   false,
+			BaseURLFlagName:         false,
+			EnableLogsFlagName:      false,
+			LogLevelFlagName:        false,
+			LogFileFlagName:         false,
+			FileStoragePathFlagName: false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -109,9 +116,14 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[LogLevelFlagName]; ok && isSet {
 			config.LogLevel = logLevel
 		}
-		if isSet, ok := isSetFlagMap[LogFileFlagEnv]; ok && isSet {
+		if isSet, ok := isSetFlagMap[LogFileFlagName]; ok && isSet {
 			if logFile != nil && *logFile != "" {
 				config.LogFile = logFile
+			}
+		}
+		if isSet, ok := isSetFlagMap[FileStoragePathFlagName]; ok && isSet {
+			if fileStoragePath != nil && *fileStoragePath != "" {
+				config.FileStoragePath = fileStoragePath
 			}
 		}
 	} else {
@@ -122,6 +134,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		config.LogLevel = logLevel
 		if logFile != nil && *logFile != "" {
 			config.LogFile = logFile
+		}
+		if fileStoragePath != nil && *fileStoragePath != "" {
+			config.FileStoragePath = fileStoragePath
 		}
 	}
 
