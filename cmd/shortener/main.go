@@ -8,6 +8,7 @@ import (
 
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
+	"github.com/liebeSonne/shortlink/internal/handler/compress"
 	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -41,7 +42,16 @@ func runApp(cfg config.Config, logger applogger.Logger) (err error) {
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, cfg.EnableLogs)
-	router := handler.LoggingMiddleware(rootRouter.Router(), logger)
+
+	router := rootRouter.Router().(http.Handler)
+	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
+		Encodings:    []compress.Encoding{compress.GzipEncoding},
+		ContentTypes: &[]string{"application/json", "text/html"},
+	})
+	if err != nil {
+		return err
+	}
+	router = handler.LoggingMiddleware(rootRouter.Router(), logger)
 
 	logger.Infow("starting server", "addr", cfg.ServerAddress)
 	return http.ListenAndServe(cfg.ServerAddress, router)

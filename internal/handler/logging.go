@@ -7,8 +7,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
-func LoggingMiddleware(next http.Handler, logger logger.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func LoggingMiddleware(next http.Handler, logger logger.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		respData := responseData{
@@ -31,7 +31,7 @@ func LoggingMiddleware(next http.Handler, logger logger.Logger) http.Handler {
 			"duration", duration,
 			"size", respData.size,
 		)
-	})
+	}
 }
 
 type responseData struct {
