@@ -1,5 +1,7 @@
 package model
 
+import "io"
+
 const ShortLinkSize = 8
 
 type ShortLink interface {
@@ -44,4 +46,9 @@ type ShortLinkRepository interface {
 
 type ShortLinkProvider interface {
 	Get(id string) (ShortLink, error)
+}
+
+type ShortLinkRepositoryWithCloser interface {
+	ShortLinkRepository
+	io.Closer
 }

@@ -11,7 +11,7 @@ import (
 const (
 	levelKey   = "level"
 	messageKey = "message"
-	timeKey    = "timestamp"
+	timeKey    = "time"
 )
 
 var zapLogLevelMap = map[LogLevel]zapcore.Level{

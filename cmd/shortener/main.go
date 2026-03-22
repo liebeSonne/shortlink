@@ -31,13 +31,13 @@ func main() {
 	cfg := initConfig()
 	logger := initLogger(cfg, &closer)
 
-	err := runApp(cfg, logger)
+	err := runApp(cfg, logger, &closer)
 
 	logger.Fatalw("error starting server", "error", err)
 }
 
-func runApp(cfg config.Config, logger applogger.Logger) (err error) {
-	shortLinkRepository := repository.NewMemoryShortLinkRepository()
+func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.MultiCloser) (err error) {
+	shortLinkRepository := initShortLinkRepository(cfg, closer, logger)
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
@@ -53,12 +53,19 @@ func runApp(cfg config.Config, logger applogger.Logger) (err error) {
 	}
 	router = handler.LoggingMiddleware(router, logger)
 
-	logger.Infow("starting server", "addr", cfg.ServerAddress)
+	logger.Infow("starting server",
+		"addr", cfg.ServerAddress,
+		"baseURL", cfg.BaseURL,
+		"logLevel", cfg.LogLevel,
+		"logFile", cfg.LogFile,
+		"storage", cfg.FileStoragePath,
+	)
+
 	return http.ListenAndServe(cfg.ServerAddress, router)
 }
 
 var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
-	config.LogLevelDebug: applogger.InfoLevel,
+	config.LogLevelDebug: applogger.DebugLevel,
 	config.LogLevelInfo:  applogger.InfoLevel,
 	config.LogLevelWarn:  applogger.WarnLevel,
 	config.LogLevelError: applogger.ErrorLevel,
@@ -95,13 +102,42 @@ func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer 
 		if err != nil {
 			log.Fatal(err)
 		}
-		closer.AddCloser(internalio.CloserFunc(
-			func() error {
-				return file.Close()
-			},
-		))
+
+		if closer != nil {
+			closer.AddCloser(internalio.CloserFunc(
+				func() error {
+					return file.Close()
+				},
+			))
+		}
+
 		return file
 	}
 
 	return os.Stderr
+}
+
+func initShortLinkRepository(
+	cfg config.Config,
+	closer *internalio.MultiCloser,
+	logger applogger.Logger,
+) model.ShortLinkRepository {
+	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
+		repo, err := repository.NewFileShortLinkRepository(*cfg.FileStoragePath, logger)
+		if err != nil {
+			log.Fatalf("error on init short link repository: %s", err.Error())
+		}
+
+		if closer != nil {
+			closer.AddCloser(internalio.CloserFunc(
+				func() error {
+					return repo.Close()
+				},
+			))
+		}
+
+		return repo
+	}
+
+	return repository.NewMemoryShortLinkRepository()
 }
