@@ -93,7 +93,11 @@ func (s *fileShortLinkRepository) init() error {
 		writer := bufio.NewWriter(s.file)
 		_, err = writer.WriteString("[\n]")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed write to file: %w", err)
+		}
+		err = writer.Flush()
+		if err != nil {
+			return fmt.Errorf("failed flush: %w", err)
 		}
 		return nil
 	}
