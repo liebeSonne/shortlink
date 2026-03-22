@@ -37,7 +37,7 @@ func main() {
 }
 
 func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.MultiCloser) (err error) {
-	shortLinkRepository := initShortLinkRepository(cfg, closer, logger)
+	shortLinkRepository := initShortLinkRepository(cfg, closer)
 	shortIDGenerator := model.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
@@ -120,10 +120,9 @@ func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer 
 func initShortLinkRepository(
 	cfg config.Config,
 	closer *internalio.MultiCloser,
-	logger applogger.Logger,
 ) model.ShortLinkRepository {
 	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := repository.NewFileShortLinkRepository(*cfg.FileStoragePath, logger)
+		repo, err := repository.NewFileShortLinkRepository(*cfg.FileStoragePath)
 		if err != nil {
 			log.Fatalf("error on init short link repository: %s", err.Error())
 		}

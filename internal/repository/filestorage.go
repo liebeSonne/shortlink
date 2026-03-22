@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 )
 
@@ -18,7 +17,7 @@ type shortLinkStorageData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func NewFileShortLinkRepository(filePath string, logger logger.Logger) (model.ShortLinkRepositoryWithCloser, error) {
+func NewFileShortLinkRepository(filePath string) (model.ShortLinkRepositoryWithCloser, error) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
@@ -28,7 +27,6 @@ func NewFileShortLinkRepository(filePath string, logger logger.Logger) (model.Sh
 		filePath: filePath,
 		file:     file,
 		lastID:   0,
-		logger:   logger,
 	}
 
 	err = storage.init()
@@ -43,7 +41,6 @@ type fileShortLinkRepository struct {
 	filePath string
 	file     *os.File
 	lastID   int
-	logger   logger.Logger
 	mu       sync.Mutex
 }
 
@@ -208,7 +205,7 @@ func (s *fileShortLinkRepository) save(items []shortLinkStorageData) error {
 	defer func() {
 		err = os.RemoveAll(tmpDir)
 		if err != nil {
-			s.logger.Errorf("failed remove tmp dir: %v", err)
+			fmt.Printf("failed remove tmp dir: %v", err)
 		}
 	}()
 
