@@ -1,7 +1,5 @@
 package model
 
-import "io"
-
 const ShortLinkSize = 8
 
 type ShortLink interface {
@@ -37,18 +35,4 @@ func (s *shortLink) URL() string {
 type shortLink struct {
 	id  string
 	url string
-}
-
-type ShortLinkRepository interface {
-	Get(id string) (ShortLink, error)
-	Store(shortLink ShortLink) error
-}
-
-type ShortLinkProvider interface {
-	Get(id string) (ShortLink, error)
-}
-
-type ShortLinkRepositoryWithCloser interface {
-	ShortLinkRepository
-	io.Closer
 }

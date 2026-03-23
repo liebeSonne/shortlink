@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -21,7 +22,7 @@ type ShortLinkHandler interface {
 
 func NewShortLinkHandler(
 	service service.ShortLinkService,
-	provider model.ShortLinkProvider,
+	provider provider.ShortLinkProvider,
 	urlAddress string,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
@@ -33,7 +34,7 @@ func NewShortLinkHandler(
 
 type shortLinkHandler struct {
 	service    service.ShortLinkService
-	provider   model.ShortLinkProvider
+	provider   provider.ShortLinkProvider
 	urlAddress string
 }
 

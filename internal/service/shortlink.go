@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
 const maxTry = 1000
@@ -15,7 +16,7 @@ type ShortLinkService interface {
 }
 
 func NewShortLinkService(
-	repository model.ShortLinkRepository,
+	repository repository.ShortLinkRepository,
 	generator model.ShortIDGenerator,
 ) ShortLinkService {
 	return &shortLinkService{
@@ -25,7 +26,7 @@ func NewShortLinkService(
 }
 
 type shortLinkService struct {
-	repository model.ShortLinkRepository
+	repository repository.ShortLinkRepository
 	generator  model.ShortIDGenerator
 }
 

@@ -1,19 +1,13 @@
-package repository
+package memory
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileShortLinkRepository_Get(t *testing.T) {
-	id1 := "id1"
-	id2 := "id2"
-	url1 := "https://example1.com"
-	url2 := "https://example2.com"
-
+func TestShortLinkRepository_Get(t *testing.T) {
 	type itemData struct {
 		id  string
 		url string
@@ -36,41 +30,32 @@ func TestFileShortLinkRepository_Get(t *testing.T) {
 	}{
 		{
 			"not found when no items",
-			on{id1},
+			on{"id1"},
 			when{[]itemData{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty id",
 			on{""},
-			when{[]itemData{{id1, url1}}},
+			when{[]itemData{{"id1", "url1"}}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
-			on{id2},
-			when{[]itemData{{id1, url1}, {id2, url2}}},
-			want{&itemData{id2, url2}, nil},
+			on{"id2"},
+			when{[]itemData{{"id1", "url1"}, {"id2", "url2"}}},
+			want{&itemData{"id2", "url2"}, nil},
 		},
 		{
-			"found first by id",
-			on{id1},
-			when{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}},
-			want{&itemData{id1, url1}, nil},
+			"found last by id",
+			on{"id1"},
+			when{[]itemData{{"id1", "url1"}, {"id2", "url2"}, {"id1", "url2"}}},
+			want{&itemData{"id1", "url2"}, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			filePath := filepath.Join(tempDir, "tmp-1.json")
-
-			repo, err := NewFileShortLinkRepository(filePath)
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				err = repo.Close()
-				require.NoError(t, err)
-			})
-
+			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
 				mockItem := new(mockShortLink)
 				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
@@ -95,12 +80,7 @@ func TestFileShortLinkRepository_Get(t *testing.T) {
 	}
 }
 
-func TestFileShortLinkRepository_Store(t *testing.T) {
-	id1 := "id1"
-	id2 := "id2"
-	url1 := "https://example1.com"
-	url2 := "https://example2.com"
-
+func TestShortLinkRepository_Store(t *testing.T) {
 	type itemData struct {
 		id  string
 		url string
@@ -110,22 +90,13 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 		items []itemData
 		err   error
 	}{
-		{"correct store items", []itemData{{id1, url1}, {id2, url2}}, nil},
-		{"correct store with eq id", []itemData{{id1, url1}, {id1, url2}}, nil},
-		{"correct store with eq url", []itemData{{id2, url2}, {id1, url2}}, nil},
+		{"correct store items", []itemData{{"id1", "url1"}, {"id2", "url2"}}, nil},
+		{"correct store with eq id", []itemData{{"id1", "url1"}, {"id1", "url2"}}, nil},
+		{"correct store with eq url", []itemData{{"id2", "url2"}, {"id1", "url2"}}, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			filePath := filepath.Join(tempDir, "tmp-1.json")
-
-			repo, err := NewFileShortLinkRepository(filePath)
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				err = repo.Close()
-				require.NoError(t, err)
-			})
-
+			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.items {
 				mockItem := new(mockShortLink)
 				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)

@@ -1,35 +1,17 @@
 package repository
 
 import (
-	"sync"
+	"io"
 
 	"github.com/liebeSonne/shortlink/internal/model"
 )
 
-func NewMemoryShortLinkRepository() model.ShortLinkRepository {
-	return &memoryShortLinkRepository{
-		linksMap: make(map[string]model.ShortLink),
-	}
+type ShortLinkRepository interface {
+	Get(id string) (model.ShortLink, error)
+	Store(shortLink model.ShortLink) error
 }
 
-type memoryShortLinkRepository struct {
-	linksMap map[string]model.ShortLink
-	mu       sync.RWMutex
-}
-
-func (s *memoryShortLinkRepository) Get(id string) (model.ShortLink, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	link, ok := s.linksMap[id]
-	if !ok {
-		return nil, nil
-	}
-	return link, nil
-}
-
-func (s *memoryShortLinkRepository) Store(shortLink model.ShortLink) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.linksMap[shortLink.ID()] = shortLink
-	return nil
+type ShortLinkRepositoryWithCloser interface {
+	ShortLinkRepository
+	io.Closer
 }

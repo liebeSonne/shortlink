@@ -6,13 +6,16 @@ import (
 	"net/http"
 	"os"
 
+	internalio "github.com/liebeSonne/shortlink/internal/io"
+	applogger "github.com/liebeSonne/shortlink/internal/logger"
+
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
-	internalio "github.com/liebeSonne/shortlink/internal/io"
-	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
+	"github.com/liebeSonne/shortlink/internal/repository/file"
+	"github.com/liebeSonne/shortlink/internal/repository/memory"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -120,9 +123,9 @@ func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer 
 func initShortLinkRepository(
 	cfg config.Config,
 	closer *internalio.MultiCloser,
-) model.ShortLinkRepository {
+) repository.ShortLinkRepository {
 	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := repository.NewFileShortLinkRepository(*cfg.FileStoragePath)
+		repo, err := file.NewFileShortLinkRepository(*cfg.FileStoragePath)
 		if err != nil {
 			log.Fatalf("error on init short link repository: %s", err.Error())
 		}
@@ -138,5 +141,5 @@ func initShortLinkRepository(
 		return repo
 	}
 
-	return repository.NewMemoryShortLinkRepository()
+	return memory.NewMemoryShortLinkRepository()
 }

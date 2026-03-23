@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/liebeSonne/shortlink/internal/repository/memory"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
-	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
 func TestShortLinkService_Create(t *testing.T) {
@@ -68,7 +68,7 @@ func TestShortLinkService_Create(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := repository.NewMemoryShortLinkRepository()
+			repo := memory.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
 				mockItem := new(mockShortLink)
 				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
