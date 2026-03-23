@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
@@ -46,7 +45,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.provider.Get(id)
+	item, err := h.provider.Find(id)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -56,7 +55,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url := item.URL()
+	url := item.URL
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -79,7 +78,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	url := h.createShortLinkURL(shortLink.ID())
+	url := h.createShortLinkURL(shortLink.ID)
 
 	w.WriteHeader(http.StatusCreated)
 	_, err = w.Write([]byte(url))
@@ -108,7 +107,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	url := h.createShortLinkURL(shortLink.ID())
+	url := h.createShortLinkURL(shortLink.ID)
 
 	resp := ShortenResponse{
 		Result: url,
@@ -133,7 +132,7 @@ func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}
-	if errors.Is(err, model.ErrInvalidURL) || errors.Is(err, model.ErrEmptyURL) || errors.Is(err, model.ErrEmptyID) {
+	if errors.Is(err, service.ErrInvalidURL) || errors.Is(err, service.ErrEmptyURL) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

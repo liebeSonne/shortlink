@@ -7,7 +7,7 @@ import (
 )
 
 type ShortLinkRepository interface {
-	Get(id string) (model.ShortLink, error)
+	Find(shortID string) (*model.ShortLink, error)
 	Store(shortLink model.ShortLink) error
 }
 

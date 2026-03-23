@@ -34,8 +34,8 @@ func TestShortLinkService_Create(t *testing.T) {
 		want want
 	}{
 		{
-			"success",
-			on{"https://localhost/1"},
+			"valid url",
+			on{"https://github.com/shortlink/?q=123"},
 			when{[]itemData{}, "id1", 2},
 			want{nil},
 		},
@@ -43,19 +43,19 @@ func TestShortLinkService_Create(t *testing.T) {
 			"empty generated id",
 			on{"https://localhost/1"},
 			when{[]itemData{}, "", 2},
-			want{model.ErrEmptyID},
+			want{ErrTooManyAttempts},
 		},
 		{
 			"empty url",
 			on{""},
 			when{[]itemData{}, "id1", 2},
-			want{model.ErrEmptyURL},
+			want{ErrEmptyURL},
 		},
 		{
 			"invalid url",
 			on{"invalid"},
 			when{[]itemData{}, "id1", 2},
-			want{model.ErrInvalidURL},
+			want{ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
@@ -72,10 +72,8 @@ func TestShortLinkService_Create(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := repository.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
-
-				err := repo.Store(mockItem)
+				shortLink := model.ShortLink{ID: item.id, URL: item.url}
+				err := repo.Store(shortLink)
 				require.NoError(t, err)
 			}
 
@@ -92,8 +90,8 @@ func TestShortLinkService_Create(t *testing.T) {
 
 			require.NoError(t, err)
 			require.NotNil(t, item)
-			assert.Equal(t, tc.on.url, item.URL())
-			assert.Equal(t, tc.when.generateID, item.ID())
+			assert.Equal(t, tc.on.url, item.URL)
+			assert.Equal(t, tc.when.generateID, item.ID)
 		})
 	}
 }
@@ -104,18 +102,5 @@ type mockOneIDGenerator struct {
 
 func (m *mockOneIDGenerator) GenerateID(size uint) string {
 	args := m.Called(size)
-	return args.String(0)
-}
-
-type mockShortLink struct {
-	mock.Mock
-}
-
-func (m *mockShortLink) ID() string {
-	args := m.Called()
-	return args.String(0)
-}
-func (m *mockShortLink) URL() string {
-	args := m.Called()
 	return args.String(0)
 }

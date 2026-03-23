@@ -44,17 +44,17 @@ type fileShortLinkRepository struct {
 	mu       sync.Mutex
 }
 
-func (s *fileShortLinkRepository) Get(id string) (model.ShortLink, error) {
+func (s *fileShortLinkRepository) Find(shortID string) (*model.ShortLink, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	itemPtr, err := s.findItem(id)
+	itemPtr, err := s.findItem(shortID)
 	if err != nil {
 		return nil, fmt.Errorf("failed find item: %w", err)
 	}
 
 	if itemPtr != nil {
-		return model.NewShortLink(itemPtr.ShortURL, itemPtr.OriginalURL)
+		return &model.ShortLink{ID: itemPtr.ShortURL, URL: itemPtr.OriginalURL}, nil
 	}
 
 	return nil, nil
@@ -67,8 +67,8 @@ func (s *fileShortLinkRepository) Store(shortLink model.ShortLink) error {
 	nextID := s.nextID()
 	item := shortLinkStorageData{
 		ID:          nextID,
-		ShortURL:    shortLink.ID(),
-		OriginalURL: shortLink.URL(),
+		ShortURL:    shortLink.ID,
+		OriginalURL: shortLink.URL,
 	}
 
 	items := []shortLinkStorageData{item}

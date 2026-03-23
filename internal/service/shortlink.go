@@ -15,7 +15,7 @@ const DefaultMaxAttemptsToGenerateUniqueID = 5
 var ErrTooManyAttempts = errors.New("too many attempts to generate unique short id")
 
 type ShortLinkService interface {
-	Create(url string) (model.ShortLink, error)
+	Create(url string) (*model.ShortLink, error)
 }
 
 func NewShortLinkService(
@@ -36,23 +36,25 @@ type shortLinkService struct {
 	maxAttemptsToGenerateUniqueID uint
 }
 
-func (s *shortLinkService) Create(url string) (model.ShortLink, error) {
+func (s *shortLinkService) Create(url string) (*model.ShortLink, error) {
+	err := validateLink(url)
+	if err != nil {
+		return nil, err
+	}
+
 	id, err := s.nextID()
 	if err != nil {
 		return nil, err
 	}
 
-	item, err := model.NewShortLink(id, url)
-	if err != nil {
-		return nil, err
-	}
+	item := model.ShortLink{ID: id, URL: url}
 
 	err = s.repository.Store(item)
 	if err != nil {
-		return item, err
+		return &item, err
 	}
 
-	return item, nil
+	return &item, nil
 }
 
 func (s *shortLinkService) nextID() (string, error) {
@@ -60,13 +62,20 @@ func (s *shortLinkService) nextID() (string, error) {
 	var err error
 
 	var errIDAlreadyExists = errors.New("id already exists")
+	var errEmptyID = errors.New("empty ID")
 
 	_ = retry.Do(
 		func() error {
 			id := s.generator.GenerateID(ShortLinkSize)
-			item, err := s.repository.Get(id)
-			if err != nil {
-				return err
+
+			if id == "" {
+				return errEmptyID
+			}
+
+			item, err1 := s.repository.Find(id)
+			if err1 != nil {
+				err = err1
+				return err1
 			}
 
 			if item != nil {
@@ -78,7 +87,7 @@ func (s *shortLinkService) nextID() (string, error) {
 		},
 		retry.Attempts(s.maxAttemptsToGenerateUniqueID),
 		retry.RetryIf(func(retryErr error) bool {
-			return errors.Is(retryErr, errIDAlreadyExists)
+			return errors.Is(retryErr, errIDAlreadyExists) || errors.Is(err, errEmptyID)
 		}),
 	)
 

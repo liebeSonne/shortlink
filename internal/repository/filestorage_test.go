@@ -6,9 +6,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/model"
 )
 
-func TestFileShortLinkRepository_Get(t *testing.T) {
+func TestFileShortLinkRepository_Find(t *testing.T) {
 	id1 := "id1"
 	id2 := "id2"
 	url1 := "https://example1.com"
@@ -72,13 +74,11 @@ func TestFileShortLinkRepository_Get(t *testing.T) {
 			})
 
 			for _, item := range tc.when.items {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
-
-				err := repo.Store(mockItem)
+				shortLink := model.ShortLink{ID: item.id, URL: item.url}
+				err := repo.Store(shortLink)
 				require.NoError(t, err)
 			}
-			item, err := repo.Get(tc.on.id)
+			item, err := repo.Find(tc.on.id)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
@@ -88,8 +88,8 @@ func TestFileShortLinkRepository_Get(t *testing.T) {
 			require.NoError(t, err)
 			if tc.want.item != nil {
 				require.NotNil(t, item)
-				assert.Equal(t, tc.want.item.id, item.ID())
-				assert.Equal(t, tc.want.item.url, item.URL())
+				assert.Equal(t, tc.want.item.id, item.ID)
+				assert.Equal(t, tc.want.item.url, item.URL)
 			}
 		})
 	}
@@ -127,10 +127,8 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 			})
 
 			for _, item := range tc.items {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(item.id).On("URL").Return(item.url)
-
-				err := repo.Store(mockItem)
+				shortLink := model.ShortLink{ID: item.id, URL: item.url}
+				err := repo.Store(shortLink)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})

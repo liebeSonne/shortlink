@@ -1,4 +1,4 @@
-package model
+package service
 
 import (
 	"testing"
@@ -6,23 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func Test_validateShortLinkID(t *testing.T) {
-	testCases := []struct {
-		name string
-		id   string
-		err  error
-	}{
-		{"valid", "123", nil},
-		{"empty", "", ErrEmptyID},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateShortLinkID(tc.id)
-			assert.ErrorIs(t, err, tc.err)
-		})
-	}
-}
 
 func Test_validateLink(t *testing.T) {
 	testCases := []struct {

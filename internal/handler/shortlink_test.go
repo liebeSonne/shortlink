@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/service"
 )
 
 func TestShortLinkHandler_HandleGet(t *testing.T) {
@@ -65,11 +66,10 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := new(mockProvider)
 			if tc.when.err == nil && tc.when.link != nil {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(tc.on.id).On("URL").Return(*tc.when.link)
-				provider.On("Get", tc.on.id).Return(mockItem, tc.when.err)
+				item := &model.ShortLink{ID: tc.on.id, URL: *tc.when.link}
+				provider.On("Find", tc.on.id).Return(item, tc.when.err)
 			} else {
-				provider.On("Get", tc.on.id).Return(nil, tc.when.err)
+				provider.On("Find", tc.on.id).Return(nil, tc.when.err)
 			}
 
 			urlAddress := "http://localhost:8080"
@@ -141,33 +141,25 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			"error empty url",
 			on{link1},
 			want{http.StatusBadRequest, ""},
-			when{"", model.ErrEmptyURL},
-		},
-		{
-			"error empty id",
-			on{link1},
-			want{http.StatusBadRequest, ""},
-			when{"", model.ErrEmptyID},
+			when{"", service.ErrEmptyURL},
 		},
 		{
 			"error invalid url",
 			on{link1},
 			want{http.StatusBadRequest, ""},
-			when{"", model.ErrInvalidURL},
+			when{"", service.ErrInvalidURL},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var item model.ShortLink
+			var item *model.ShortLink
 			if tc.when.err == nil {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(tc.when.id).On("URL").Return(link1)
-				item = mockItem
+				item = &model.ShortLink{ID: tc.when.id, URL: link1}
 			}
-			service := new(mockService)
-			service.On("Create", tc.on.link).Return(item, tc.when.err)
+			s := new(mockService)
+			s.On("Create", tc.on.link).Return(item, tc.when.err)
 
-			handler := NewShortLinkHandler(service, new(mockProvider), urlAddress)
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
@@ -231,33 +223,25 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 			"error empty url",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusBadRequest, ""},
-			when{"", model.ErrEmptyURL},
-		},
-		{
-			"error empty id",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
-			want{http.StatusBadRequest, ""},
-			when{"", model.ErrEmptyID},
+			when{"", service.ErrEmptyURL},
 		},
 		{
 			"error invalid url",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusBadRequest, ""},
-			when{"", model.ErrInvalidURL},
+			when{"", service.ErrInvalidURL},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var item model.ShortLink
+			var item *model.ShortLink
 			if tc.when.err == nil {
-				mockItem := new(mockShortLink)
-				mockItem.On("ID").Return(tc.when.id).On("URL").Return(link1)
-				item = mockItem
+				item = &model.ShortLink{ID: tc.when.id, URL: link1}
 			}
-			service := new(mockService)
-			service.On("Create", mock.Anything).Return(item, tc.when.err)
+			s := new(mockService)
+			s.On("Create", mock.Anything).Return(item, tc.when.err)
 
-			handler := NewShortLinkHandler(service, new(mockProvider), urlAddress)
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)
