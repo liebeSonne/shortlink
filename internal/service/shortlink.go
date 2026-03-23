@@ -7,7 +7,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
-const maxTry = 1000
+const maxTry = 100
 
 var ErrTooManyAttempts = errors.New("too many attempts")
 
