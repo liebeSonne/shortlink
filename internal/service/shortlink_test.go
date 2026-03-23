@@ -20,8 +20,9 @@ func TestShortLinkService_Create(t *testing.T) {
 		url string
 	}
 	type when struct {
-		items      []itemData
-		generateID string
+		items       []itemData
+		generateID  string
+		maxAttempts uint
 	}
 	type want struct {
 		err error
@@ -35,25 +36,25 @@ func TestShortLinkService_Create(t *testing.T) {
 		{
 			"success",
 			on{"https://localhost/1"},
-			when{[]itemData{}, "id1"},
+			when{[]itemData{}, "id1", 2},
 			want{nil},
 		},
 		{
 			"empty generated id",
 			on{"https://localhost/1"},
-			when{[]itemData{}, ""},
+			when{[]itemData{}, "", 2},
 			want{model.ErrEmptyID},
 		},
 		{
 			"empty url",
 			on{""},
-			when{[]itemData{}, "id1"},
+			when{[]itemData{}, "id1", 2},
 			want{model.ErrEmptyURL},
 		},
 		{
 			"invalid url",
 			on{"invalid"},
-			when{[]itemData{}, "id1"},
+			when{[]itemData{}, "id1", 2},
 			want{model.ErrInvalidURL},
 		},
 		{
@@ -62,6 +63,7 @@ func TestShortLinkService_Create(t *testing.T) {
 			when{
 				[]itemData{{"id1", "https://localhost/1"}},
 				"id1",
+				2,
 			},
 			want{ErrTooManyAttempts},
 		},
@@ -80,7 +82,7 @@ func TestShortLinkService_Create(t *testing.T) {
 			generator := new(mockOneIDGenerator)
 			generator.On("GenerateID", mock.Anything).Return(tc.when.generateID)
 
-			service := NewShortLinkService(repo, generator)
+			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
 			item, err := service.Create(tc.on.url)
 			if tc.want.err != nil {
 				require.Error(t, err)

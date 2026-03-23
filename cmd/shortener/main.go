@@ -39,7 +39,7 @@ func main() {
 func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.MultiCloser) (err error) {
 	shortLinkRepository := initShortLinkRepository(cfg, closer)
 	shortIDGenerator := service.NewShortIDGenerator()
-	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
+	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, cfg.EnableLogs)
 

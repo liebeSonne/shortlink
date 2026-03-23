@@ -1,7 +1,5 @@
 package model
 
-const ShortLinkSize = 8
-
 type ShortLink interface {
 	ID() string
 	URL() string
