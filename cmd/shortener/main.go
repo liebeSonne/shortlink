@@ -13,8 +13,6 @@ import (
 	"github.com/liebeSonne/shortlink/internal/handler"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
 	"github.com/liebeSonne/shortlink/internal/repository"
-	"github.com/liebeSonne/shortlink/internal/repository/file"
-	"github.com/liebeSonne/shortlink/internal/repository/memory"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -124,7 +122,7 @@ func initShortLinkRepository(
 	closer *internalio.MultiCloser,
 ) repository.ShortLinkRepository {
 	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := file.NewFileShortLinkRepository(*cfg.FileStoragePath)
+		repo, err := repository.NewFileShortLinkRepository(*cfg.FileStoragePath)
 		if err != nil {
 			log.Fatalf("error on init short link repository: %s", err.Error())
 		}
@@ -140,5 +138,5 @@ func initShortLinkRepository(
 		return repo
 	}
 
-	return memory.NewMemoryShortLinkRepository()
+	return repository.NewMemoryShortLinkRepository()
 }

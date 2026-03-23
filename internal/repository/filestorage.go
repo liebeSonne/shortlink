@@ -1,4 +1,4 @@
-package file
+package repository
 
 import (
 	"bufio"
@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/liebeSonne/shortlink/internal/model"
-	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
 type shortLinkStorageData struct {
@@ -18,7 +17,7 @@ type shortLinkStorageData struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepositoryWithCloser, error) {
+func NewFileShortLinkRepository(filePath string) (ShortLinkRepositoryWithCloser, error) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
