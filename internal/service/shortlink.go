@@ -17,7 +17,7 @@ type ShortLinkService interface {
 
 func NewShortLinkService(
 	repository repository.ShortLinkRepository,
-	generator model.ShortIDGenerator,
+	generator ShortIDGenerator,
 ) ShortLinkService {
 	return &shortLinkService{
 		repository: repository,
@@ -27,7 +27,7 @@ func NewShortLinkService(
 
 type shortLinkService struct {
 	repository repository.ShortLinkRepository
-	generator  model.ShortIDGenerator
+	generator  ShortIDGenerator
 }
 
 func (s *shortLinkService) Create(url string) (model.ShortLink, error) {

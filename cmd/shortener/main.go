@@ -12,7 +12,6 @@ import (
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
-	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/repository/file"
 	"github.com/liebeSonne/shortlink/internal/repository/memory"
@@ -41,7 +40,7 @@ func main() {
 
 func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.MultiCloser) (err error) {
 	shortLinkRepository := initShortLinkRepository(cfg, closer)
-	shortIDGenerator := model.NewShortIDGenerator()
+	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, cfg.EnableLogs)
