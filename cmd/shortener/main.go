@@ -41,7 +41,8 @@ func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.Multi
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
-	rootRouter := handler.NewRootRouter(shortLinkHandler, cfg.EnableLogs)
+	databaseHandler := handler.NewDatabaseHandler()
+	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)
 
 	router := rootRouter.Router().(http.Handler)
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{

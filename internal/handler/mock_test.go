@@ -45,3 +45,11 @@ func (m *mockProvider) Find(id string) (*model.ShortLink, error) {
 	}
 	return args.Get(0).(*model.ShortLink), args.Error(1)
 }
+
+type mockDatabaseHandler struct {
+	mock.Mock
+}
+
+func (m *mockDatabaseHandler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
+}

@@ -38,6 +38,14 @@ func TestRootHandler_Handle(t *testing.T) {
 		require.NoError(t, err)
 	}).Return()
 
+	mockDBHandler := new(mockDatabaseHandler)
+	mockDBHandler.On("HandlePing", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		w := args.Get(0).(http.ResponseWriter)
+		w.WriteHeader(codeGetResult)
+		_, err := w.Write([]byte(getResponse))
+		require.NoError(t, err)
+	}).Return()
+
 	type want struct {
 		code int
 		body string
@@ -58,10 +66,11 @@ func TestRootHandler_Handle(t *testing.T) {
 		{"not acceptable delete", http.MethodDelete, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"not acceptable options", http.MethodOptions, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"not acceptable trace", http.MethodTrace, "/", want{http.StatusMethodNotAllowed, ""}},
+		{"ping handler", http.MethodGet, "/ping", want{codeGetResult, getResponse}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			router := NewRootRouter(mockHandler, false)
+			router := NewRootRouter(mockHandler, mockDBHandler, false)
 
 			srv := httptest.NewServer(router.Router())
 			defer srv.Close()
