@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
@@ -21,6 +24,8 @@ const appID = "shortlink"
 const envPrefix = ""
 
 func main() {
+	ctx := context.Background()
+
 	closer := internalio.MultiCloser{}
 	defer func() {
 		closeErr := closer.Close()
@@ -32,12 +37,22 @@ func main() {
 	cfg := initConfig()
 	logger := initLogger(cfg, &closer)
 
-	err := runApp(cfg, logger, &closer)
+	err := runApp(ctx, cfg, logger, &closer)
 
 	logger.Fatalw("error starting server", "error", err)
 }
 
-func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.MultiCloser) (err error) {
+func runApp(
+	ctx context.Context,
+	cfg config.Config,
+	logger applogger.Logger,
+	closer *internalio.MultiCloser,
+) (err error) {
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+
+	ctx = osContext(ctx)
+
 	shortLinkRepository := initShortLinkRepository(cfg, closer)
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
@@ -64,6 +79,24 @@ func runApp(cfg config.Config, logger applogger.Logger, closer *internalio.Multi
 	)
 
 	return http.ListenAndServe(cfg.ServerAddress, router)
+}
+
+func osContext(ctx context.Context) context.Context {
+	ctx, cancelFunc := context.WithCancel(ctx)
+
+	go func() {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
+		select {
+		case <-ch:
+			cancelFunc()
+		case <-ctx.Done():
+			signal.Reset()
+			return
+		}
+	}()
+
+	return ctx
 }
 
 var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
