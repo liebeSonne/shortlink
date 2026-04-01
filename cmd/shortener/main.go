@@ -6,8 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
@@ -52,8 +50,6 @@ func runApp(
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 
-	ctx = osContext(ctx)
-
 	shortLinkRepository := initShortLinkRepository(cfg, closer)
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
@@ -85,24 +81,6 @@ func runApp(
 	)
 
 	return http.ListenAndServe(cfg.ServerAddress, router)
-}
-
-func osContext(ctx context.Context) context.Context {
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	go func() {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
-		select {
-		case <-ch:
-			cancelFunc()
-		case <-ctx.Done():
-			signal.Reset()
-			return
-		}
-	}()
-
-	return ctx
 }
 
 var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
