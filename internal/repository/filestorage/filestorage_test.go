@@ -1,4 +1,4 @@
-package repository
+package filestorage
 
 import (
 	"path/filepath"

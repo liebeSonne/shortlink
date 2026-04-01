@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
-	"github.com/liebeSonne/shortlink/internal/repository"
+	"github.com/liebeSonne/shortlink/internal/repository/memory"
 )
 
 func TestShortLinkService_Create(t *testing.T) {
@@ -70,7 +70,7 @@ func TestShortLinkService_Create(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := repository.NewMemoryShortLinkRepository()
+			repo := memory.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
 				shortLink := model.ShortLink{ID: item.id, URL: item.url}
 				err := repo.Store(shortLink)

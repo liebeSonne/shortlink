@@ -1,12 +1,13 @@
-package repository
+package memory
 
 import (
 	"sync"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
-func NewMemoryShortLinkRepository() ShortLinkRepository {
+func NewMemoryShortLinkRepository() repository.ShortLinkRepository {
 	return &memoryShortLinkRepository{
 		linksMap: make(map[string]model.ShortLink),
 	}
