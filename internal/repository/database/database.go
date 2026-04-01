@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 //go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i Database -o ../../mocks/mock_database.go -g
