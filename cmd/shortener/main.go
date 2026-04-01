@@ -15,6 +15,7 @@ import (
 	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/repository"
+	"github.com/liebeSonne/shortlink/internal/repository/database"
 	"github.com/liebeSonne/shortlink/internal/repository/filestorage"
 	"github.com/liebeSonne/shortlink/internal/repository/memory"
 	"github.com/liebeSonne/shortlink/internal/service"
@@ -57,7 +58,12 @@ func runApp(
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
-	databaseHandler := handler.NewDatabaseHandler()
+	databaseDSN := ""
+	if cfg.DatabaseDSN != nil {
+		databaseDSN = *cfg.DatabaseDSN
+	}
+	db := database.NewDatabase(databaseDSN)
+	databaseHandler := handler.NewDatabaseHandler(db, logger)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)
 
 	router := rootRouter.Router().(http.Handler)

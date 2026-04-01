@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,25 +9,46 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
+	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/mocks"
 )
 
 func TestDatabaseHandler_HandlePing(t *testing.T) {
 	type want struct {
 		code int
 	}
+	type when struct {
+		err error
+	}
 	testCases := []struct {
 		name string
+		when when
 		want want
 	}{
 		{
 			"200",
+			when{nil},
 			want{http.StatusOK},
+		},
+		{
+			"500",
+			when{errors.New("som ping database error")},
+			want{http.StatusInternalServerError},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := NewDatabaseHandler()
+			mc := minimock.NewController(t)
+			mockDatabase := mocks.NewDatabaseMock(mc)
+			mockDatabase.PingMock.Expect(minimock.AnyContext).Return(tc.when.err)
+
+			mockLogger := mocks.NewLoggerMock(mc)
+			mockLogger.DebugfMock.Optional().Set(func(_ string, _ ...interface{}) {
+			})
+
+			handler := NewDatabaseHandler(mockDatabase, mockLogger)
 
 			r := chi.NewRouter()
 			r.Get("/ping", handler.HandlePing)

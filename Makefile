@@ -1,9 +1,13 @@
 .PHONY: all
-all: build tests
+all: build generate tests
 
 .PHONY: build
 build:
 	go build -o cmd/shortener/shortener ./cmd/shortener
+
+.PHONY: generate
+generate:
+	go generate ./...
 
 .PHONY: tests
 tests:
