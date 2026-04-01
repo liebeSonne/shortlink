@@ -17,6 +17,7 @@ const (
 	LogLevelFlagName        = "ll"
 	LogFileFlagName         = "lf"
 	FileStoragePathFlagName = "f"
+	DatabaseDSNFlagName     = "d"
 )
 
 var ErrInvalidFlagValue = errors.New("invalid flag value")
@@ -29,6 +30,7 @@ type flagsConfig struct {
 	LogLevel        *string
 	LogFile         *string
 	FileStoragePath *string
+	DatabaseDSN     *string
 }
 
 func parseFlags(appID string, config *Config) error {
@@ -57,6 +59,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.FileStoragePath != nil {
 			config.FileStoragePath = flagsConf.FileStoragePath
 		}
+		if flagsConf.DatabaseDSN != nil {
+			config.DatabaseDSN = flagsConf.DatabaseDSN
+		}
 	}
 
 	return nil
@@ -78,6 +83,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	logLevel := fs.String(LogLevelFlagName, DefaultLogLevel, "log level")
 	logFile := fs.String(LogFileFlagName, "", "log file")
 	fileStoragePath := fs.String(FileStoragePathFlagName, "", "file storage path")
+	databaseDSN := fs.String(DatabaseDSNFlagName, "", "database DSN")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -97,6 +103,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			LogLevelFlagName:        false,
 			LogFileFlagName:         false,
 			FileStoragePathFlagName: false,
+			DatabaseDSNFlagName:     false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -126,6 +133,11 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 				config.FileStoragePath = fileStoragePath
 			}
 		}
+		if isSet, ok := isSetFlagMap[DatabaseDSNFlagName]; ok && isSet {
+			if databaseDSN != nil && *databaseDSN != "" {
+				config.DatabaseDSN = databaseDSN
+			}
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
@@ -137,6 +149,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		}
 		if fileStoragePath != nil && *fileStoragePath != "" {
 			config.FileStoragePath = fileStoragePath
+		}
+		if databaseDSN != nil && *databaseDSN != "" {
+			config.DatabaseDSN = databaseDSN
 		}
 	}
 

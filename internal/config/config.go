@@ -30,6 +30,7 @@ const (
 	LogLevelEnvName        = "LOG_LEVEL"
 	LogFileEnvName         = "LOG_FILE"
 	FileStoragePathEnvName = "FILE_STORAGE_PATH"
+	DatabaseDSNEnvName     = "DATABASE_DSN"
 )
 
 type Config struct {
@@ -39,6 +40,7 @@ type Config struct {
 	LogLevel        string  `env:"LOG_LEVEL" default:"info"`
 	LogFile         *string `env:"LOG_FILE" default:""`
 	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:""`
+	DatabaseDSN     *string `env:"DATABASE_DSN" default:""`
 }
 
 func ParseEnv(prefix string, cfg *Config) error {

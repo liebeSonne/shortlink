@@ -11,6 +11,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	appLog1 := "app.log"
 	fileStoragePath1 := "./file/path"
+	databaseDSN1 := "host=localhost user=username password=password dbname=db sslmode=disable"
 
 	type when struct {
 		appID     string
@@ -52,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", LogLevelEnvName):        "error",
 					getEnvNameWithPrefix("prefix", LogFileEnvName):         appLog1,
 					getEnvNameWithPrefix("prefix", FileStoragePathEnvName): fileStoragePath1,
+					getEnvNameWithPrefix("prefix", DatabaseDSNEnvName):     databaseDSN1,
 				},
 			},
 			want{
@@ -62,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 					LogLevel:        "error",
 					LogFile:         &appLog1,
 					FileStoragePath: &fileStoragePath1,
+					DatabaseDSN:     &databaseDSN1,
 				},
 				nil,
 			},
@@ -78,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
 					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
 					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
+					getEnvNameWithPrefix("", DatabaseDSNEnvName):     databaseDSN1,
 				},
 			},
 			want{
@@ -88,6 +92,7 @@ func TestLoadConfig(t *testing.T) {
 					LogLevel:        "error",
 					LogFile:         &appLog1,
 					FileStoragePath: &fileStoragePath1,
+					DatabaseDSN:     &databaseDSN1,
 				},
 				nil,
 			},
@@ -103,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 					"-ll", "error",
 					"-lf", appLog1,
 					"-f", fileStoragePath1,
+					"-d", databaseDSN1,
 				},
 				map[string]string{},
 			},
@@ -114,6 +120,7 @@ func TestLoadConfig(t *testing.T) {
 					LogLevel:        "error",
 					LogFile:         &appLog1,
 					FileStoragePath: &fileStoragePath1,
+					DatabaseDSN:     &databaseDSN1,
 				},
 				nil,
 			},
@@ -129,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
 					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
 					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
+					getEnvNameWithPrefix("", DatabaseDSNEnvName):     databaseDSN1,
 				},
 			},
 			want{
@@ -139,6 +147,7 @@ func TestLoadConfig(t *testing.T) {
 					LogLevel:        "error",
 					LogFile:         &appLog1,
 					FileStoragePath: &fileStoragePath1,
+					DatabaseDSN:     &databaseDSN1,
 				},
 				nil,
 			},
@@ -154,6 +163,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", LogLevelEnvName):        "error",
 					getEnvNameWithPrefix("", LogFileEnvName):         appLog1,
 					getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath1,
+					getEnvNameWithPrefix("", DatabaseDSNEnvName):     databaseDSN1,
 				},
 			},
 			want{
@@ -164,6 +174,7 @@ func TestLoadConfig(t *testing.T) {
 					LogLevel:        "error",
 					LogFile:         &appLog1,
 					FileStoragePath: &fileStoragePath1,
+					DatabaseDSN:     &databaseDSN1,
 				},
 				nil,
 			},
@@ -213,6 +224,17 @@ func TestMergeFlagsConfig(t *testing.T) {
 	logLevel1 := LogLevelError
 	logFile1 := "app.log"
 	fileStoragePath1 := "./file/path"
+	databaseDSN1 := "host=localhost user=username password=password dbname=db sslmode=disable"
+
+	flagConfig1 := flagsConfig{
+		&serverAddress1,
+		&baseURL1,
+		&enableLogsTrue,
+		&logLevel1,
+		&logFile1,
+		&fileStoragePath1,
+		&databaseDSN1,
+	}
 
 	type on struct {
 		fCfg     flagsConfig
@@ -228,48 +250,53 @@ func TestMergeFlagsConfig(t *testing.T) {
 	}{
 		{
 			"empty env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{}},
+			on{flagConfig1, []string{}},
 			want{Config{}},
 		},
 		{
 			"server address env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{ServerAddressEnvName}},
+			on{flagConfig1, []string{ServerAddressEnvName}},
 			want{Config{ServerAddress: serverAddress1}},
 		},
 		{
 			"base url env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{BaseURLEnvName}},
+			on{flagConfig1, []string{BaseURLEnvName}},
 			want{Config{BaseURL: baseURL1}},
 		},
 		{
 			"enable logs env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{EnableLogsEnvName}},
+			on{flagConfig1, []string{EnableLogsEnvName}},
 			want{Config{EnableLogs: enableLogsTrue}},
 		},
 		{
 			"unknown env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{"unknown"}},
+			on{flagConfig1, []string{"unknown"}},
 			want{Config{}},
 		},
 		{
 			"server address and base url and enable logs env names",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
+			on{flagConfig1, []string{ServerAddressEnvName, BaseURLEnvName, EnableLogsEnvName}},
 			want{Config{ServerAddress: serverAddress1, BaseURL: baseURL1, EnableLogs: enableLogsTrue}},
 		},
 		{
 			"log level env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{LogLevelEnvName}},
+			on{flagConfig1, []string{LogLevelEnvName}},
 			want{Config{LogLevel: logLevel1}},
 		},
 		{
 			"log file env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{LogFileEnvName}},
+			on{flagConfig1, []string{LogFileEnvName}},
 			want{Config{LogFile: &logFile1}},
 		},
 		{
 			"file path storage env name",
-			on{flagsConfig{&serverAddress1, &baseURL1, &enableLogsTrue, &logLevel1, &logFile1, &fileStoragePath1}, []string{FileStoragePathEnvName}},
+			on{flagConfig1, []string{FileStoragePathEnvName}},
 			want{Config{FileStoragePath: &fileStoragePath1}},
+		},
+		{
+			"database DSN env name",
+			on{flagConfig1, []string{DatabaseDSNEnvName}},
+			want{Config{DatabaseDSN: &databaseDSN1}},
 		},
 	}
 

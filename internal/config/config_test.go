@@ -11,6 +11,7 @@ import (
 func TestParseEnv(t *testing.T) {
 	appLog := "app.log"
 	fileStoragePath := "file/path"
+	databaseDSN := "host=localhost user=user password=password dbname=db sslmode=disabled"
 
 	type on struct {
 		prefix string
@@ -133,6 +134,20 @@ func TestParseEnv(t *testing.T) {
 			}, nil},
 		},
 		{
+			"database dsn",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", DatabaseDSNEnvName): databaseDSN,
+			}},
+			want{Config{
+				ServerAddress: DefaultServerAddress,
+				BaseURL:       DefaultBaseURL,
+				EnableLogs:    DefaultEnableLogs,
+				LogLevel:      DefaultLogLevel,
+				DatabaseDSN:   &databaseDSN,
+			}, nil},
+		},
+		{
 			"all env",
 			on{""},
 			when{map[string]string{
@@ -142,6 +157,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", LogLevelEnvName):        LogLevelError,
 				getEnvNameWithPrefix("", LogFileEnvName):         appLog,
 				getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath,
+				getEnvNameWithPrefix("", DatabaseDSNEnvName):     databaseDSN,
 			}},
 			want{Config{
 				ServerAddress:   "127.0.0.1:8888",
@@ -150,6 +166,7 @@ func TestParseEnv(t *testing.T) {
 				LogLevel:        LogLevelError,
 				LogFile:         &appLog,
 				FileStoragePath: &fileStoragePath,
+				DatabaseDSN:     &databaseDSN,
 			}, nil},
 		},
 		{
@@ -162,6 +179,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):        LogLevelError,
 				getEnvNameWithPrefix("APP_ID", LogFileEnvName):         appLog,
 				getEnvNameWithPrefix("APP_ID", FileStoragePathEnvName): fileStoragePath,
+				getEnvNameWithPrefix("APP_ID", DatabaseDSNEnvName):     databaseDSN,
 			}},
 			want{Config{
 				ServerAddress:   "127.0.0.1:8888",
@@ -170,6 +188,7 @@ func TestParseEnv(t *testing.T) {
 				LogLevel:        LogLevelError,
 				LogFile:         &appLog,
 				FileStoragePath: &fileStoragePath,
+				DatabaseDSN:     &databaseDSN,
 			}, nil},
 		},
 	}

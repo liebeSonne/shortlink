@@ -24,6 +24,7 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 		prefix + LogLevelEnvName:        LogLevelEnvName,
 		prefix + LogFileEnvName:         LogFileEnvName,
 		prefix + FileStoragePathEnvName: FileStoragePathEnvName,
+		prefix + DatabaseDSNEnvName:     DatabaseDSNEnvName,
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
@@ -84,6 +85,11 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 			if fCfg.FileStoragePath != nil && *fCfg.FileStoragePath != "" {
 				cfg.FileStoragePath = fCfg.FileStoragePath
 			}
+		case DatabaseDSNEnvName:
+			if fCfg.DatabaseDSN != nil && *fCfg.DatabaseDSN != "" {
+				cfg.DatabaseDSN = fCfg.DatabaseDSN
+			}
 		}
+
 	}
 }
