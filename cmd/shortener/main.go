@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"io"
 	"log"
 	"net/http"
@@ -23,8 +22,6 @@ const appID = "shortlink"
 const envPrefix = ""
 
 func main() {
-	ctx := context.Background()
-
 	closer := internalio.MultiCloser{}
 	defer func() {
 		closeErr := closer.Close()
@@ -36,19 +33,16 @@ func main() {
 	cfg := initConfig()
 	logger := initLogger(cfg, &closer)
 
-	err := runApp(ctx, cfg, logger, &closer)
+	err := runApp(cfg, logger, &closer)
 
 	logger.Fatalw("error starting server", "error", err)
 }
 
 func runApp(
-	ctx context.Context,
 	cfg config.Config,
 	logger applogger.Logger,
 	closer *internalio.MultiCloser,
 ) (err error) {
-	ctx, cancelFunc := context.WithCancel(ctx)
-	defer cancelFunc()
 
 	shortLinkRepository := initShortLinkRepository(cfg, closer)
 	shortIDGenerator := service.NewShortIDGenerator()
