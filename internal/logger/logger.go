@@ -11,8 +11,6 @@ const (
 	PanicLevel
 )
 
-//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i Logger -o ../mocks/mock_logger.go -g
-
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})

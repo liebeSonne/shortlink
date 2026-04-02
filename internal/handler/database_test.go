@@ -9,10 +9,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
-	"github.com/gojuno/minimock/v3"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/liebeSonne/shortlink/internal/mocks"
 )
 
 func TestDatabaseHandler_HandlePing(t *testing.T) {
@@ -40,15 +38,13 @@ func TestDatabaseHandler_HandlePing(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			mc := minimock.NewController(t)
-			mockDatabase := mocks.NewDatabaseMock(mc)
-			mockDatabase.PingMock.Expect(minimock.AnyContext).Return(tc.when.err)
+			db := new(mockDatabase)
+			db.On("Ping", mock.Anything).Return(tc.when.err)
 
-			mockLogger := mocks.NewLoggerMock(mc)
-			mockLogger.DebugfMock.Optional().Set(func(_ string, _ ...interface{}) {
-			})
+			logger := new(mockLogger)
+			logger.On("Debugf", mock.Anything, mock.Anything).Return()
 
-			handler := NewDatabaseHandler(mockDatabase, mockLogger)
+			handler := NewDatabaseHandler(db, logger)
 
 			r := chi.NewRouter()
 			r.Get("/ping", handler.HandlePing)

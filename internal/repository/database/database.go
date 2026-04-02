@@ -8,8 +8,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -i Database -o ../../mocks/mock_database.go -g
-
 type Database interface {
 	Ping(ctx context.Context) error
 }
