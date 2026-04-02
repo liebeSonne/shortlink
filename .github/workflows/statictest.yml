@@ -9,7 +9,7 @@ on:
 jobs:
   statictest:
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     runs-on: ubuntu-latest
     container: golang:1.25
     steps:
