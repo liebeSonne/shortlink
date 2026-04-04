@@ -141,9 +141,28 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// TODO
-	_ = ctx
-	resp := ShortenBatchResponseItem{}
+	inputs := make([]service.InputShortLinkData, 0, len(request))
+	for _, item := range request {
+		inputs = append(inputs, service.InputShortLinkData{
+			CorrelationID: item.CorrelationID,
+			URL:           item.OriginalURL,
+		})
+	}
+
+	outputs, err := h.service.CreateBatch(ctx, inputs)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	resp := make(ShortenBatchResponse, 0, len(outputs))
+	for _, output := range outputs {
+		url := h.createShortLinkURL(output.ShortLink.ID)
+		resp = append(resp, ShortenBatchResponseItem{
+			CorrelationID: output.CorrelationID,
+			ShortURL:      url,
+		})
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

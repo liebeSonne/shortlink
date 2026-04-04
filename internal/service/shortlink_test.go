@@ -226,8 +226,8 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 					if expectOutput.CorrelationID == outputItem.CorrelationID {
 						exist = true
 						assert.Equal(t, expectOutput.CorrelationID, outputItem.CorrelationID)
-						assert.Equal(t, expectOutput.shortLink.URL, outputItem.shortLink.URL)
-						assert.Equal(t, expectOutput.shortLink.ID, outputItem.shortLink.ID)
+						assert.Equal(t, expectOutput.ShortLink.URL, outputItem.ShortLink.URL)
+						assert.Equal(t, expectOutput.ShortLink.ID, outputItem.ShortLink.ID)
 					}
 				}
 				assert.True(t, exist)

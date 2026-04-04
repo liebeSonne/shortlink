@@ -274,8 +274,6 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	}
 }
 
-// TODO
-/*
 func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 	correlationID1 := "correlationID1"
 	correlationID2 := "correlationID2"
@@ -289,8 +287,8 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 		body string
 	}
 	type when struct {
-		urlToIDMap map[string]string
-		err        error
+		outputs []service.OutputShortLinkData
+		err     error
 	}
 	type want struct {
 		code int
@@ -306,46 +304,40 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 			"success create one link",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1)},
-			when{map[string]string{link1: id1}, nil},
+			when{[]service.OutputShortLinkData{{correlationID1, model.ShortLink{id1, link1}}}, nil},
 		},
 		{
 			"success create many link",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"},{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1, correlationID2, link2)},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}, {"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1, correlationID2, urlAddress, id2)},
-			when{map[string]string{link1: id1, link2: id2}, nil},
+			when{[]service.OutputShortLinkData{
+				{correlationID1, model.ShortLink{id1, link1}},
+				{correlationID2, model.ShortLink{id2, link2}},
+			}, nil},
 		},
 		{
 			"error in service",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
 			want{http.StatusInternalServerError, ""},
-			when{map[string]string{}, errors.New("some service error")},
+			when{nil, errors.New("some service error")},
 		},
 		{
 			"error empty url",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
 			want{http.StatusBadRequest, ""},
-			when{map[string]string{}, service.ErrEmptyURL},
+			when{nil, service.ErrEmptyURL},
 		},
 		{
 			"error invalid url",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
 			want{http.StatusBadRequest, ""},
-			when{map[string]string{}, service.ErrInvalidURL},
+			when{nil, service.ErrInvalidURL},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := new(mockService)
-			var item *model.ShortLink
-			if tc.when.err == nil {
-				item = &model.ShortLink{ID: "", URL: link1}
-				s.On("Create", mock.Anything, mock.Anything).Return(item, tc.when.err)
-			} else {
-				for link, id := range tc.when.urlToIDMap {
-					item = &model.ShortLink{ID: id, URL: link}
-					s.On("Create", mock.Anything, link).Return(item, nil)
-				}
-			}
+			s.On("CreateBatch", mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
 
 			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 
@@ -379,4 +371,3 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 		})
 	}
 }
-*/

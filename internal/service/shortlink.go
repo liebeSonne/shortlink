@@ -21,7 +21,7 @@ type InputShortLinkData struct {
 
 type OutputShortLinkData struct {
 	CorrelationID string
-	shortLink     model.ShortLink
+	ShortLink     model.ShortLink
 }
 
 type ShortLinkService interface {
@@ -91,13 +91,13 @@ func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShor
 
 		outputURLsData = append(outputURLsData, OutputShortLinkData{
 			CorrelationID: urlData.CorrelationID,
-			shortLink:     item,
+			ShortLink:     item,
 		})
 	}
 
 	items := make([]model.ShortLink, 0, len(outputURLsData))
 	for _, urlData := range outputURLsData {
-		items = append(items, urlData.shortLink)
+		items = append(items, urlData.ShortLink)
 	}
 
 	err := s.repository.StoreAll(ctx, items)
