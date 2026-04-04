@@ -20,3 +20,8 @@ tests-v:
 .PHONY: clean-bin
 clean-bin:
 	rm -f cmd/shortener/shortener
+
+.PHONY: create-migration
+create-migration:
+	# example: make create-migration name=add_short_link_table
+	migrate create -ext sql -dir ./migrations -format "20060102150405" $(name)

@@ -33,7 +33,12 @@ func main() {
 	cfg := initConfig()
 	logger := initLogger(cfg, &closer)
 
-	err := runApp(cfg, logger, &closer)
+	err := runMigrator(cfg)
+	if err != nil {
+		logger.Fatalw("error run migrator", "error", err)
+	}
+
+	err = runApp(cfg, logger, &closer)
 
 	logger.Fatalw("error starting server", "error", err)
 }
