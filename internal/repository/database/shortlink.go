@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
@@ -24,7 +27,7 @@ type shortLinkRepository struct {
 
 func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.ShortLink, error) {
 	const sqlQuery = `
-		SELECT short_id, url FROM short_link WHERE short_id = $1
+		SELECT short_id, url FROM short_link WHERE short_id = $1 LIMIT 1
 	`
 
 	var shortLink model.ShortLink
@@ -40,17 +43,26 @@ func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.
 	return &shortLink, nil
 }
 
-func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink) error {
+func (r *shortLinkRepository) FindByURL(ctx context.Context, url string) (*model.ShortLink, error) {
 	const sqlQuery = `
-		INSERT INTO short_link (short_id, url) VALUES ($1, $2)
+		SELECT short_id, url FROM short_link WHERE url = $1 LIMIT 1
 	`
 
-	_, err := r.db.ExecContext(ctx, sqlQuery, shortLink.ID, shortLink.URL)
+	var shortLink model.ShortLink
+	row := r.db.QueryRowContext(ctx, sqlQuery, url)
+	err := row.Scan(&shortLink.ID, &shortLink.URL)
 	if err != nil {
-		return fmt.Errorf("error on insert: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("error on scan row: %w", err)
 	}
 
-	return nil
+	return &shortLink, nil
+}
+
+func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink) error {
+	return r.StoreAll(ctx, []model.ShortLink{shortLink})
 }
 
 func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.ShortLink) error {
@@ -81,11 +93,21 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 		}
 	}()
 
+	insertErrors := make([]error, 0)
 	for _, shortLink := range shortLinks {
 		_, err := stmt.ExecContext(ctx, shortLink.ID, shortLink.URL)
 		if err != nil {
-			return fmt.Errorf("error on insert: %w", err)
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgerrcode.UniqueViolation == pgErr.Code {
+				err = repository.NewErrConflictURL(shortLink.URL, err)
+			}
+			insertErrors = append(insertErrors, err)
 		}
+	}
+
+	err = errors.Join(insertErrors...)
+	if err != nil {
+		return fmt.Errorf("error on insert: %w", err)
 	}
 
 	err = tx.Commit()

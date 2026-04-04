@@ -95,6 +95,91 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 	}
 }
 
+func TestFileShortLinkRepository_FindByURL(t *testing.T) {
+	id1 := "id1"
+	id2 := "id2"
+	url1 := "https://example1.com"
+	url2 := "https://example2.com"
+
+	type itemData struct {
+		id  string
+		url string
+	}
+	type on struct {
+		url string
+	}
+	type want struct {
+		item *itemData
+		err  error
+	}
+	type when struct {
+		items []itemData
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"not found when no items",
+			on{url1},
+			when{[]itemData{}},
+			want{nil, nil},
+		},
+		{
+			"not found when empty url",
+			on{""},
+			when{[]itemData{{id1, url1}}},
+			want{nil, nil},
+		},
+		{
+			"found by url",
+			on{url2},
+			when{[]itemData{{id1, url1}, {id2, url2}}},
+			want{&itemData{id2, url2}, nil},
+		},
+		{
+			"found first by url",
+			on{url1},
+			when{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}},
+			want{&itemData{id1, url1}, nil},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			repo, err := NewFileShortLinkRepository(filePath)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err = repo.Close()
+				require.NoError(t, err)
+			})
+
+			for _, item := range tc.when.items {
+				shortLink := model.ShortLink{ID: item.id, URL: item.url}
+				err := repo.Store(t.Context(), shortLink)
+				require.NoError(t, err)
+			}
+			item, err := repo.FindByURL(t.Context(), tc.on.url)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+			if tc.want.item != nil {
+				require.NotNil(t, item)
+				assert.Equal(t, tc.want.item.id, item.ID)
+				assert.Equal(t, tc.want.item.url, item.URL)
+			}
+		})
+	}
+}
+
 func TestFileShortLinkRepository_Store(t *testing.T) {
 	id1 := "id1"
 	id2 := "id2"

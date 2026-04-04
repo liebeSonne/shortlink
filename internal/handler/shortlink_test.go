@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -194,8 +195,10 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 		body string
 	}
 	type when struct {
-		id  string
-		err error
+		createItem *model.ShortLink
+		createErr  error
+		findItem   *model.ShortLink
+		findErr    error
 	}
 	type want struct {
 		code int
@@ -211,37 +214,48 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 			"success create",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusCreated, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
-			when{id1, nil},
+			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
 		},
 		{
 			"error in service",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusInternalServerError, ""},
-			when{"", errors.New("some service error")},
+			when{nil, errors.New("some service error"), nil, nil},
 		},
 		{
 			"error empty url",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusBadRequest, ""},
-			when{"", service.ErrEmptyURL},
+			when{nil, service.ErrEmptyURL, nil, nil},
 		},
 		{
 			"error invalid url",
 			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
 			want{http.StatusBadRequest, ""},
-			when{"", service.ErrInvalidURL},
+			when{nil, service.ErrInvalidURL, nil, nil},
+		},
+		{
+			"conflict unique url",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusConflict, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
+			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), &model.ShortLink{ID: id1, URL: link1}, nil},
+		},
+		{
+			"conflict unique url and not found",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			want{http.StatusInternalServerError, ""},
+			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var item *model.ShortLink
-			if tc.when.err == nil {
-				item = &model.ShortLink{ID: tc.when.id, URL: link1}
-			}
 			s := new(mockService)
-			s.On("Create", mock.Anything, mock.Anything).Return(item, tc.when.err)
+			s.On("Create", mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
-			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
+			p := new(mockProvider)
+			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
+
+			handler := NewShortLinkHandler(s, p, urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)

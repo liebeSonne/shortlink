@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"net/url"
 )
 
@@ -16,8 +16,7 @@ func validateLink(str string) error {
 
 	u, err := url.ParseRequestURI(str)
 	if err != nil {
-		log.Printf("error on parse url: %v", err)
-		return ErrInvalidURL
+		return errors.Join(fmt.Errorf("error on parse url: %v", err), ErrInvalidURL)
 	}
 	if u.Scheme == "" || u.Host == "" {
 		return ErrInvalidURL

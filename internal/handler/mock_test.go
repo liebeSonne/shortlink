@@ -59,6 +59,14 @@ func (m *mockProvider) Find(ctx context.Context, id string) (*model.ShortLink, e
 	return args.Get(0).(*model.ShortLink), args.Error(1)
 }
 
+func (m *mockProvider) FindByURL(ctx context.Context, url string) (*model.ShortLink, error) {
+	args := m.Called(ctx, url)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.ShortLink), args.Error(1)
+}
+
 type mockDatabaseHandler struct {
 	mock.Mock
 }

@@ -29,6 +29,17 @@ func (s *memoryShortLinkRepository) Find(_ context.Context, shortID string) (*mo
 	return &link, nil
 }
 
+func (s *memoryShortLinkRepository) FindByURL(_ context.Context, url string) (*model.ShortLink, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, link := range s.linksMap {
+		if link.URL == url {
+			return &link, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

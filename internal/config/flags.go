@@ -73,8 +73,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	serverAddress := address{}
 	err := serverAddress.Set(DefaultServerAddress)
 	if err != nil {
-		log.Printf("invalid default server address: %v", err)
-		return ErrInvalidDefaultServerAddress
+		return errors.Join(err, ErrInvalidDefaultServerAddress)
 	}
 
 	fs.Var(&serverAddress, ServerAddressFlagName, "address and port to run server")
@@ -175,8 +174,7 @@ func (a *address) Set(flagValue string) error {
 
 	port, err := strconv.Atoi(params[1])
 	if err != nil {
-		log.Printf("error on atoi port: %v\n", err)
-		return ErrInvalidFlagValue
+		return errors.Join(fmt.Errorf("error on atoi port: %w", err), ErrInvalidFlagValue)
 	}
 
 	a.Host = params[0]

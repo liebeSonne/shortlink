@@ -9,7 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"
+	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -103,7 +105,18 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	shortLink, err := h.service.Create(ctx, request.URL)
+	var shortLink *model.ShortLink
+	status := http.StatusCreated
+
+	shortLink, err = h.service.Create(ctx, request.URL)
+	if err != nil {
+		var conflictErr *repository.ErrConflictURL
+		if errors.As(err, &conflictErr) && conflictErr.URL == request.URL {
+			shortLink, err = h.provider.FindByURL(ctx, request.URL)
+			status = http.StatusConflict
+		}
+
+	}
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -120,7 +133,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(status)
 
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)

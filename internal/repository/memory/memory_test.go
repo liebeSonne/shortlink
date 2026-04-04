@@ -75,6 +75,72 @@ func TestShortLinkRepository_Find(t *testing.T) {
 	}
 }
 
+func TestShortLinkRepository_FindByURL(t *testing.T) {
+	type on struct {
+		url string
+	}
+	type want struct {
+		item *model.ShortLink
+		err  error
+	}
+	type when struct {
+		items []model.ShortLink
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"not found when no items",
+			on{"url1"},
+			when{[]model.ShortLink{}},
+			want{nil, nil},
+		},
+		{
+			"not found when empty url",
+			on{""},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}}},
+			want{nil, nil},
+		},
+		{
+			"found by url",
+			on{"url2"},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}},
+			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
+		},
+		{
+			"found first by url",
+			on{"url2"},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id2", URL: "url2"}}},
+			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := NewMemoryShortLinkRepository()
+			for _, item := range tc.when.items {
+				err := repo.Store(t.Context(), item)
+				require.NoError(t, err)
+			}
+			item, err := repo.FindByURL(t.Context(), tc.on.url)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+			if tc.want.item != nil {
+				require.NotNil(t, item)
+				assert.Equal(t, tc.want.item.ID, item.ID)
+				assert.Equal(t, tc.want.item.URL, item.URL)
+			}
+		})
+	}
+}
+
 func TestShortLinkRepository_Store(t *testing.T) {
 	testCases := []struct {
 		name  string

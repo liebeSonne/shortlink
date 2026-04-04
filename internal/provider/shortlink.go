@@ -7,4 +7,5 @@ import (
 
 type ShortLinkProvider interface {
 	Find(ctx context.Context, shortID string) (*model.ShortLink, error)
+	FindByURL(ctx context.Context, url string) (*model.ShortLink, error)
 }

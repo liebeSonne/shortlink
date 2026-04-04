@@ -62,6 +62,22 @@ func (s *fileShortLinkRepository) Find(_ context.Context, shortID string) (*mode
 	return nil, nil
 }
 
+func (s *fileShortLinkRepository) FindByURL(_ context.Context, url string) (*model.ShortLink, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	itemPtr, err := s.findItemByURL(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed find item: %w", err)
+	}
+
+	if itemPtr != nil {
+		return &model.ShortLink{ID: itemPtr.ShortURL, URL: itemPtr.OriginalURL}, nil
+	}
+
+	return nil, nil
+}
+
 func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -200,6 +216,34 @@ func (s *fileShortLinkRepository) findItem(id string) (*shortLinkStorageData, er
 		}
 
 		if itemPtr != nil && itemPtr.ShortURL == id {
+			return itemPtr, nil
+		}
+	}
+	err = scanner.Err()
+	if err != nil {
+		return nil, fmt.Errorf("failed scan file: %w", err)
+	}
+
+	return nil, nil
+}
+
+func (s *fileShortLinkRepository) findItemByURL(url string) (*shortLinkStorageData, error) {
+	_, err := s.file.Seek(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed seek file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(s.file)
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		itemPtr, err := s.parseItem(b)
+		if err != nil {
+			return nil, fmt.Errorf("failed parse item: %w", err)
+		}
+
+		if itemPtr != nil && itemPtr.OriginalURL == url {
 			return itemPtr, nil
 		}
 	}
