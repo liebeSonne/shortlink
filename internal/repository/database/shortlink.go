@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -23,13 +24,16 @@ type shortLinkRepository struct {
 
 func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.ShortLink, error) {
 	const sqlQuery = `
-		SELECT short_id, url FROM short_link WHERE short_id = ?
+		SELECT short_id, url FROM short_link WHERE short_id = $1
 	`
 
 	var shortLink model.ShortLink
 	row := r.db.QueryRowContext(ctx, sqlQuery, shortID)
-	err := row.Scan(shortLink.ID, &shortLink.URL)
+	err := row.Scan(&shortLink.ID, &shortLink.URL)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("error on scan row: %w", err)
 	}
 
@@ -38,7 +42,7 @@ func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.
 
 func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink) error {
 	const sqlQuery = `
-		INSERT INTO short_link (short_id, url) VALUES (?, ?)
+		INSERT INTO short_link (short_id, url) VALUES ($1, $2)
 	`
 
 	_, err := r.db.ExecContext(ctx, sqlQuery, shortLink.ID, shortLink.URL)
