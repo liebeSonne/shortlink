@@ -38,6 +38,7 @@ type shortLinkHandler struct {
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := chi.URLParam(r, "id")
 
 	if id == "" {
@@ -45,7 +46,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.provider.Find(id)
+	item, err := h.provider.Find(ctx, id)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -61,6 +62,8 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.responseError(w, err)
@@ -68,7 +71,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	link := string(body)
 
-	shortLink, err := h.service.Create(link)
+	shortLink, err := h.service.Create(ctx, link)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -89,6 +92,8 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var request ShortenRequest
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&request)
@@ -97,7 +102,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	shortLink, err := h.service.Create(request.URL)
+	shortLink, err := h.service.Create(ctx, request.URL)
 	if err != nil {
 		h.responseError(w, err)
 		return

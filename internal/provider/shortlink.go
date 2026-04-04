@@ -1,7 +1,10 @@
 package provider
 
-import "github.com/liebeSonne/shortlink/internal/model"
+import (
+	"context"
+	"github.com/liebeSonne/shortlink/internal/model"
+)
 
 type ShortLinkProvider interface {
-	Find(shortID string) (*model.ShortLink, error)
+	Find(ctx context.Context, shortID string) (*model.ShortLink, error)
 }

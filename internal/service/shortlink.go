@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/avast/retry-go"
@@ -15,7 +16,7 @@ const DefaultMaxAttemptsToGenerateUniqueID = 5
 var ErrTooManyAttempts = errors.New("too many attempts to generate unique short id")
 
 type ShortLinkService interface {
-	Create(url string) (*model.ShortLink, error)
+	Create(ctx context.Context, url string) (*model.ShortLink, error)
 }
 
 func NewShortLinkService(
@@ -36,20 +37,20 @@ type shortLinkService struct {
 	maxAttemptsToGenerateUniqueID uint
 }
 
-func (s *shortLinkService) Create(url string) (*model.ShortLink, error) {
+func (s *shortLinkService) Create(ctx context.Context, url string) (*model.ShortLink, error) {
 	err := validateLink(url)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := s.nextID()
+	id, err := s.nextID(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	item := model.ShortLink{ID: id, URL: url}
 
-	err = s.repository.Store(item)
+	err = s.repository.Store(ctx, item)
 	if err != nil {
 		return &item, err
 	}
@@ -57,7 +58,7 @@ func (s *shortLinkService) Create(url string) (*model.ShortLink, error) {
 	return &item, nil
 }
 
-func (s *shortLinkService) nextID() (string, error) {
+func (s *shortLinkService) nextID(ctx context.Context) (string, error) {
 	var nextID *string
 	var err error
 
@@ -72,7 +73,7 @@ func (s *shortLinkService) nextID() (string, error) {
 				return errEmptyID
 			}
 
-			item, err1 := s.repository.Find(id)
+			item, err1 := s.repository.Find(ctx, id)
 			if err1 != nil {
 				err = err1
 				return err1

@@ -60,10 +60,10 @@ func TestShortLinkRepository_Find(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
 				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(shortLink)
+				err := repo.Store(t.Context(), shortLink)
 				require.NoError(t, err)
 			}
-			item, err := repo.Find(tc.on.id)
+			item, err := repo.Find(t.Context(), tc.on.id)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
@@ -99,7 +99,7 @@ func TestShortLinkRepository_Store(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.items {
 				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(shortLink)
+				err := repo.Store(t.Context(), shortLink)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})

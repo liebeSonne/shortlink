@@ -73,7 +73,7 @@ func TestShortLinkService_Create(t *testing.T) {
 			repo := memory.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
 				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(shortLink)
+				err := repo.Store(t.Context(), shortLink)
 				require.NoError(t, err)
 			}
 
@@ -81,7 +81,7 @@ func TestShortLinkService_Create(t *testing.T) {
 			generator.On("GenerateID", mock.Anything).Return(tc.when.generateID)
 
 			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
-			item, err := service.Create(tc.on.url)
+			item, err := service.Create(t.Context(), tc.on.url)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)

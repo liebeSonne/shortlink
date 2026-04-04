@@ -67,9 +67,9 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			provider := new(mockProvider)
 			if tc.when.err == nil && tc.when.link != nil {
 				item := &model.ShortLink{ID: tc.on.id, URL: *tc.when.link}
-				provider.On("Find", tc.on.id).Return(item, tc.when.err)
+				provider.On("Find", mock.Anything, tc.on.id).Return(item, tc.when.err)
 			} else {
-				provider.On("Find", tc.on.id).Return(nil, tc.when.err)
+				provider.On("Find", mock.Anything, tc.on.id).Return(nil, tc.when.err)
 			}
 
 			urlAddress := "http://localhost:8080"
@@ -157,7 +157,7 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 				item = &model.ShortLink{ID: tc.when.id, URL: link1}
 			}
 			s := new(mockService)
-			s.On("Create", tc.on.link).Return(item, tc.when.err)
+			s.On("Create", mock.Anything, tc.on.link).Return(item, tc.when.err)
 
 			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 
@@ -239,7 +239,7 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 				item = &model.ShortLink{ID: tc.when.id, URL: link1}
 			}
 			s := new(mockService)
-			s.On("Create", mock.Anything).Return(item, tc.when.err)
+			s.On("Create", mock.Anything, mock.Anything).Return(item, tc.when.err)
 
 			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 

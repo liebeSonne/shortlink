@@ -27,8 +27,8 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) Create(url string) (*model.ShortLink, error) {
-	args := m.Called(url)
+func (m *mockService) Create(ctx context.Context, url string) (*model.ShortLink, error) {
+	args := m.Called(ctx, url)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -39,8 +39,8 @@ type mockProvider struct {
 	mock.Mock
 }
 
-func (m *mockProvider) Find(id string) (*model.ShortLink, error) {
-	args := m.Called(id)
+func (m *mockProvider) Find(ctx context.Context, id string) (*model.ShortLink, error) {
+	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

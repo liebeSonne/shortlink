@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"sync"
 
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -18,7 +19,7 @@ type memoryShortLinkRepository struct {
 	mu       sync.RWMutex
 }
 
-func (s *memoryShortLinkRepository) Find(shortID string) (*model.ShortLink, error) {
+func (s *memoryShortLinkRepository) Find(_ context.Context, shortID string) (*model.ShortLink, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	link, ok := s.linksMap[shortID]
@@ -28,7 +29,7 @@ func (s *memoryShortLinkRepository) Find(shortID string) (*model.ShortLink, erro
 	return &link, nil
 }
 
-func (s *memoryShortLinkRepository) Store(shortLink model.ShortLink) error {
+func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.linksMap[shortLink.ID] = shortLink

@@ -2,6 +2,7 @@ package filestorage
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -45,7 +46,7 @@ type fileShortLinkRepository struct {
 	mu       sync.Mutex
 }
 
-func (s *fileShortLinkRepository) Find(shortID string) (*model.ShortLink, error) {
+func (s *fileShortLinkRepository) Find(_ context.Context, shortID string) (*model.ShortLink, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -61,7 +62,7 @@ func (s *fileShortLinkRepository) Find(shortID string) (*model.ShortLink, error)
 	return nil, nil
 }
 
-func (s *fileShortLinkRepository) Store(shortLink model.ShortLink) error {
+func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
