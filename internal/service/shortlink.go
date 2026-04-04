@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-
 	"github.com/avast/retry-go"
 
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -15,8 +14,19 @@ const DefaultMaxAttemptsToGenerateUniqueID = 5
 
 var ErrTooManyAttempts = errors.New("too many attempts to generate unique short id")
 
+type InputShortLinkData struct {
+	CorrelationID string
+	URL           string
+}
+
+type OutputShortLinkData struct {
+	CorrelationID string
+	shortLink     model.ShortLink
+}
+
 type ShortLinkService interface {
 	Create(ctx context.Context, url string) (*model.ShortLink, error)
+	CreateBatch(ctx context.Context, urlsData []InputShortLinkData) ([]OutputShortLinkData, error)
 }
 
 func NewShortLinkService(
@@ -43,7 +53,7 @@ func (s *shortLinkService) Create(ctx context.Context, url string) (*model.Short
 		return nil, err
 	}
 
-	id, err := s.nextID(ctx)
+	id, err := s.nextID(ctx, []string{})
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +68,47 @@ func (s *shortLinkService) Create(ctx context.Context, url string) (*model.Short
 	return &item, nil
 }
 
-func (s *shortLinkService) nextID(ctx context.Context) (string, error) {
+func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShortLinkData) ([]OutputShortLinkData, error) {
+	for _, urlData := range urlsData {
+		err := validateLink(urlData.URL)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	outputURLsData := make([]OutputShortLinkData, 0, len(urlsData))
+	exceptions := []string{}
+
+	for _, urlData := range urlsData {
+		id, err := s.nextID(ctx, exceptions)
+		if err != nil {
+			return nil, err
+		}
+
+		exceptions = append(exceptions, id)
+
+		item := model.ShortLink{ID: id, URL: urlData.URL}
+
+		outputURLsData = append(outputURLsData, OutputShortLinkData{
+			CorrelationID: urlData.CorrelationID,
+			shortLink:     item,
+		})
+	}
+
+	items := make([]model.ShortLink, 0, len(outputURLsData))
+	for _, urlData := range outputURLsData {
+		items = append(items, urlData.shortLink)
+	}
+
+	err := s.repository.StoreAll(ctx, items)
+	if err != nil {
+		return nil, err
+	}
+
+	return outputURLsData, nil
+}
+
+func (s *shortLinkService) nextID(ctx context.Context, exceptions []string) (string, error) {
 	var nextID *string
 	var err error
 
@@ -71,6 +121,12 @@ func (s *shortLinkService) nextID(ctx context.Context) (string, error) {
 
 			if id == "" {
 				return errEmptyID
+			}
+
+			for _, exception := range exceptions {
+				if exception == id {
+					return errIDAlreadyExists
+				}
 			}
 
 			item, err1 := s.repository.Find(ctx, id)

@@ -134,3 +134,36 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 		})
 	}
 }
+
+func TestFileShortLinkRepository_StoreAll(t *testing.T) {
+	id1 := "id1"
+	id2 := "id2"
+	url1 := "https://example1.com"
+	url2 := "https://example2.com"
+
+	testCases := []struct {
+		name  string
+		items []model.ShortLink
+		err   error
+	}{
+		{"correct store all items", []model.ShortLink{{id1, url1}, {id2, url2}}, nil},
+		{"correct store all with eq id", []model.ShortLink{{id1, url1}, {id1, url2}}, nil},
+		{"correct store all with eq url", []model.ShortLink{{id2, url2}, {id1, url2}}, nil},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			repo, err := NewFileShortLinkRepository(filePath)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err = repo.Close()
+				require.NoError(t, err)
+			})
+
+			err = repo.StoreAll(t.Context(), tc.items)
+			assert.ErrorIs(t, err, tc.err)
+		})
+	}
+}

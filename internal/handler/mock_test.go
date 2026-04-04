@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/service"
 )
 
 type mockShortLinkHandler struct {
@@ -35,6 +37,14 @@ func (m *mockService) Create(ctx context.Context, url string) (*model.ShortLink,
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.ShortLink), args.Error(1)
+}
+
+func (m *mockService) CreateBatch(ctx context.Context, urlsData []service.InputShortLinkData) ([]service.OutputShortLinkData, error) {
+	args := m.Called(ctx, urlsData)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]service.OutputShortLinkData), args.Error(1)
 }
 
 type mockProvider struct {

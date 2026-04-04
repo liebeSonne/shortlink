@@ -82,6 +82,30 @@ func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.Short
 	return nil
 }
 
+func (s *fileShortLinkRepository) StoreAll(_ context.Context, shortLinks []model.ShortLink) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	items := make([]shortLinkStorageData, len(shortLinks))
+
+	for _, shortLink := range shortLinks {
+		nextID := s.nextID()
+		item := shortLinkStorageData{
+			ID:          nextID,
+			ShortURL:    shortLink.ID,
+			OriginalURL: shortLink.URL,
+		}
+		items = append(items, item)
+	}
+
+	err := s.save(items)
+	if err != nil {
+		return fmt.Errorf("failed save items: %w", err)
+	}
+
+	return nil
+}
+
 func (s *fileShortLinkRepository) Close() error {
 	return s.file.Close()
 }

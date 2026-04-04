@@ -52,3 +52,50 @@ func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLi
 
 	return nil
 }
+
+func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.ShortLink) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("error on begin transaction: %w", err)
+	}
+
+	defer func() {
+		err = tx.Rollback()
+		if err != nil {
+			fmt.Printf("error on rollback transaction: %v\n", err)
+		}
+	}()
+
+	const sqlQuery = `
+		INSERT INTO short_link (short_id, url) VALUES (@shortID, @url)
+	`
+
+	stmt, err := tx.PrepareContext(ctx, sqlQuery)
+	if err != nil {
+		return fmt.Errorf("error on prepare statement: %w", err)
+	}
+	defer func() {
+		err = stmt.Close()
+		if err != nil {
+			fmt.Printf("error on close statement: %v\n", err)
+		}
+	}()
+
+	for _, shortLink := range shortLinks {
+		_, err := stmt.ExecContext(
+			ctx,
+			sql.Named("shortID", shortLink.ID),
+			sql.Named("url", shortLink.URL),
+		)
+		if err != nil {
+			return fmt.Errorf("error on insert: %w", err)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("error on commit transaction: %w", err)
+	}
+
+	return nil
+}

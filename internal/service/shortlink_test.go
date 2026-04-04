@@ -12,15 +12,11 @@ import (
 )
 
 func TestShortLinkService_Create(t *testing.T) {
-	type itemData struct {
-		id  string
-		url string
-	}
 	type on struct {
 		url string
 	}
 	type when struct {
-		items       []itemData
+		items       []model.ShortLink
 		generateID  string
 		maxAttempts uint
 	}
@@ -36,32 +32,32 @@ func TestShortLinkService_Create(t *testing.T) {
 		{
 			"valid url",
 			on{"https://github.com/shortlink/?q=123"},
-			when{[]itemData{}, "id1", 2},
+			when{[]model.ShortLink{}, "id1", 2},
 			want{nil},
 		},
 		{
 			"empty generated id",
 			on{"https://localhost/1"},
-			when{[]itemData{}, "", 2},
+			when{[]model.ShortLink{}, "", 2},
 			want{ErrTooManyAttempts},
 		},
 		{
 			"empty url",
 			on{""},
-			when{[]itemData{}, "id1", 2},
+			when{[]model.ShortLink{}, "id1", 2},
 			want{ErrEmptyURL},
 		},
 		{
 			"invalid url",
 			on{"invalid"},
-			when{[]itemData{}, "id1", 2},
+			when{[]model.ShortLink{}, "id1", 2},
 			want{ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
 			on{"https://localhost/1"},
 			when{
-				[]itemData{{"id1", "https://localhost/1"}},
+				[]model.ShortLink{{"id1", "https://localhost/1"}},
 				"id1",
 				2,
 			},
@@ -72,8 +68,7 @@ func TestShortLinkService_Create(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := memory.NewMemoryShortLinkRepository()
 			for _, item := range tc.when.items {
-				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(t.Context(), shortLink)
+				err := repo.Store(t.Context(), item)
 				require.NoError(t, err)
 			}
 
@@ -96,11 +91,147 @@ func TestShortLinkService_Create(t *testing.T) {
 	}
 }
 
-type mockOneIDGenerator struct {
-	mock.Mock
-}
+func TestShortLinkService_CreateBatch(t *testing.T) {
+	correlationID1 := "cid1"
+	correlationID2 := "cid2"
+	link1 := "https://github.com/shortlink/?q=123"
+	link2 := "https://localhost/1"
+	id1 := "id1"
+	id2 := "id2"
+	invalidLink := "invalid"
 
-func (m *mockOneIDGenerator) GenerateID(size uint) string {
-	args := m.Called(size)
-	return args.String(0)
+	type on struct {
+		inputData []InputShortLinkData
+	}
+	type when struct {
+		items       []model.ShortLink
+		generateIDs []string
+		maxAttempts uint
+	}
+	type want struct {
+		outputData []OutputShortLinkData
+		err        error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"crete one valid url",
+			on{[]InputShortLinkData{
+				{correlationID1, link1},
+			}},
+			when{[]model.ShortLink{}, []string{id1}, 2},
+			want{[]OutputShortLinkData{
+				{correlationID1, model.ShortLink{id1, link1}},
+			}, nil},
+		},
+		{
+			"crete many valid url",
+			on{[]InputShortLinkData{
+				{correlationID1, link1},
+				{correlationID2, link2},
+			}},
+			when{[]model.ShortLink{}, []string{id1, id2}, 2},
+			want{[]OutputShortLinkData{
+				{correlationID1, model.ShortLink{id1, link1}},
+				{correlationID2, model.ShortLink{id2, link2}},
+			}, nil},
+		},
+		{
+			"empty generated id",
+			on{[]InputShortLinkData{
+				{correlationID1, link1},
+			}},
+			when{[]model.ShortLink{}, []string{""}, 2},
+			want{nil, ErrTooManyAttempts},
+		},
+		{
+			"empty url",
+			on{[]InputShortLinkData{
+				{correlationID1, ""},
+			}},
+			when{[]model.ShortLink{}, []string{id1}, 2},
+			want{nil, ErrEmptyURL},
+		},
+		{
+			"invalid url",
+			on{[]InputShortLinkData{
+				{correlationID1, invalidLink},
+			}},
+			when{[]model.ShortLink{}, []string{id1}, 2},
+			want{nil, ErrInvalidURL},
+		},
+		{
+			"err too many generate attempts",
+			on{[]InputShortLinkData{
+				{correlationID1, link1},
+			}},
+			when{
+				[]model.ShortLink{{id1, link2}},
+				[]string{id1},
+				2,
+			},
+			want{nil, ErrTooManyAttempts},
+		},
+		{
+			"err too many generate attempts in many items",
+			on{[]InputShortLinkData{
+				{correlationID1, link1},
+				{correlationID2, link2},
+			}},
+			when{
+				[]model.ShortLink{},
+				[]string{id1, id1},
+				2,
+			},
+			want{nil, ErrTooManyAttempts},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := memory.NewMemoryShortLinkRepository()
+			for _, item := range tc.when.items {
+				err := repo.Store(t.Context(), item)
+				require.NoError(t, err)
+			}
+
+			lastGenerateIndex := 0
+			generator := new(mockOneIDGenerator)
+			generator.On("GenerateID", mock.Anything).Return(func(_ uint) string {
+				if lastGenerateIndex >= len(tc.when.generateIDs) {
+					return ""
+				}
+				id := tc.when.generateIDs[lastGenerateIndex]
+				lastGenerateIndex++
+				return id
+			})
+
+			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
+			outputItems, err := service.CreateBatch(t.Context(), tc.on.inputData)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Len(t, outputItems, len(tc.want.outputData))
+
+			for _, expectOutput := range tc.want.outputData {
+				exist := false
+				for _, outputItem := range outputItems {
+					if expectOutput.CorrelationID == outputItem.CorrelationID {
+						exist = true
+						assert.Equal(t, expectOutput.CorrelationID, outputItem.CorrelationID)
+						assert.Equal(t, expectOutput.shortLink.URL, outputItem.shortLink.URL)
+						assert.Equal(t, expectOutput.shortLink.ID, outputItem.shortLink.ID)
+					}
+				}
+				assert.True(t, exist)
+			}
+		})
+	}
 }

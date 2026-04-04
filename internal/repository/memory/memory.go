@@ -35,3 +35,12 @@ func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.Sho
 	s.linksMap[shortLink.ID] = shortLink
 	return nil
 }
+
+func (s *memoryShortLinkRepository) StoreAll(_ context.Context, shortLinks []model.ShortLink) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, shortLink := range shortLinks {
+		s.linksMap[shortLink.ID] = shortLink
+	}
+	return nil
+}
