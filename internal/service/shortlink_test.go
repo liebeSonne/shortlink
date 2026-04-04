@@ -57,7 +57,7 @@ func TestShortLinkService_Create(t *testing.T) {
 			"err too many generate attempts",
 			on{"https://localhost/1"},
 			when{
-				[]model.ShortLink{{"id1", "https://localhost/1"}},
+				[]model.ShortLink{{ID: "id1", URL: "https://localhost/1"}},
 				"id1",
 				2,
 			},
@@ -125,19 +125,19 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			}},
 			when{[]model.ShortLink{}, []string{id1}, 2},
 			want{[]OutputShortLinkData{
-				{correlationID1, model.ShortLink{id1, link1}},
+				{correlationID1, model.ShortLink{ID: id1, URL: link1}},
 			}, nil},
 		},
 		{
 			"crete many valid url",
 			on{[]InputShortLinkData{
-				{correlationID1, link1},
-				{correlationID2, link2},
+				{CorrelationID: correlationID1, URL: link1},
+				{CorrelationID: correlationID2, URL: link2},
 			}},
 			when{[]model.ShortLink{}, []string{id1, id2}, 2},
 			want{[]OutputShortLinkData{
-				{correlationID1, model.ShortLink{id1, link1}},
-				{correlationID2, model.ShortLink{id2, link2}},
+				{correlationID1, model.ShortLink{ID: id1, URL: link1}},
+				{correlationID2, model.ShortLink{ID: id2, URL: link2}},
 			}, nil},
 		},
 		{
@@ -170,7 +170,7 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 				{correlationID1, link1},
 			}},
 			when{
-				[]model.ShortLink{{id1, link2}},
+				[]model.ShortLink{{ID: id1, URL: link2}},
 				[]string{id1},
 				2,
 			},
@@ -179,8 +179,8 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 		{
 			"err too many generate attempts in many items",
 			on{[]InputShortLinkData{
-				{correlationID1, link1},
-				{correlationID2, link2},
+				{CorrelationID: correlationID1, URL: link1},
+				{CorrelationID: correlationID2, URL: link2},
 			}},
 			when{
 				[]model.ShortLink{},

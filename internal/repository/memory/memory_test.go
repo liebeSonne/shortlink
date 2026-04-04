@@ -35,20 +35,20 @@ func TestShortLinkRepository_Find(t *testing.T) {
 		{
 			"not found when empty id",
 			on{""},
-			when{[]model.ShortLink{{"id1", "url1"}}},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
 			on{"id2"},
-			when{[]model.ShortLink{{"id1", "url1"}, {"id2", "url2"}}},
-			want{&model.ShortLink{"id2", "url2"}, nil},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}},
+			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
 		},
 		{
 			"found last by id",
 			on{"id1"},
-			when{[]model.ShortLink{{"id1", "url1"}, {"id2", "url2"}, {"id1", "url2"}}},
-			want{&model.ShortLink{"id1", "url2"}, nil},
+			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}},
+			want{&model.ShortLink{ID: "id1", URL: "url2"}, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -81,9 +81,9 @@ func TestShortLinkRepository_Store(t *testing.T) {
 		items []model.ShortLink
 		err   error
 	}{
-		{"correct store items", []model.ShortLink{{"id1", "url1"}, {"id2", "url2"}}, nil},
-		{"correct store with eq id", []model.ShortLink{{"id1", "url1"}, {"id1", "url2"}}, nil},
-		{"correct store with eq url", []model.ShortLink{{"id2", "url2"}, {"id1", "url2"}}, nil},
+		{"correct store items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+		{"correct store with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil},
+		{"correct store with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -102,10 +102,10 @@ func TestShortLinkRepository_StoreAll(t *testing.T) {
 		items []model.ShortLink
 		err   error
 	}{
-		{"correct store all one items", []model.ShortLink{{"id1", "url1"}}, nil},
-		{"correct store all many items", []model.ShortLink{{"id1", "url1"}, {"id2", "url2"}}, nil},
-		{"correct store all with eq id", []model.ShortLink{{"id1", "url1"}, {"id1", "url2"}}, nil},
-		{"correct store all with eq url", []model.ShortLink{{"id2", "url2"}, {"id1", "url2"}}, nil},
+		{"correct store all one items", []model.ShortLink{{ID: "id1", URL: "url1"}}, nil},
+		{"correct store all many items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+		{"correct store all with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil},
+		{"correct store all with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

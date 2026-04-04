@@ -304,15 +304,15 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 			"success create one link",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1)},
-			when{[]service.OutputShortLinkData{{correlationID1, model.ShortLink{id1, link1}}}, nil},
+			when{[]service.OutputShortLinkData{{CorrelationID: correlationID1, ShortLink: model.ShortLink{ID: id1, URL: link1}}}, nil},
 		},
 		{
 			"success create many link",
 			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"},{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1, correlationID2, link2)},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}, {"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1, correlationID2, urlAddress, id2)},
 			when{[]service.OutputShortLinkData{
-				{correlationID1, model.ShortLink{id1, link1}},
-				{correlationID2, model.ShortLink{id2, link2}},
+				{CorrelationID: correlationID1, ShortLink: model.ShortLink{ID: id1, URL: link1}},
+				{CorrelationID: correlationID2, ShortLink: model.ShortLink{ID: id2, URL: link2}},
 			}, nil},
 		},
 		{
