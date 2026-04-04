@@ -273,3 +273,110 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 		})
 	}
 }
+
+// TODO
+/*
+func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
+	correlationID1 := "correlationID1"
+	correlationID2 := "correlationID2"
+	id1 := "id1"
+	id2 := "id2"
+	link1 := "https://localhost/111"
+	link2 := "https://localhost/222"
+	urlAddress := "http://localhost:8080"
+
+	type on struct {
+		body string
+	}
+	type when struct {
+		urlToIDMap map[string]string
+		err        error
+	}
+	type want struct {
+		code int
+		body string
+	}
+	testCases := []struct {
+		name string
+		on   on
+		want want
+		when when
+	}{
+		{
+			"success create one link",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1)},
+			when{map[string]string{link1: id1}, nil},
+		},
+		{
+			"success create many link",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"},{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1, correlationID2, link2)},
+			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}, {"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1, correlationID2, urlAddress, id2)},
+			when{map[string]string{link1: id1, link2: id2}, nil},
+		},
+		{
+			"error in service",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			want{http.StatusInternalServerError, ""},
+			when{map[string]string{}, errors.New("some service error")},
+		},
+		{
+			"error empty url",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			want{http.StatusBadRequest, ""},
+			when{map[string]string{}, service.ErrEmptyURL},
+		},
+		{
+			"error invalid url",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			want{http.StatusBadRequest, ""},
+			when{map[string]string{}, service.ErrInvalidURL},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := new(mockService)
+			var item *model.ShortLink
+			if tc.when.err == nil {
+				item = &model.ShortLink{ID: "", URL: link1}
+				s.On("Create", mock.Anything, mock.Anything).Return(item, tc.when.err)
+			} else {
+				for link, id := range tc.when.urlToIDMap {
+					item = &model.ShortLink{ID: id, URL: link}
+					s.On("Create", mock.Anything, link).Return(item, nil)
+				}
+			}
+
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
+
+			r := chi.NewRouter()
+			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)
+
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			req := client.R()
+			req.Method = resty.MethodPost
+			req.URL = srv.URL + "/api/shorten/batch"
+
+			if len(tc.on.body) > 0 {
+				req.SetHeader("Content-Type", "application/json")
+				req.SetBody(tc.on.body)
+			}
+
+			resp, err := req.Send()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+
+			if tc.want.body != "" {
+				assert.JSONEq(t, tc.want.body, string(resp.Body()))
+				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			}
+		})
+	}
+}
+*/

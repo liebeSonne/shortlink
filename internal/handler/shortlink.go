@@ -17,6 +17,7 @@ type ShortLinkHandler interface {
 	HandleGet(w http.ResponseWriter, r *http.Request)
 	HandleCreate(w http.ResponseWriter, r *http.Request)
 	HandleCreateShorten(w http.ResponseWriter, r *http.Request)
+	HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request)
 }
 
 func NewShortLinkHandler(
@@ -117,6 +118,32 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	resp := ShortenResponse{
 		Result: url,
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	enc := json.NewEncoder(w)
+	err = enc.Encode(resp)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+}
+
+func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var request ShortenBatchRequest
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&request)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	// TODO
+	_ = ctx
+	resp := ShortenBatchResponseItem{}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

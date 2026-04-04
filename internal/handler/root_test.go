@@ -37,6 +37,12 @@ func TestRootHandler_Handle(t *testing.T) {
 		_, err := w.Write([]byte(postResponse))
 		require.NoError(t, err)
 	}).Return()
+	mockHandler.On("HandleCreateShortenBatch", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		w := args.Get(0).(http.ResponseWriter)
+		w.WriteHeader(codePostResult)
+		_, err := w.Write([]byte(postResponse))
+		require.NoError(t, err)
+	}).Return()
 
 	mockDBHandler := new(mockDatabaseHandler)
 	mockDBHandler.On("HandlePing", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {

@@ -18,8 +18,10 @@ func (m *mockShortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request)
 func (m *mockShortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	m.Called(w, r)
 }
-
 func (m *mockShortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
+}
+func (m *mockShortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request) {
 	m.Called(w, r)
 }
 
