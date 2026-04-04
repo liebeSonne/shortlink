@@ -67,7 +67,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 	}()
 
 	const sqlQuery = `
-		INSERT INTO short_link (short_id, url) VALUES (@shortID, @url)
+		INSERT INTO short_link (short_id, url) VALUES ($1, $2)
 	`
 
 	stmt, err := tx.PrepareContext(ctx, sqlQuery)
@@ -82,11 +82,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 	}()
 
 	for _, shortLink := range shortLinks {
-		_, err := stmt.ExecContext(
-			ctx,
-			sql.Named("shortID", shortLink.ID),
-			sql.Named("url", shortLink.URL),
-		)
+		_, err := stmt.ExecContext(ctx, shortLink.ID, shortLink.URL)
 		if err != nil {
 			return fmt.Errorf("error on insert: %w", err)
 		}
