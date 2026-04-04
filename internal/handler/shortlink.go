@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,7 +75,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	link := string(body)
 
-	shortLink, err := h.service.Create(ctx, link)
+	shortLink, status, err := h.createShortLink(ctx, link)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -86,7 +87,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 
 	url := h.createShortLinkURL(shortLink.ID)
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(status)
 	_, err = w.Write([]byte(url))
 	if err != nil {
 		fmt.Printf("error: %v", err)
@@ -105,18 +106,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var shortLink *model.ShortLink
-	status := http.StatusCreated
-
-	shortLink, err = h.service.Create(ctx, request.URL)
-	if err != nil {
-		var conflictErr *repository.ErrConflictURL
-		if errors.As(err, &conflictErr) && conflictErr.URL == request.URL {
-			shortLink, err = h.provider.FindByURL(ctx, request.URL)
-			status = http.StatusConflict
-		}
-
-	}
+	shortLink, status, err := h.createShortLink(ctx, request.URL)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -186,6 +176,25 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 		fmt.Printf("error: %v", err)
 		return
 	}
+}
+
+func (h *shortLinkHandler) createShortLink(ctx context.Context, link string) (*model.ShortLink, int, error) {
+	var shortLink *model.ShortLink
+	status := http.StatusCreated
+
+	shortLink, err := h.service.Create(ctx, link)
+	if err != nil {
+		var conflictErr *repository.ErrConflictURL
+		if errors.As(err, &conflictErr) && conflictErr.URL == link {
+			shortLink, err = h.provider.FindByURL(ctx, link)
+			status = http.StatusConflict
+		}
+	}
+	if err != nil {
+		return nil, status, err
+	}
+
+	return shortLink, status, nil
 }
 
 func (h *shortLinkHandler) createShortLinkURL(id string) string {
