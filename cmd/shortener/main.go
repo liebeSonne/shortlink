@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -48,16 +49,20 @@ func runApp(
 	logger applogger.Logger,
 	closer *internalio.MultiCloser,
 ) (err error) {
+	dbClient, err := initDatabaseClient(cfg, closer)
+	if err != nil {
+		return fmt.Errorf("error initializing database client: %w", err)
+	}
 
-	shortLinkRepository := initShortLinkRepository(cfg, closer)
+	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient)
+	if err != nil {
+		return fmt.Errorf("error initializing short link repository: %w", err)
+	}
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
-	databaseDSN := ""
-	if cfg.DatabaseDSN != nil {
-		databaseDSN = *cfg.DatabaseDSN
-	}
-	db := database.NewDatabase(databaseDSN)
+	db := createDatabase(cfg)
+
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)
 
@@ -138,23 +143,40 @@ func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer 
 func initShortLinkRepository(
 	cfg config.Config,
 	closer *internalio.MultiCloser,
-) repository.ShortLinkRepository {
-	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := filestorage.NewFileShortLinkRepository(*cfg.FileStoragePath)
-		if err != nil {
-			log.Fatalf("error on init short link repository: %s", err.Error())
-		}
-
-		if closer != nil {
-			closer.AddCloser(internalio.CloserFunc(
-				func() error {
-					return repo.Close()
-				},
-			))
-		}
-
-		return repo
+	dbClient *database.Client,
+) (repository.ShortLinkRepository, error) {
+	if dbClient != nil {
+		repo := database.NewShortLinkRepository((*dbClient).DB())
+		return repo, nil
 	}
 
-	return memory.NewMemoryShortLinkRepository()
+	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
+		repo, err := crateFileShortLinkRepository(*cfg.FileStoragePath, closer)
+		if err != nil {
+			return nil, err
+		}
+		return repo, nil
+	}
+
+	return memory.NewMemoryShortLinkRepository(), nil
+}
+
+func crateFileShortLinkRepository(
+	fileStoragePath string,
+	closer *internalio.MultiCloser,
+) (repository.ShortLinkRepository, error) {
+	repo, err := filestorage.NewFileShortLinkRepository(fileStoragePath)
+	if err != nil {
+		return nil, fmt.Errorf("error on init file short link repository: %w", err)
+	}
+
+	if closer != nil {
+		closer.AddCloser(internalio.CloserFunc(
+			func() error {
+				return repo.Close()
+			},
+		))
+	}
+
+	return repo, nil
 }
