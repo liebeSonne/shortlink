@@ -7,22 +7,24 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
 func NewShortLinkRepository(
-	db *sql.DB,
+	pool *pgxpool.Pool,
 ) repository.ShortLinkRepository {
 	return &shortLinkRepository{
-		db: db,
+		pool: pool,
 	}
 }
 
 type shortLinkRepository struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
 func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.ShortLink, error) {
@@ -31,7 +33,7 @@ func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.
 	`
 
 	var shortLink model.ShortLink
-	row := r.db.QueryRowContext(ctx, sqlQuery, shortID)
+	row := r.pool.QueryRow(ctx, sqlQuery, shortID)
 	err := row.Scan(&shortLink.ID, &shortLink.URL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -49,7 +51,7 @@ func (r *shortLinkRepository) FindByURL(ctx context.Context, url string) (*model
 	`
 
 	var shortLink model.ShortLink
-	row := r.db.QueryRowContext(ctx, sqlQuery, url)
+	row := r.pool.QueryRow(ctx, sqlQuery, url)
 	err := row.Scan(&shortLink.ID, &shortLink.URL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -66,13 +68,13 @@ func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLi
 }
 
 func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.ShortLink) error {
-	tx, err := r.db.BeginTx(ctx, nil)
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("error on begin transaction: %w", err)
 	}
 
 	defer func() {
-		err = tx.Rollback()
+		err = tx.Rollback(ctx)
 		if err != nil {
 			fmt.Printf("error on rollback transaction: %v\n", err)
 		}
@@ -82,20 +84,15 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 		INSERT INTO short_link (short_id, url) VALUES ($1, $2)
 	`
 
-	stmt, err := tx.PrepareContext(ctx, sqlQuery)
+	stmtName := "insert_short_link"
+	_, err = tx.Conn().Prepare(ctx, stmtName, sqlQuery)
 	if err != nil {
 		return fmt.Errorf("error on prepare statement: %w", err)
 	}
-	defer func() {
-		err = stmt.Close()
-		if err != nil {
-			fmt.Printf("error on close statement: %v\n", err)
-		}
-	}()
 
 	insertErrors := make([]error, 0)
 	for _, shortLink := range shortLinks {
-		_, err := stmt.ExecContext(ctx, shortLink.ID, shortLink.URL)
+		_, err := tx.Exec(ctx, stmtName, shortLink.ID, shortLink.URL)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgerrcode.UniqueViolation == pgErr.Code {
@@ -110,7 +107,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 		return fmt.Errorf("error on insert: %w", err)
 	}
 
-	err = tx.Commit()
+	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("error on commit transaction: %w", err)
 	}

@@ -1,45 +1,42 @@
 package database
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"io"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Client interface {
-	DB() *sql.DB
+	Pool() *pgxpool.Pool
 
 	io.Closer
 }
 
 func NewClient(
+	ctx context.Context,
 	dataSourceName string,
 ) (Client, error) {
-	db, err := sql.Open("pgx", dataSourceName)
+	pool, err := pgxpool.New(ctx, dataSourceName)
 	if err != nil {
-		return nil, fmt.Errorf("opening database connection: %w", err)
+		return nil, fmt.Errorf("erro on pgxpool.New: %w", err)
 	}
 
 	return &client{
-		db: db,
+		pool: pool,
 	}, nil
 }
 
 type client struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
-func (d *client) DB() *sql.DB {
-	return d.db
+func (d *client) Pool() *pgxpool.Pool {
+	return d.pool
 }
 
 func (d *client) Close() error {
-	if d.db != nil {
-		err := d.db.Close()
-		if err != nil {
-			return fmt.Errorf("error closing database connection: %w", err)
-		}
-		return nil
-	}
+	d.pool.Close()
 	return nil
 }

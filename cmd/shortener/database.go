@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/liebeSonne/shortlink/internal/config"
@@ -17,11 +18,12 @@ func createDatabase(cfg config.Config) database.Database {
 }
 
 func initDatabaseClient(
+	ctx context.Context,
 	cfg config.Config,
 	closer *internalio.MultiCloser,
 ) (*database.Client, error) {
 	if cfg.DatabaseDSN != nil && *cfg.DatabaseDSN != "" {
-		client, err := createDatabaseClient(*cfg.DatabaseDSN, closer)
+		client, err := createDatabaseClient(ctx, *cfg.DatabaseDSN, closer)
 		if err != nil {
 			return nil, err
 		}
@@ -31,10 +33,11 @@ func initDatabaseClient(
 }
 
 func createDatabaseClient(
+	ctx context.Context,
 	databaseDSN string,
 	closer *internalio.MultiCloser,
 ) (database.Client, error) {
-	client, err := database.NewClient(databaseDSN)
+	client, err := database.NewClient(ctx, databaseDSN)
 	if err != nil {
 		return nil, fmt.Errorf("error init db client: %w", err)
 	}

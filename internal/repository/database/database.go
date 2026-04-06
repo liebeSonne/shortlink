@@ -2,9 +2,9 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -25,19 +25,14 @@ type database struct {
 }
 
 func (d *database) Ping(ctx context.Context) error {
-	db, err := sql.Open("pgx", d.dataSourceName)
+	pool, err := pgxpool.New(ctx, d.dataSourceName)
 	if err != nil {
-		return fmt.Errorf("opening database connection: %w", err)
+		return fmt.Errorf("erro on pgxpool.New: %w", err)
 	}
 
-	defer func() {
-		err = db.Close()
-		if err != nil {
-			fmt.Printf("error closing database connection: %v", err)
-		}
-	}()
+	defer pool.Close()
 
-	err = db.PingContext(ctx)
+	err = pool.Ping(ctx)
 	if err != nil {
 		return fmt.Errorf("pinging database: %w", err)
 	}

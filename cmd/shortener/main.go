@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +24,8 @@ const appID = "shortlink"
 const envPrefix = ""
 
 func main() {
+	ctx := context.Background()
+
 	closer := internalio.MultiCloser{}
 	defer func() {
 		closeErr := closer.Close()
@@ -39,17 +42,21 @@ func main() {
 		logger.Fatalw("error run migrator", "error", err)
 	}
 
-	err = runApp(cfg, logger, &closer)
+	err = runApp(ctx, cfg, logger, &closer)
 
 	logger.Fatalw("error starting server", "error", err)
 }
 
 func runApp(
+	ctx context.Context,
 	cfg config.Config,
 	logger applogger.Logger,
 	closer *internalio.MultiCloser,
 ) (err error) {
-	dbClient, err := initDatabaseClient(cfg, closer)
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+
+	dbClient, err := initDatabaseClient(ctx, cfg, closer)
 	if err != nil {
 		return fmt.Errorf("error initializing database client: %w", err)
 	}
@@ -146,7 +153,7 @@ func initShortLinkRepository(
 	dbClient *database.Client,
 ) (repository.ShortLinkRepository, error) {
 	if dbClient != nil {
-		repo := database.NewShortLinkRepository((*dbClient).DB())
+		repo := database.NewShortLinkRepository((*dbClient).Pool())
 		return repo, nil
 	}
 
