@@ -14,6 +14,9 @@ const DefaultMaxAttemptsToGenerateUniqueID = 5
 
 var ErrTooManyAttempts = errors.New("too many attempts to generate unique short id")
 
+var errIDAlreadyExists = errors.New("id already exists")
+var errEmptyID = errors.New("empty ID")
+
 type InputShortLinkData struct {
 	CorrelationID string
 	URL           string
@@ -111,9 +114,6 @@ func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShor
 func (s *shortLinkService) nextID(ctx context.Context, exceptions []string) (string, error) {
 	var nextID *string
 	var err error
-
-	var errIDAlreadyExists = errors.New("id already exists")
-	var errEmptyID = errors.New("empty ID")
 
 	_ = retry.Do(
 		func() error {
