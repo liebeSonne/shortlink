@@ -16,6 +16,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
+var ErrNotCreated = errors.New("short link not created")
+
 type ShortLinkHandler interface {
 	HandleGet(w http.ResponseWriter, r *http.Request)
 	HandleCreate(w http.ResponseWriter, r *http.Request)
@@ -80,10 +82,6 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 		h.responseError(w, err)
 		return
 	}
-	if shortLink == nil {
-		http.Error(w, "not created", http.StatusInternalServerError)
-		return
-	}
 
 	url := h.createShortLinkURL(shortLink.ID)
 
@@ -109,10 +107,6 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	shortLink, status, err := h.createShortLink(ctx, request.URL)
 	if err != nil {
 		h.responseError(w, err)
-		return
-	}
-	if shortLink == nil {
-		http.Error(w, "not created", http.StatusInternalServerError)
 		return
 	}
 
@@ -194,6 +188,10 @@ func (h *shortLinkHandler) createShortLink(ctx context.Context, link string) (*m
 		return nil, status, err
 	}
 
+	if shortLink == nil {
+		return nil, http.StatusInternalServerError, ErrNotCreated
+	}
+
 	return shortLink, status, nil
 }
 
@@ -207,6 +205,10 @@ func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
 	}
 	if errors.Is(err, service.ErrInvalidURL) || errors.Is(err, service.ErrEmptyURL) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if errors.Is(err, ErrNotCreated) {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Error(w, err.Error(), http.StatusInternalServerError)
