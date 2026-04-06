@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
@@ -25,6 +29,8 @@ const envPrefix = ""
 
 func main() {
 	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	closer := internalio.MultiCloser{}
 	defer func() {
@@ -43,8 +49,9 @@ func main() {
 	}
 
 	err = runApp(ctx, cfg, logger, &closer)
-
-	logger.Fatalw("error starting server", "error", err)
+	if err != nil {
+		logger.Fatalw("error starting server", "error", err)
+	}
 }
 
 func runApp(
@@ -52,18 +59,66 @@ func runApp(
 	cfg config.Config,
 	logger applogger.Logger,
 	closer *internalio.MultiCloser,
-) (err error) {
-	ctx, cancelFunc := context.WithCancel(ctx)
-	defer cancelFunc()
+) error {
+	router, err := initRouter(ctx, cfg, logger, closer)
+	if err != nil {
+		return err
+	}
 
+	logger.Infow("starting server",
+		"addr", cfg.ServerAddress,
+		"baseURL", cfg.BaseURL,
+		"logLevel", cfg.LogLevel,
+		"logFile", cfg.LogFile,
+		"storage", cfg.FileStoragePath,
+	)
+
+	srv := &http.Server{
+		Addr:    cfg.ServerAddress,
+		Handler: router,
+	}
+
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrors <- err
+		}
+	}()
+
+	select {
+	case err := <-serverErrors:
+		return err
+	case <-ctx.Done():
+		logger.Infow("starting server shutdown")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			srv.Close()
+			return err
+		}
+		logger.Infow("server shutdown complete")
+	}
+
+	return nil
+}
+
+func initRouter(
+	ctx context.Context,
+	cfg config.Config,
+	logger applogger.Logger,
+	closer *internalio.MultiCloser,
+) (http.Handler, error) {
 	dbClient, err := initDatabaseClient(ctx, cfg, closer)
 	if err != nil {
-		return fmt.Errorf("error initializing database client: %w", err)
+		return nil, fmt.Errorf("error initializing database client: %w", err)
 	}
 
 	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient)
 	if err != nil {
-		return fmt.Errorf("error initializing short link repository: %w", err)
+		return nil, fmt.Errorf("error initializing short link repository: %w", err)
 	}
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
@@ -79,19 +134,12 @@ func runApp(
 		ContentTypes: &[]string{"application/json", "text/html"},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	router = handler.LoggingMiddleware(router, logger)
 
-	logger.Infow("starting server",
-		"addr", cfg.ServerAddress,
-		"baseURL", cfg.BaseURL,
-		"logLevel", cfg.LogLevel,
-		"logFile", cfg.LogFile,
-		"storage", cfg.FileStoragePath,
-	)
-
-	return http.ListenAndServe(cfg.ServerAddress, router)
+	return router, nil
 }
 
 var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
