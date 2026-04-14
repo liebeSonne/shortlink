@@ -118,18 +118,18 @@ func initRouter(
 		return nil, fmt.Errorf("error initializing database client: %w", err)
 	}
 
+	tokenService := token.NewService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
+	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
+	userService := service.NewUserService()
+
 	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing short link repository: %w", err)
 	}
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, cookieService, tokenService)
 	db := createDatabase(cfg)
-
-	tokenService := token.NewService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
-	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
-	userService := service.NewUserService()
 
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)

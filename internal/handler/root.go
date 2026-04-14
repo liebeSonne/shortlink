@@ -39,6 +39,7 @@ func (h *rootHandler) Router() chi.Router {
 	r.Post("/", h.shortLinkHandler.HandleCreate)
 	r.Post("/api/shorten", h.shortLinkHandler.HandleCreateShorten)
 	r.Post("/api/shorten/batch", h.shortLinkHandler.HandleCreateShortenBatch)
+	r.Get("/api/user/urls", h.shortLinkHandler.HandleGetUserUrls)
 
 	return r
 }

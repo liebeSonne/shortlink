@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/liebeSonne/shortlink/internal/handler/token"
 	"net/http"
 
 	"github.com/stretchr/testify/mock"
@@ -24,6 +25,9 @@ func (m *mockShortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *htt
 	m.Called(w, r)
 }
 func (m *mockShortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
+}
+func (m *mockShortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
 	m.Called(w, r)
 }
 
@@ -123,4 +127,31 @@ func (l *mockLogger) Fatalw(msg string, keysAndValues ...interface{}) {
 }
 func (l *mockLogger) Panicw(msg string, keysAndValues ...interface{}) {
 	l.Called(msg, keysAndValues)
+}
+
+type mockCookieService struct {
+	mock.Mock
+}
+
+func (m *mockCookieService) SetAuthToken(tokenString string, w http.ResponseWriter) error {
+	args := m.Called(tokenString, w)
+	return args.Error(0)
+}
+func (m *mockCookieService) GetAuthToken(r *http.Request) (string, error) {
+	args := m.Called(r)
+	return args.String(0), args.Error(1)
+}
+
+type mockTokenService struct {
+	mock.Mock
+}
+
+func (m *mockTokenService) Create(tokenData token.AuthToken) (string, error) {
+	args := m.Called(tokenData)
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockTokenService) Parse(tokenString string) (token.AuthToken, error) {
+	args := m.Called(tokenString)
+	return args.Get(0).(token.AuthToken), args.Error(1)
 }

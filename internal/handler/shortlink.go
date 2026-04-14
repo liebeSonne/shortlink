@@ -10,6 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/liebeSonne/shortlink/internal/handler/cookie"
+	"github.com/liebeSonne/shortlink/internal/handler/token"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -23,24 +25,31 @@ type ShortLinkHandler interface {
 	HandleCreate(w http.ResponseWriter, r *http.Request)
 	HandleCreateShorten(w http.ResponseWriter, r *http.Request)
 	HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request)
+	HandleGetUserUrls(w http.ResponseWriter, r *http.Request)
 }
 
 func NewShortLinkHandler(
 	service service.ShortLinkService,
 	provider provider.ShortLinkProvider,
 	urlAddress string,
+	cookieService cookie.Service,
+	tokenService token.Service,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
-		service:    service,
-		provider:   provider,
-		urlAddress: urlAddress,
+		service:       service,
+		provider:      provider,
+		urlAddress:    urlAddress,
+		cookieService: cookieService,
+		tokenService:  tokenService,
 	}
 }
 
 type shortLinkHandler struct {
-	service    service.ShortLinkService
-	provider   provider.ShortLinkProvider
-	urlAddress string
+	service       service.ShortLinkService
+	provider      provider.ShortLinkProvider
+	urlAddress    string
+	cookieService cookie.Service
+	tokenService  token.Service
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +179,63 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 		fmt.Printf("error: %v", err)
 		return
 	}
+}
+
+func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	tokenDataPtr, err := h.findAuthToken(r)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+	if tokenDataPtr == nil || tokenDataPtr.UserID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// TODO: найти ссылки по пользователю
+	var items []model.ShortLink
+	_ = ctx
+
+	if len(items) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	resp := make(UserUrlsResponse, 0, len(items))
+	for _, item := range items {
+		url := h.createShortLinkURL(item.ID)
+		resp = append(resp, UserUrlsResponseItem{
+			ShortURL:    url,
+			OriginalURL: item.URL,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	enc := json.NewEncoder(w)
+	err = enc.Encode(resp)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		return
+	}
+}
+
+func (h *shortLinkHandler) findAuthToken(r *http.Request) (*token.AuthToken, error) {
+	tokenString, err := h.cookieService.GetAuthToken(r)
+	if err != nil {
+		return nil, err
+	}
+	if tokenString == "" {
+		return nil, nil
+	}
+	tokenData, err := h.tokenService.Parse(tokenString)
+	if err != nil {
+		return nil, err
+	}
+	return &tokenData, nil
 }
 
 func (h *shortLinkHandler) createShortLink(ctx context.Context, link string) (*model.ShortLink, int, error) {
