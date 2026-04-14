@@ -18,13 +18,16 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 	prefix := getEnvNameWithPrefix(envPrefix, "")
 
 	tagNameToEnvName := map[string]string{
-		prefix + ServerAddressEnvName:   ServerAddressEnvName,
-		prefix + BaseURLEnvName:         BaseURLEnvName,
-		prefix + EnableLogsEnvName:      EnableLogsEnvName,
-		prefix + LogLevelEnvName:        LogLevelEnvName,
-		prefix + LogFileEnvName:         LogFileEnvName,
-		prefix + FileStoragePathEnvName: FileStoragePathEnvName,
-		prefix + DatabaseDSNEnvName:     DatabaseDSNEnvName,
+		prefix + ServerAddressEnvName:      ServerAddressEnvName,
+		prefix + BaseURLEnvName:            BaseURLEnvName,
+		prefix + EnableLogsEnvName:         EnableLogsEnvName,
+		prefix + LogLevelEnvName:           LogLevelEnvName,
+		prefix + LogFileEnvName:            LogFileEnvName,
+		prefix + FileStoragePathEnvName:    FileStoragePathEnvName,
+		prefix + DatabaseDSNEnvName:        DatabaseDSNEnvName,
+		prefix + AuthCookieTokenKeyEnvName: AuthCookieTokenKeyEnvName,
+		prefix + AuthTokenExpiresEnvName:   AuthTokenExpiresEnvName,
+		prefix + AuthSecretKeyEnvName:      AuthSecretKeyEnvName,
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {

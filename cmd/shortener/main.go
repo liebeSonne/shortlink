@@ -15,6 +15,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
+	"github.com/liebeSonne/shortlink/internal/handler/cookie"
+	"github.com/liebeSonne/shortlink/internal/handler/token"
 	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -125,10 +127,17 @@ func initRouter(
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
 	db := createDatabase(cfg)
 
+	tokenService := token.NewService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
+	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
+	userService := service.NewUserService()
+
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
 	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)
 
 	router := rootRouter.Router().(http.Handler)
+
+	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService)
+
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
 		Encodings:    []compress.Encoding{compress.GzipEncoding},
 		ContentTypes: &[]string{"application/json", "text/html"},
