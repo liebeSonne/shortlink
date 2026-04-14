@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
@@ -32,15 +33,11 @@ func NewShortLinkHandler(
 	service service.ShortLinkService,
 	provider provider.ShortLinkProvider,
 	urlAddress string,
-	cookieService cookie.Service,
-	tokenService auth.TokenService,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
-		service:       service,
-		provider:      provider,
-		urlAddress:    urlAddress,
-		cookieService: cookieService,
-		tokenService:  tokenService,
+		service:    service,
+		provider:   provider,
+		urlAddress: urlAddress,
 	}
 }
 
@@ -86,7 +83,12 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	}
 	link := string(body)
 
-	shortLink, status, err := h.createShortLink(ctx, link)
+	var userIDPtr *uuid.UUID
+	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+		userIDPtr = &userID
+	}
+
+	shortLink, status, err := h.createShortLink(ctx, link, userIDPtr)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -113,7 +115,12 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	shortLink, status, err := h.createShortLink(ctx, request.URL)
+	var userIDPtr *uuid.UUID
+	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+		userIDPtr = &userID
+	}
+
+	shortLink, status, err := h.createShortLink(ctx, request.URL, userIDPtr)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -155,7 +162,12 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 		})
 	}
 
-	outputs, err := h.service.CreateBatch(ctx, inputs)
+	var userIDPtr *uuid.UUID
+	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+		userIDPtr = &userID
+	}
+
+	outputs, err := h.service.CreateBatch(ctx, inputs, userIDPtr)
 	if err != nil {
 		h.responseError(w, err)
 		return
@@ -184,19 +196,18 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	tokenDataPtr, err := h.findAuthToken(r)
-	if err != nil {
-		h.responseError(w, err)
-		return
-	}
-	if tokenDataPtr == nil || tokenDataPtr.UserID == "" {
+	userID, hasUserID := auth.GetUserIDFromContext(ctx)
+
+	if !hasUserID {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	// TODO: найти ссылки по пользователю
-	var items []model.ShortLink
-	_ = ctx
+	items, err := h.provider.FindByUserID(ctx, userID)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
 
 	if len(items) == 0 {
 		w.WriteHeader(http.StatusNoContent)
@@ -223,26 +234,11 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (h *shortLinkHandler) findAuthToken(r *http.Request) (*auth.Token, error) {
-	tokenString, err := h.cookieService.GetAuthToken(r)
-	if err != nil {
-		return nil, err
-	}
-	if tokenString == "" {
-		return nil, nil
-	}
-	tokenData, err := h.tokenService.Parse(tokenString)
-	if err != nil {
-		return nil, err
-	}
-	return &tokenData, nil
-}
-
-func (h *shortLinkHandler) createShortLink(ctx context.Context, link string) (*model.ShortLink, int, error) {
+func (h *shortLinkHandler) createShortLink(ctx context.Context, link string, userID *uuid.UUID) (*model.ShortLink, int, error) {
 	var shortLink *model.ShortLink
 	status := http.StatusCreated
 
-	shortLink, err := h.service.Create(ctx, link)
+	shortLink, err := h.service.Create(ctx, link, userID)
 	if err != nil {
 		var conflictErr *repository.ErrConflictURL
 		if errors.As(err, &conflictErr) && conflictErr.URL == link {

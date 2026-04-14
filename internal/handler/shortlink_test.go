@@ -74,7 +74,7 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			}
 
 			urlAddress := "http://localhost:8080"
-			handler := NewShortLinkHandler(new(mockService), provider, urlAddress, new(mockCookieService), new(mockTokenService))
+			handler := NewShortLinkHandler(new(mockService), provider, urlAddress)
 
 			r := chi.NewRouter()
 			r.Get("/", handler.HandleGet)
@@ -168,12 +168,12 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := new(mockService)
-			s.On("Create", mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			s.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
 			p := new(mockProvider)
 			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
 
-			handler := NewShortLinkHandler(s, p, urlAddress, new(mockCookieService), new(mockTokenService))
+			handler := NewShortLinkHandler(s, p, urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
@@ -263,12 +263,12 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := new(mockService)
-			s.On("Create", mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			s.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
 			p := new(mockProvider)
 			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
 
-			handler := NewShortLinkHandler(s, p, urlAddress, new(mockCookieService), new(mockTokenService))
+			handler := NewShortLinkHandler(s, p, urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)
@@ -364,9 +364,9 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := new(mockService)
-			s.On("CreateBatch", mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
+			s.On("CreateBatch", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
 
-			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress, new(mockCookieService), new(mockTokenService))
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)

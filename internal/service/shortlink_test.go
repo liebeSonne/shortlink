@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -13,10 +14,15 @@ import (
 
 func TestShortLinkService_Create(t *testing.T) {
 	type on struct {
-		url string
+		url    string
+		userID *uuid.UUID
+	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
 	}
 	type when struct {
-		items       []model.ShortLink
+		userItems   []userItems
 		generateID  string
 		maxAttempts uint
 	}
@@ -31,33 +37,33 @@ func TestShortLinkService_Create(t *testing.T) {
 	}{
 		{
 			"valid url",
-			on{"https://github.com/shortlink/?q=123"},
-			when{[]model.ShortLink{}, "id1", 2},
+			on{"https://github.com/shortlink/?q=123", nil},
+			when{[]userItems{}, "id1", 2},
 			want{nil},
 		},
 		{
 			"empty generated id",
-			on{"https://localhost/1"},
-			when{[]model.ShortLink{}, "", 2},
+			on{"https://localhost/1", nil},
+			when{[]userItems{}, "", 2},
 			want{ErrTooManyAttempts},
 		},
 		{
 			"empty url",
-			on{""},
-			when{[]model.ShortLink{}, "id1", 2},
+			on{"", nil},
+			when{[]userItems{}, "id1", 2},
 			want{ErrEmptyURL},
 		},
 		{
 			"invalid url",
-			on{"invalid"},
-			when{[]model.ShortLink{}, "id1", 2},
+			on{"invalid", nil},
+			when{[]userItems{}, "id1", 2},
 			want{ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
-			on{"https://localhost/1"},
+			on{"https://localhost/1", nil},
 			when{
-				[]model.ShortLink{{ID: "id1", URL: "https://localhost/1"}},
+				[]userItems{{[]model.ShortLink{{ID: "id1", URL: "https://localhost/1"}}, nil}},
 				"id1",
 				2,
 			},
@@ -67,16 +73,18 @@ func TestShortLinkService_Create(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := memory.NewMemoryShortLinkRepository()
-			for _, item := range tc.when.items {
-				err := repo.Store(t.Context(), item)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(t.Context(), item, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 
 			generator := new(mockOneIDGenerator)
 			generator.On("GenerateID", mock.Anything).Return(tc.when.generateID)
 
 			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
-			item, err := service.Create(t.Context(), tc.on.url)
+			item, err := service.Create(t.Context(), tc.on.url, tc.on.userID)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)
@@ -102,9 +110,14 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 
 	type on struct {
 		inputData []InputShortLinkData
+		userID    *uuid.UUID
+	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
 	}
 	type when struct {
-		items       []model.ShortLink
+		userItems   []userItems
 		generateIDs []string
 		maxAttempts uint
 	}
@@ -122,8 +135,8 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			"crete one valid url",
 			on{[]InputShortLinkData{
 				{correlationID1, link1},
-			}},
-			when{[]model.ShortLink{}, []string{id1}, 2},
+			}, nil},
+			when{[]userItems{}, []string{id1}, 2},
 			want{[]OutputShortLinkData{
 				{correlationID1, model.ShortLink{ID: id1, URL: link1}},
 			}, nil},
@@ -133,8 +146,8 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			on{[]InputShortLinkData{
 				{CorrelationID: correlationID1, URL: link1},
 				{CorrelationID: correlationID2, URL: link2},
-			}},
-			when{[]model.ShortLink{}, []string{id1, id2}, 2},
+			}, nil},
+			when{[]userItems{}, []string{id1, id2}, 2},
 			want{[]OutputShortLinkData{
 				{correlationID1, model.ShortLink{ID: id1, URL: link1}},
 				{correlationID2, model.ShortLink{ID: id2, URL: link2}},
@@ -144,33 +157,33 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			"empty generated id",
 			on{[]InputShortLinkData{
 				{correlationID1, link1},
-			}},
-			when{[]model.ShortLink{}, []string{""}, 2},
+			}, nil},
+			when{[]userItems{}, []string{""}, 2},
 			want{nil, ErrTooManyAttempts},
 		},
 		{
 			"empty url",
 			on{[]InputShortLinkData{
 				{correlationID1, ""},
-			}},
-			when{[]model.ShortLink{}, []string{id1}, 2},
+			}, nil},
+			when{[]userItems{}, []string{id1}, 2},
 			want{nil, ErrEmptyURL},
 		},
 		{
 			"invalid url",
 			on{[]InputShortLinkData{
 				{correlationID1, invalidLink},
-			}},
-			when{[]model.ShortLink{}, []string{id1}, 2},
+			}, nil},
+			when{[]userItems{}, []string{id1}, 2},
 			want{nil, ErrInvalidURL},
 		},
 		{
 			"err too many generate attempts",
 			on{[]InputShortLinkData{
 				{correlationID1, link1},
-			}},
+			}, nil},
 			when{
-				[]model.ShortLink{{ID: id1, URL: link2}},
+				[]userItems{{[]model.ShortLink{{ID: id1, URL: link2}}, nil}},
 				[]string{id1},
 				2,
 			},
@@ -181,9 +194,9 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			on{[]InputShortLinkData{
 				{CorrelationID: correlationID1, URL: link1},
 				{CorrelationID: correlationID2, URL: link2},
-			}},
+			}, nil},
 			when{
-				[]model.ShortLink{},
+				[]userItems{},
 				[]string{id1, id1},
 				2,
 			},
@@ -193,9 +206,11 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := memory.NewMemoryShortLinkRepository()
-			for _, item := range tc.when.items {
-				err := repo.Store(t.Context(), item)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(t.Context(), item, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 
 			lastGenerateIndex := 0
@@ -210,7 +225,7 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			})
 
 			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
-			outputItems, err := service.CreateBatch(t.Context(), tc.on.inputData)
+			outputItems, err := service.CreateBatch(t.Context(), tc.on.inputData, tc.on.userID)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, tc.want.err)

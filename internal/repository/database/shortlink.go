@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -63,11 +64,40 @@ func (r *shortLinkRepository) FindByURL(ctx context.Context, url string) (*model
 	return &shortLink, nil
 }
 
-func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink) error {
-	return r.StoreAll(ctx, []model.ShortLink{shortLink})
+func (r *shortLinkRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error) {
+	const sqlQuery = `
+		SELECT short_id, url FROM short_link WHERE user_id = $1
+	`
+
+	rows, err := r.pool.Query(ctx, sqlQuery, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("error on query: %w", err)
+	}
+
+	shortLinks := make([]model.ShortLink, 0)
+	for rows.Next() {
+		var shortLink model.ShortLink
+		err := rows.Scan(&shortLink.ID, &shortLink.URL)
+		if err != nil {
+			return nil, fmt.Errorf("error on scan row: %w", err)
+		}
+		shortLinks = append(shortLinks, shortLink)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("error on scan rows: %w", rows.Err())
+	}
+
+	return shortLinks, nil
 }
 
-func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.ShortLink) error {
+func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink, userID *uuid.UUID) error {
+	return r.StoreAll(ctx, []model.ShortLink{shortLink}, userID)
+}
+
+func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.ShortLink, userID *uuid.UUID) error {
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("error on begin transaction: %w", err)
@@ -81,7 +111,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 	}()
 
 	const sqlQuery = `
-		INSERT INTO short_link (short_id, url) VALUES ($1, $2)
+		INSERT INTO short_link (short_id, url, user_id) VALUES ($1, $2, $3)
 	`
 
 	stmtName := "insert_short_link"
@@ -92,7 +122,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 
 	insertErrors := make([]error, 0)
 	for _, shortLink := range shortLinks {
-		_, err := tx.Exec(ctx, stmtName, shortLink.ID, shortLink.URL)
+		_, err := tx.Exec(ctx, stmtName, shortLink.ID, shortLink.URL, userID)
 		if err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgerrcode.UniqueViolation == pgErr.Code {

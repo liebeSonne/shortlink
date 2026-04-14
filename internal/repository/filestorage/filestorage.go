@@ -9,14 +9,17 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
 type shortLinkStorageData struct {
-	ID          int    `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ID          int        `json:"uuid"`
+	ShortURL    string     `json:"short_url"`
+	OriginalURL string     `json:"original_url"`
+	UserID      *uuid.UUID `json:"user_id"`
 }
 
 func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepositoryWithCloser, error) {
@@ -78,7 +81,25 @@ func (s *fileShortLinkRepository) FindByURL(_ context.Context, url string) (*mod
 	return nil, nil
 }
 
-func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink) error {
+func (s *fileShortLinkRepository) FindByUserID(_ context.Context, userID uuid.UUID) ([]model.ShortLink, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	items, err := s.findItemsByUserUD(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed find item: %w", err)
+	}
+
+	result := make([]model.ShortLink, 0, len(items))
+	for _, item := range items {
+		shortLink := model.ShortLink{ID: item.ShortURL, URL: item.OriginalURL}
+		result = append(result, shortLink)
+	}
+
+	return result, nil
+}
+
+func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink, userID *uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -87,6 +108,7 @@ func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.Short
 		ID:          nextID,
 		ShortURL:    shortLink.ID,
 		OriginalURL: shortLink.URL,
+		UserID:      userID,
 	}
 
 	items := []shortLinkStorageData{item}
@@ -98,7 +120,7 @@ func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.Short
 	return nil
 }
 
-func (s *fileShortLinkRepository) StoreAll(_ context.Context, shortLinks []model.ShortLink) error {
+func (s *fileShortLinkRepository) StoreAll(_ context.Context, shortLinks []model.ShortLink, userID *uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -110,6 +132,7 @@ func (s *fileShortLinkRepository) StoreAll(_ context.Context, shortLinks []model
 			ID:          nextID,
 			ShortURL:    shortLink.ID,
 			OriginalURL: shortLink.URL,
+			UserID:      userID,
 		}
 		items = append(items, item)
 	}
@@ -253,6 +276,36 @@ func (s *fileShortLinkRepository) findItemByURL(url string) (*shortLinkStorageDa
 	}
 
 	return nil, nil
+}
+
+func (s *fileShortLinkRepository) findItemsByUserUD(userID uuid.UUID) ([]shortLinkStorageData, error) {
+	_, err := s.file.Seek(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed seek file: %w", err)
+	}
+
+	result := make([]shortLinkStorageData, 0)
+
+	scanner := bufio.NewScanner(s.file)
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		itemPtr, err := s.parseItem(b)
+		if err != nil {
+			return nil, fmt.Errorf("failed parse item: %w", err)
+		}
+
+		if itemPtr != nil && itemPtr.UserID != nil && *(itemPtr.UserID) == userID {
+			result = append(result, *itemPtr)
+		}
+	}
+	err = scanner.Err()
+	if err != nil {
+		return nil, fmt.Errorf("failed scan file: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *fileShortLinkRepository) parseItem(b []byte) (*shortLinkStorageData, error) {

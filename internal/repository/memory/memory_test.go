@@ -3,6 +3,7 @@ package memory
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -17,8 +18,12 @@ func TestShortLinkRepository_Find(t *testing.T) {
 		item *model.ShortLink
 		err  error
 	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
+	}
 	type when struct {
-		items []model.ShortLink
+		userItems []userItems
 	}
 	testCases := []struct {
 		name string
@@ -29,34 +34,36 @@ func TestShortLinkRepository_Find(t *testing.T) {
 		{
 			"not found when no items",
 			on{"id1"},
-			when{[]model.ShortLink{}},
+			when{[]userItems{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty id",
 			on{""},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}}, nil}}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
 			on{"id2"},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil}}},
 			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
 		},
 		{
 			"found last by id",
 			on{"id1"},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil}}},
 			want{&model.ShortLink{ID: "id1", URL: "url2"}, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
-			for _, item := range tc.when.items {
-				err := repo.Store(t.Context(), item)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(t.Context(), item, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 			item, err := repo.Find(t.Context(), tc.on.id)
 			if tc.want.err != nil {
@@ -83,8 +90,12 @@ func TestShortLinkRepository_FindByURL(t *testing.T) {
 		item *model.ShortLink
 		err  error
 	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
+	}
 	type when struct {
-		items []model.ShortLink
+		userItems []userItems
 	}
 	testCases := []struct {
 		name string
@@ -95,34 +106,36 @@ func TestShortLinkRepository_FindByURL(t *testing.T) {
 		{
 			"not found when no items",
 			on{"url1"},
-			when{[]model.ShortLink{}},
+			when{[]userItems{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty url",
 			on{""},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}}, nil}}},
 			want{nil, nil},
 		},
 		{
 			"found by url",
 			on{"url2"},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil}}},
 			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
 		},
 		{
 			"found first by url",
 			on{"url2"},
-			when{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id2", URL: "url2"}}},
+			when{[]userItems{{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}, {ID: "id2", URL: "url2"}}, nil}}},
 			want{&model.ShortLink{ID: "id2", URL: "url2"}, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
-			for _, item := range tc.when.items {
-				err := repo.Store(t.Context(), item)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(t.Context(), item, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 			item, err := repo.FindByURL(t.Context(), tc.on.url)
 			if tc.want.err != nil {
@@ -143,19 +156,20 @@ func TestShortLinkRepository_FindByURL(t *testing.T) {
 
 func TestShortLinkRepository_Store(t *testing.T) {
 	testCases := []struct {
-		name  string
-		items []model.ShortLink
-		err   error
+		name   string
+		items  []model.ShortLink
+		userID *uuid.UUID
+		err    error
 	}{
-		{"correct store items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
-		{"correct store with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil},
-		{"correct store with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil},
+		{"correct store items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil, nil},
+		{"correct store with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil, nil},
+		{"correct store with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
 			for _, item := range tc.items {
-				err := repo.Store(t.Context(), item)
+				err := repo.Store(t.Context(), item, tc.userID)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})
@@ -164,19 +178,20 @@ func TestShortLinkRepository_Store(t *testing.T) {
 
 func TestShortLinkRepository_StoreAll(t *testing.T) {
 	testCases := []struct {
-		name  string
-		items []model.ShortLink
-		err   error
+		name   string
+		items  []model.ShortLink
+		userID *uuid.UUID
+		err    error
 	}{
-		{"correct store all one items", []model.ShortLink{{ID: "id1", URL: "url1"}}, nil},
-		{"correct store all many items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
-		{"correct store all with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil},
-		{"correct store all with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil},
+		{"correct store all one items", []model.ShortLink{{ID: "id1", URL: "url1"}}, nil, nil},
+		{"correct store all many items", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil, nil},
+		{"correct store all with eq id", []model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id1", URL: "url2"}}, nil, nil},
+		{"correct store all with eq url", []model.ShortLink{{ID: "id2", URL: "url2"}, {ID: "id1", URL: "url2"}}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := NewMemoryShortLinkRepository()
-			err := repo.StoreAll(t.Context(), tc.items)
+			err := repo.StoreAll(t.Context(), tc.items, tc.userID)
 			assert.ErrorIs(t, err, tc.err)
 		})
 	}

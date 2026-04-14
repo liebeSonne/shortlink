@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
@@ -35,16 +36,16 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) Create(ctx context.Context, url string) (*model.ShortLink, error) {
-	args := m.Called(ctx, url)
+func (m *mockService) Create(ctx context.Context, url string, userID *uuid.UUID) (*model.ShortLink, error) {
+	args := m.Called(ctx, url, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.ShortLink), args.Error(1)
 }
 
-func (m *mockService) CreateBatch(ctx context.Context, urlsData []service.InputShortLinkData) ([]service.OutputShortLinkData, error) {
-	args := m.Called(ctx, urlsData)
+func (m *mockService) CreateBatch(ctx context.Context, urlsData []service.InputShortLinkData, userID *uuid.UUID) ([]service.OutputShortLinkData, error) {
+	args := m.Called(ctx, urlsData, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -69,6 +70,14 @@ func (m *mockProvider) FindByURL(ctx context.Context, url string) (*model.ShortL
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*model.ShortLink), args.Error(1)
+}
+
+func (m *mockProvider) FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]model.ShortLink), args.Error(1)
 }
 
 type mockDatabaseHandler struct {

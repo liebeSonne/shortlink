@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"errors"
+
 	"github.com/avast/retry-go"
+	"github.com/google/uuid"
 
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -28,8 +30,8 @@ type OutputShortLinkData struct {
 }
 
 type ShortLinkService interface {
-	Create(ctx context.Context, url string) (*model.ShortLink, error)
-	CreateBatch(ctx context.Context, urlsData []InputShortLinkData) ([]OutputShortLinkData, error)
+	Create(ctx context.Context, url string, userID *uuid.UUID) (*model.ShortLink, error)
+	CreateBatch(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID) ([]OutputShortLinkData, error)
 }
 
 func NewShortLinkService(
@@ -50,7 +52,7 @@ type shortLinkService struct {
 	maxAttemptsToGenerateUniqueID uint
 }
 
-func (s *shortLinkService) Create(ctx context.Context, url string) (*model.ShortLink, error) {
+func (s *shortLinkService) Create(ctx context.Context, url string, userID *uuid.UUID) (*model.ShortLink, error) {
 	err := validateLink(url)
 	if err != nil {
 		return nil, err
@@ -63,7 +65,7 @@ func (s *shortLinkService) Create(ctx context.Context, url string) (*model.Short
 
 	item := model.ShortLink{ID: id, URL: url}
 
-	err = s.repository.Store(ctx, item)
+	err = s.repository.Store(ctx, item, userID)
 	if err != nil {
 		return &item, err
 	}
@@ -71,7 +73,7 @@ func (s *shortLinkService) Create(ctx context.Context, url string) (*model.Short
 	return &item, nil
 }
 
-func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShortLinkData) ([]OutputShortLinkData, error) {
+func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID) ([]OutputShortLinkData, error) {
 	for _, urlData := range urlsData {
 		err := validateLink(urlData.URL)
 		if err != nil {
@@ -103,7 +105,7 @@ func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShor
 		items = append(items, urlData.ShortLink)
 	}
 
-	err := s.repository.StoreAll(ctx, items)
+	err := s.repository.StoreAll(ctx, items, userID)
 	if err != nil {
 		return nil, err
 	}

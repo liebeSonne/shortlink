@@ -15,6 +15,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
+	handlerauth "github.com/liebeSonne/shortlink/internal/handler/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
 	internalio "github.com/liebeSonne/shortlink/internal/io"
@@ -128,7 +129,7 @@ func initRouter(
 	}
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, cookieService, tokenService)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
 	db := createDatabase(cfg)
 
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
@@ -137,6 +138,7 @@ func initRouter(
 	router := rootRouter.Router().(http.Handler)
 
 	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService)
+	router = handlerauth.NewAuthMiddleware(router, tokenService, cookieService)
 
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
 		Encodings:    []compress.Encoding{compress.GzipEncoding},

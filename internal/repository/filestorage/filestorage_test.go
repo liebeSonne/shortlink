@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -27,8 +28,12 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 		item *itemData
 		err  error
 	}
+	type userItems struct {
+		items  []itemData
+		userID *uuid.UUID
+	}
 	type when struct {
-		items []itemData
+		userItems []userItems
 	}
 	testCases := []struct {
 		name string
@@ -39,25 +44,25 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 		{
 			"not found when no items",
 			on{id1},
-			when{[]itemData{}},
+			when{[]userItems{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty id",
 			on{""},
-			when{[]itemData{{id1, url1}}},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}},
 			want{nil, nil},
 		},
 		{
 			"found by id",
 			on{id2},
-			when{[]itemData{{id1, url1}, {id2, url2}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}},
 			want{&itemData{id2, url2}, nil},
 		},
 		{
 			"found first by id",
 			on{id1},
-			when{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}, nil}}},
 			want{&itemData{id1, url1}, nil},
 		},
 	}
@@ -73,10 +78,12 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			for _, item := range tc.when.items {
-				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(t.Context(), shortLink)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					shortLink := model.ShortLink{ID: item.id, URL: item.url}
+					err := repo.Store(t.Context(), shortLink, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 			item, err := repo.Find(t.Context(), tc.on.id)
 			if tc.want.err != nil {
@@ -106,14 +113,19 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 		url string
 	}
 	type on struct {
-		url string
+		url    string
+		userID *uuid.UUID
 	}
 	type want struct {
 		item *itemData
 		err  error
 	}
+	type userItems struct {
+		items  []itemData
+		userID *uuid.UUID
+	}
 	type when struct {
-		items []itemData
+		userItems []userItems
 	}
 	testCases := []struct {
 		name string
@@ -123,26 +135,26 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 	}{
 		{
 			"not found when no items",
-			on{url1},
-			when{[]itemData{}},
+			on{url1, nil},
+			when{[]userItems{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty url",
-			on{""},
-			when{[]itemData{{id1, url1}}},
+			on{"", nil},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}},
 			want{nil, nil},
 		},
 		{
 			"found by url",
-			on{url2},
-			when{[]itemData{{id1, url1}, {id2, url2}}},
+			on{url2, nil},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}},
 			want{&itemData{id2, url2}, nil},
 		},
 		{
 			"found first by url",
-			on{url1},
-			when{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}},
+			on{url1, nil},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}, nil}}},
 			want{&itemData{id1, url1}, nil},
 		},
 	}
@@ -158,10 +170,12 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			for _, item := range tc.when.items {
-				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(t.Context(), shortLink)
-				require.NoError(t, err)
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					shortLink := model.ShortLink{ID: item.id, URL: item.url}
+					err := repo.Store(t.Context(), shortLink, userItem.userID)
+					require.NoError(t, err)
+				}
 			}
 			item, err := repo.FindByURL(t.Context(), tc.on.url)
 			if tc.want.err != nil {
@@ -191,13 +205,14 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 		url string
 	}
 	testCases := []struct {
-		name  string
-		items []itemData
-		err   error
+		name   string
+		items  []itemData
+		userID *uuid.UUID
+		err    error
 	}{
-		{"correct store items", []itemData{{id1, url1}, {id2, url2}}, nil},
-		{"correct store with eq id", []itemData{{id1, url1}, {id1, url2}}, nil},
-		{"correct store with eq url", []itemData{{id2, url2}, {id1, url2}}, nil},
+		{"correct store items", []itemData{{id1, url1}, {id2, url2}}, nil, nil},
+		{"correct store with eq id", []itemData{{id1, url1}, {id1, url2}}, nil, nil},
+		{"correct store with eq url", []itemData{{id2, url2}, {id1, url2}}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -213,7 +228,7 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 
 			for _, item := range tc.items {
 				shortLink := model.ShortLink{ID: item.id, URL: item.url}
-				err := repo.Store(t.Context(), shortLink)
+				err := repo.Store(t.Context(), shortLink, tc.userID)
 				assert.ErrorIs(t, err, tc.err)
 			}
 		})
@@ -227,13 +242,14 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 	url2 := "https://example2.com"
 
 	testCases := []struct {
-		name  string
-		items []model.ShortLink
-		err   error
+		name   string
+		items  []model.ShortLink
+		userID *uuid.UUID
+		err    error
 	}{
-		{"correct store all items", []model.ShortLink{{ID: id1, URL: url1}, {ID: id2, URL: url2}}, nil},
-		{"correct store all with eq id", []model.ShortLink{{ID: id1, URL: url1}, {ID: id1, URL: url2}}, nil},
-		{"correct store all with eq url", []model.ShortLink{{ID: id2, URL: url2}, {ID: id1, URL: url2}}, nil},
+		{"correct store all items", []model.ShortLink{{ID: id1, URL: url1}, {ID: id2, URL: url2}}, nil, nil},
+		{"correct store all with eq id", []model.ShortLink{{ID: id1, URL: url1}, {ID: id1, URL: url2}}, nil, nil},
+		{"correct store all with eq url", []model.ShortLink{{ID: id2, URL: url2}, {ID: id1, URL: url2}}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -247,7 +263,7 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			err = repo.StoreAll(t.Context(), tc.items)
+			err = repo.StoreAll(t.Context(), tc.items, tc.userID)
 			assert.ErrorIs(t, err, tc.err)
 		})
 	}
