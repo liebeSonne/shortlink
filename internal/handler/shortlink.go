@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
-	"github.com/liebeSonne/shortlink/internal/handler/token"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -33,7 +33,7 @@ func NewShortLinkHandler(
 	provider provider.ShortLinkProvider,
 	urlAddress string,
 	cookieService cookie.Service,
-	tokenService token.Service,
+	tokenService auth.TokenService,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
 		service:       service,
@@ -49,7 +49,7 @@ type shortLinkHandler struct {
 	provider      provider.ShortLinkProvider
 	urlAddress    string
 	cookieService cookie.Service
-	tokenService  token.Service
+	tokenService  auth.TokenService
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +223,7 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (h *shortLinkHandler) findAuthToken(r *http.Request) (*token.AuthToken, error) {
+func (h *shortLinkHandler) findAuthToken(r *http.Request) (*auth.Token, error) {
 	tokenString, err := h.cookieService.GetAuthToken(r)
 	if err != nil {
 		return nil, err

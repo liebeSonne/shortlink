@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
-	"github.com/liebeSonne/shortlink/internal/handler/token"
 	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -118,7 +118,7 @@ func initRouter(
 		return nil, fmt.Errorf("error initializing database client: %w", err)
 	}
 
-	tokenService := token.NewService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
+	tokenService := auth.NewTokenService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
 	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
 	userService := service.NewUserService()
 

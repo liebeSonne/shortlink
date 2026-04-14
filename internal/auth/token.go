@@ -1,4 +1,4 @@
-package token
+package auth
 
 import (
 	"errors"
@@ -12,22 +12,22 @@ var ErrTokenIsNotValid = errors.New("token is not valid")
 
 type Claims struct {
 	jwt.RegisteredClaims
-	AuthToken
+	Token
 }
 
-type AuthToken struct {
+type Token struct {
 	UserID string
 }
 
-type Service interface {
-	Create(tokenData AuthToken) (string, error)
-	Parse(tokenString string) (AuthToken, error)
+type TokenService interface {
+	Create(tokenData Token) (string, error)
+	Parse(tokenString string) (Token, error)
 }
 
-func NewService(
+func NewTokenService(
 	secretKey string,
 	tokenExpiry time.Duration,
-) Service {
+) TokenService {
 	return &tokenServiceImpl{
 		secretKey:   secretKey,
 		tokenExpiry: tokenExpiry,
@@ -39,12 +39,12 @@ type tokenServiceImpl struct {
 	tokenExpiry time.Duration
 }
 
-func (s *tokenServiceImpl) Create(tokenData AuthToken) (string, error) {
+func (s *tokenServiceImpl) Create(tokenData Token) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiry)),
 		},
-		AuthToken: tokenData,
+		Token: tokenData,
 	})
 
 	tokenString, err := token.SignedString([]byte(s.secretKey))
@@ -55,7 +55,7 @@ func (s *tokenServiceImpl) Create(tokenData AuthToken) (string, error) {
 	return tokenString, nil
 }
 
-func (s *tokenServiceImpl) Parse(tokenString string) (AuthToken, error) {
+func (s *tokenServiceImpl) Parse(tokenString string) (Token, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -64,12 +64,12 @@ func (s *tokenServiceImpl) Parse(tokenString string) (AuthToken, error) {
 		return []byte(s.secretKey), nil
 	})
 	if err != nil {
-		return AuthToken{}, fmt.Errorf("parse token error: %w", err)
+		return Token{}, fmt.Errorf("parse token error: %w", err)
 	}
 
 	if !token.Valid {
-		return AuthToken{}, ErrTokenIsNotValid
+		return Token{}, ErrTokenIsNotValid
 	}
 
-	return claims.AuthToken, nil
+	return claims.Token, nil
 }

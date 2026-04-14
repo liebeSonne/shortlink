@@ -2,11 +2,11 @@ package handler
 
 import (
 	"context"
-	"github.com/liebeSonne/shortlink/internal/handler/token"
 	"net/http"
 
 	"github.com/stretchr/testify/mock"
 
+	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
@@ -146,12 +146,12 @@ type mockTokenService struct {
 	mock.Mock
 }
 
-func (m *mockTokenService) Create(tokenData token.AuthToken) (string, error) {
+func (m *mockTokenService) Create(tokenData auth.Token) (string, error) {
 	args := m.Called(tokenData)
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockTokenService) Parse(tokenString string) (token.AuthToken, error) {
+func (m *mockTokenService) Parse(tokenString string) (auth.Token, error) {
 	args := m.Called(tokenString)
-	return args.Get(0).(token.AuthToken), args.Error(1)
+	return args.Get(0).(auth.Token), args.Error(1)
 }

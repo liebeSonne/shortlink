@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/liebeSonne/shortlink/internal/handler/token"
+	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -12,7 +12,7 @@ var ErrInvalidTokenUserID = errors.New("invalid token user id")
 
 func NewAuthCookieMiddleware(
 	next http.Handler,
-	tokenService token.Service,
+	tokenService auth.TokenService,
 	cookieService Service,
 	userService service.UserService,
 ) http.HandlerFunc {
@@ -28,7 +28,7 @@ func NewAuthCookieMiddleware(
 		if tokenString != "" {
 			tokenData, err := tokenService.Parse(tokenString)
 			if err != nil {
-				if !errors.Is(err, token.ErrTokenIsNotValid) {
+				if !errors.Is(err, auth.ErrTokenIsNotValid) {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -43,7 +43,7 @@ func NewAuthCookieMiddleware(
 
 		if !hasValidCookie {
 			userID := userService.NextID()
-			tokenData := token.AuthToken{
+			tokenData := auth.Token{
 				UserID: userID.String(),
 			}
 			tokenString, err := tokenService.Create(tokenData)
