@@ -9,10 +9,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/service"
@@ -387,6 +389,97 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 			}
 
 			resp, err := req.Send()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+
+			if tc.want.body != "" {
+				assert.JSONEq(t, tc.want.body, string(resp.Body()))
+				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			}
+		})
+	}
+}
+
+func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
+	urlAddress := "http://localhost:8080"
+	userID1 := uuid.New()
+
+	type on struct {
+		userID *uuid.UUID
+	}
+	type want struct {
+		code int
+		body string
+	}
+	type when struct {
+		items []model.ShortLink
+		err   error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		want want
+		when when
+	}{
+		{
+			"no user",
+			on{nil},
+			want{http.StatusUnauthorized, ""},
+			when{nil, nil},
+		},
+		{
+			"empty items",
+			on{&userID1},
+			want{http.StatusNoContent, ""},
+			when{nil, nil},
+		},
+		{
+			"provider error",
+			on{&userID1},
+			want{http.StatusInternalServerError, ""},
+			when{nil, errors.New("some provider error")},
+		},
+		{
+			"found items",
+			on{&userID1},
+			want{http.StatusOK, fmt.Sprintf(`[{"short_url": "%s/id1", "original_url": "https://example1.com"},{"short_url": "%s/id2", "original_url": "https://example2.com"}]`, urlAddress, urlAddress)},
+			when{[]model.ShortLink{{ID: "id1", URL: "https://example1.com"}, {ID: "id2", URL: "https://example2.com"}}, nil},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := new(mockProvider)
+			if tc.on.userID != nil {
+				provider.On("FindByUserID", mock.Anything, *(tc.on.userID)).Return(tc.when.items, tc.when.err)
+			}
+
+			handler := NewShortLinkHandler(new(mockService), provider, urlAddress)
+
+			r := chi.NewRouter()
+			r.Get("/api/user/urls", handler.HandleGetUserUrls)
+
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			resp, err := client.R().
+				Get(srv.URL + "/api/user/urls")
+
 			require.NoError(t, err)
 
 			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))

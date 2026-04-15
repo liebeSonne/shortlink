@@ -13,6 +13,8 @@ import (
 )
 
 func TestShortLinkService_Create(t *testing.T) {
+	userID1 := uuid.New()
+
 	type on struct {
 		url    string
 		userID *uuid.UUID
@@ -69,6 +71,12 @@ func TestShortLinkService_Create(t *testing.T) {
 			},
 			want{ErrTooManyAttempts},
 		},
+		{
+			"valid url by user",
+			on{"https://github.com/shortlink/?q=123", &userID1},
+			when{[]userItems{}, "id1", 2},
+			want{nil},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -107,6 +115,7 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 	id1 := "id1"
 	id2 := "id2"
 	invalidLink := "invalid"
+	userID1 := uuid.New()
 
 	type on struct {
 		inputData []InputShortLinkData
@@ -201,6 +210,18 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 				2,
 			},
 			want{nil, ErrTooManyAttempts},
+		},
+		{
+			"crete many valid url by user",
+			on{[]InputShortLinkData{
+				{CorrelationID: correlationID1, URL: link1},
+				{CorrelationID: correlationID2, URL: link2},
+			}, &userID1},
+			when{[]userItems{}, []string{id1, id2}, 2},
+			want{[]OutputShortLinkData{
+				{correlationID1, model.ShortLink{ID: id1, URL: link1}},
+				{correlationID2, model.ShortLink{ID: id2, URL: link2}},
+			}, nil},
 		},
 	}
 	for _, tc := range testCases {

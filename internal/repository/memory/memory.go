@@ -14,14 +14,14 @@ func NewMemoryShortLinkRepository() repository.ShortLinkRepository {
 	return &memoryShortLinkRepository{
 		linksMap:    make(map[string]model.ShortLink),
 		urlToIDMap:  make(map[string]string),
-		userIDToIDs: make(map[uuid.UUID][]string),
+		userIDToIDs: make(map[uuid.UUID]map[string]bool),
 	}
 }
 
 type memoryShortLinkRepository struct {
 	linksMap    map[string]model.ShortLink
 	urlToIDMap  map[string]string
-	userIDToIDs map[uuid.UUID][]string
+	userIDToIDs map[uuid.UUID]map[string]bool
 	mu          sync.RWMutex
 }
 
@@ -55,8 +55,8 @@ func (s *memoryShortLinkRepository) FindByUserID(_ context.Context, userID uuid.
 
 	result := make([]model.ShortLink, 0)
 
-	if ids, ok := s.userIDToIDs[userID]; ok {
-		for _, id := range ids {
+	if idMap, ok := s.userIDToIDs[userID]; ok {
+		for id, _ := range idMap {
 			if link, ok := s.linksMap[id]; ok {
 				result = append(result, link)
 			}
@@ -73,9 +73,9 @@ func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.Sho
 	s.urlToIDMap[shortLink.URL] = shortLink.ID
 	if userID != nil {
 		if _, ok := s.userIDToIDs[*userID]; !ok {
-			s.userIDToIDs[*userID] = make([]string, 0)
+			s.userIDToIDs[*userID] = make(map[string]bool)
 		}
-		s.userIDToIDs[*userID] = append(s.userIDToIDs[*userID], shortLink.ID)
+		s.userIDToIDs[*userID][shortLink.ID] = true
 	}
 	return nil
 }
@@ -88,9 +88,9 @@ func (s *memoryShortLinkRepository) StoreAll(_ context.Context, shortLinks []mod
 		s.urlToIDMap[shortLink.URL] = shortLink.ID
 		if userID != nil {
 			if _, ok := s.userIDToIDs[*userID]; !ok {
-				s.userIDToIDs[*userID] = make([]string, 0)
+				s.userIDToIDs[*userID] = make(map[string]bool)
 			}
-			s.userIDToIDs[*userID] = append(s.userIDToIDs[*userID], shortLink.ID)
+			s.userIDToIDs[*userID][shortLink.ID] = true
 		}
 	}
 	return nil

@@ -16,6 +16,7 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 	id2 := "id2"
 	url1 := "https://example1.com"
 	url2 := "https://example2.com"
+	userID1 := uuid.New()
 
 	type itemData struct {
 		id  string
@@ -65,6 +66,12 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}, nil}}},
 			want{&itemData{id1, url1}, nil},
 		},
+		{
+			"found by id when created by user",
+			on{id2},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}},
+			want{&itemData{id2, url2}, nil},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -107,14 +114,14 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 	id2 := "id2"
 	url1 := "https://example1.com"
 	url2 := "https://example2.com"
+	userID1 := uuid.New()
 
 	type itemData struct {
 		id  string
 		url string
 	}
 	type on struct {
-		url    string
-		userID *uuid.UUID
+		url string
 	}
 	type want struct {
 		item *itemData
@@ -135,27 +142,33 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 	}{
 		{
 			"not found when no items",
-			on{url1, nil},
+			on{url1},
 			when{[]userItems{}},
 			want{nil, nil},
 		},
 		{
 			"not found when empty url",
-			on{"", nil},
+			on{""},
 			when{[]userItems{{[]itemData{{id1, url1}}, nil}}},
 			want{nil, nil},
 		},
 		{
 			"found by url",
-			on{url2, nil},
+			on{url2},
 			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}},
 			want{&itemData{id2, url2}, nil},
 		},
 		{
 			"found first by url",
-			on{url1, nil},
+			on{url1},
 			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}, nil}}},
 			want{&itemData{id1, url1}, nil},
+		},
+		{
+			"found by url when created by user",
+			on{url2},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}},
+			want{&itemData{id2, url2}, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -194,11 +207,127 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 	}
 }
 
+func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
+	id1 := "id1"
+	id2 := "id2"
+	id3 := "id3"
+	id4 := "id4"
+	url1 := "https://example1.com"
+	url2 := "https://example2.com"
+	url3 := "https://example3.com"
+	url4 := "https://example4.com"
+	url5 := "https://example5.com"
+	url6 := "https://example6.com"
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+
+	type itemData struct {
+		id  string
+		url string
+	}
+	type on struct {
+		userID uuid.UUID
+	}
+	type want struct {
+		items []itemData
+		err   error
+	}
+	type userItems struct {
+		items  []itemData
+		userID *uuid.UUID
+	}
+	type when struct {
+		userItems []userItems
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"not found when no items",
+			on{userID1},
+			when{[]userItems{}},
+			want{nil, nil},
+		},
+		{
+			"not found when no user items",
+			on{userID1},
+			when{[]userItems{
+				{[]itemData{{id1, url1}}, nil},
+				{[]itemData{{id2, url2}}, &userID2},
+			}},
+			want{nil, nil},
+		},
+		{
+			"found by userID",
+			on{userID1},
+			when{[]userItems{
+				{[]itemData{{id1, url1}, {id2, url4}}, nil},
+				{[]itemData{{id1, url2}, {id3, url5}}, &userID1},
+				{[]itemData{{id1, url3}, {id4, url6}}, &userID2},
+			}},
+			want{[]itemData{{id1, url2}, {id3, url5}}, nil},
+		},
+		{
+			"found all by userID",
+			on{userID1},
+			when{[]userItems{
+				{[]itemData{{id1, url1}, {id2, url4}, {id2, url1}}, nil},
+				{[]itemData{{id1, url2}, {id3, url5}, {id3, url2}}, &userID1},
+				{[]itemData{{id1, url3}, {id4, url6}, {id4, url3}}, &userID2},
+			}},
+			want{[]itemData{{id1, url2}, {id3, url5}, {id3, url2}}, nil},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			repo, err := NewFileShortLinkRepository(filePath)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err = repo.Close()
+				require.NoError(t, err)
+			})
+
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					shortLink := model.ShortLink{ID: item.id, URL: item.url}
+					err := repo.Store(t.Context(), shortLink, userItem.userID)
+					require.NoError(t, err)
+				}
+			}
+			items, err := repo.FindByUserID(t.Context(), tc.on.userID)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Len(t, items, len(tc.want.items))
+			countEqual := 0
+			for _, wantItem := range tc.want.items {
+				for _, item := range items {
+					if item.ID == wantItem.id && item.URL == wantItem.url {
+						countEqual++
+					}
+				}
+			}
+			assert.Equal(t, len(tc.want.items), countEqual)
+		})
+	}
+}
+
 func TestFileShortLinkRepository_Store(t *testing.T) {
 	id1 := "id1"
 	id2 := "id2"
 	url1 := "https://example1.com"
 	url2 := "https://example2.com"
+	userID1 := uuid.New()
 
 	type itemData struct {
 		id  string
@@ -213,6 +342,7 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 		{"correct store items", []itemData{{id1, url1}, {id2, url2}}, nil, nil},
 		{"correct store with eq id", []itemData{{id1, url1}, {id1, url2}}, nil, nil},
 		{"correct store with eq url", []itemData{{id2, url2}, {id1, url2}}, nil, nil},
+		{"correct store items by user", []itemData{{id1, url1}, {id2, url2}}, &userID1, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -240,6 +370,7 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 	id2 := "id2"
 	url1 := "https://example1.com"
 	url2 := "https://example2.com"
+	userID1 := uuid.New()
 
 	testCases := []struct {
 		name   string
@@ -250,6 +381,7 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 		{"correct store all items", []model.ShortLink{{ID: id1, URL: url1}, {ID: id2, URL: url2}}, nil, nil},
 		{"correct store all with eq id", []model.ShortLink{{ID: id1, URL: url1}, {ID: id1, URL: url2}}, nil, nil},
 		{"correct store all with eq url", []model.ShortLink{{ID: id2, URL: url2}, {ID: id1, URL: url2}}, nil, nil},
+		{"correct store all items by user", []model.ShortLink{{ID: id1, URL: url1}, {ID: id2, URL: url2}}, &userID1, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
