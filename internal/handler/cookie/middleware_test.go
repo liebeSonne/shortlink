@@ -21,7 +21,7 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 	defaultCode := http.StatusOK
 
 	type when struct {
-		cookieTokenString string
+		getTokenString    string
 		getTokenErr       error
 		setTokenErr       error
 		parseTokenData    auth.Token
@@ -44,47 +44,47 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 		},
 		{
 			"parse not empty cookie token string error",
-			when{cookieTokenString: "111", parseTokenErr: errors.New("error")},
+			when{getTokenString: "111", parseTokenErr: errors.New("error")},
 			want{http.StatusInternalServerError},
 		},
 		{
 			"set new token on parse not empty cookie token string when error is token is not valid",
-			when{cookieTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenString: "222"},
+			when{getTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenString: "222"},
 			want{defaultCode},
 		},
 		{
 			"create token error when not empty cookie token string",
-			when{cookieTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenErr: errors.New("error")},
+			when{getTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenErr: errors.New("error")},
 			want{http.StatusInternalServerError},
 		},
 		{
 			"set auth token error when not empty cookie token string",
-			when{cookieTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenString: "222", setTokenErr: errors.New("error")},
+			when{getTokenString: "111", parseTokenErr: auth.ErrTokenIsNotValid, createTokenString: "222", setTokenErr: errors.New("error")},
 			want{http.StatusInternalServerError},
 		},
 		{
 			"empty user id in parsed token",
-			when{cookieTokenString: "111", parseTokenData: auth.Token{UserID: ""}},
+			when{getTokenString: "111", parseTokenData: auth.Token{UserID: ""}},
 			want{http.StatusUnauthorized},
 		},
 		{
 			"not empty user id in parsed token",
-			when{cookieTokenString: "111", parseTokenData: auth.Token{UserID: "user1"}},
+			when{getTokenString: "111", parseTokenData: auth.Token{UserID: "user1"}},
 			want{defaultCode},
 		},
 		{
 			"set new token on empty cookie token string",
-			when{cookieTokenString: "", createTokenString: "222"},
+			when{getTokenString: "", createTokenString: "222"},
 			want{defaultCode},
 		},
 		{
 			"create token error when empty cookie token string",
-			when{cookieTokenString: "", createTokenErr: errors.New("error")},
+			when{getTokenString: "", createTokenErr: errors.New("error")},
 			want{http.StatusInternalServerError},
 		},
 		{
 			"set auth token error when empty cookie token string",
-			when{cookieTokenString: "", createTokenString: "222", setTokenErr: errors.New("error")},
+			when{getTokenString: "", createTokenString: "222", setTokenErr: errors.New("error")},
 			want{http.StatusInternalServerError},
 		},
 	}
@@ -96,7 +96,7 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 			tokenService.On("Create", mock.Anything).Return(tc.when.createTokenString, tc.when.createTokenErr)
 
 			cookieService := new(mockService)
-			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.cookieTokenString, tc.when.getTokenErr)
+			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
 			lastSetTokenString := ""
 			cookieService.On("SetAuthToken", mock.Anything, mock.Anything).Return(tc.when.setTokenErr).Run(func(args mock.Arguments) {
 				lastSetTokenString = args.String(0)
