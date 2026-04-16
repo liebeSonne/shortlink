@@ -50,7 +50,10 @@ func TestCookieService_SetAuthToken(t *testing.T) {
 
 			require.NoError(t, err)
 
-			cookies := w.Result().Cookies()
+			res := w.Result()
+			defer res.Body.Close()
+
+			cookies := res.Cookies()
 			require.Len(t, cookies, 1)
 			require.Equal(t, tokenKey, cookies[0].Name)
 			require.Equal(t, tc.on.tokenString, cookies[0].Value)
