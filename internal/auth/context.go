@@ -6,7 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
-var tokenKey struct{}
+type tokenContextKey struct{}
+
+var tokenKey = tokenContextKey{}
 
 func CreateTokenContext(ctx context.Context, token Token) context.Context {
 	return context.WithValue(ctx, tokenKey, token)
