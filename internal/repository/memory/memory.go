@@ -55,7 +55,7 @@ func (s *memoryShortLinkRepository) FindByUserID(_ context.Context, userID uuid.
 
 	result := make([]model.ShortLink, 0)
 
-	if idMap, ok := s.userIDToIDs[userID]; ok {
+	if idMap, ok := s.userIDToIDs[userID]; ok && len(idMap) > 0 {
 		for id, _ := range idMap {
 			if link, ok := s.linksMap[id]; ok {
 				result = append(result, link)
