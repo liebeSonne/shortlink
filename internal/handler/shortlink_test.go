@@ -486,6 +486,9 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 
 			if tc.want.body != "" {
 				assert.JSONEq(t, tc.want.body, string(resp.Body()))
+			}
+
+			if tc.want.code == http.StatusNoContent || tc.want.code == http.StatusOK {
 				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			}
 		})

@@ -209,6 +209,8 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if len(items) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -223,7 +225,6 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 		})
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	enc := json.NewEncoder(w)
