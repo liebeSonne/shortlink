@@ -98,7 +98,7 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 			cookieService := new(mockService)
 			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
 			lastSetTokenString := ""
-			cookieService.On("SetAuthToken", mock.Anything, mock.Anything).Return(tc.when.setTokenErr).Run(func(args mock.Arguments) {
+			cookieService.On("SetAuthToken", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.setTokenErr).Run(func(args mock.Arguments) {
 				lastSetTokenString = args.String(0)
 			})
 

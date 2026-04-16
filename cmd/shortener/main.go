@@ -137,8 +137,8 @@ func initRouter(
 
 	router := rootRouter.Router().(http.Handler)
 
-	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService)
 	router = handlerauth.NewAuthMiddleware(router, tokenService, cookieService)
+	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService)
 
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
 		Encodings:    []compress.Encoding{compress.GzipEncoding},

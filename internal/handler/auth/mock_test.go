@@ -20,8 +20,8 @@ type mockService struct {
 	mock.Mock
 }
 
-func (m *mockService) SetAuthToken(tokenString string, w http.ResponseWriter) error {
-	args := m.Called(tokenString, w)
+func (m *mockService) SetAuthToken(tokenString string, w http.ResponseWriter, r *http.Request) error {
+	args := m.Called(tokenString, w, r)
 	return args.Error(0)
 }
 

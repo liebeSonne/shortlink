@@ -6,7 +6,7 @@ import (
 )
 
 type Service interface {
-	SetAuthToken(tokenString string, w http.ResponseWriter) error
+	SetAuthToken(tokenString string, w http.ResponseWriter, r *http.Request) error
 	GetAuthToken(r *http.Request) (string, error)
 }
 
@@ -22,11 +22,13 @@ type cookieServiceImpl struct {
 	tokenKey string
 }
 
-func (s *cookieServiceImpl) SetAuthToken(tokenString string, w http.ResponseWriter) error {
-	http.SetCookie(w, &http.Cookie{
+func (s *cookieServiceImpl) SetAuthToken(tokenString string, w http.ResponseWriter, r *http.Request) error {
+	cookie := &http.Cookie{
 		Name:  s.tokenKey,
 		Value: tokenString,
-	})
+	}
+	http.SetCookie(w, cookie)
+	r.AddCookie(cookie)
 	return nil
 }
 

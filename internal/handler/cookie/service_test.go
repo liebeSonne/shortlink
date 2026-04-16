@@ -37,10 +37,11 @@ func TestCookieService_SetAuthToken(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/", nil)
 
 			cookieService := NewService(tokenKey)
 
-			err := cookieService.SetAuthToken(tc.on.tokenString, w)
+			err := cookieService.SetAuthToken(tc.on.tokenString, w, r)
 
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -54,6 +55,11 @@ func TestCookieService_SetAuthToken(t *testing.T) {
 			defer res.Body.Close()
 
 			cookies := res.Cookies()
+			require.Len(t, cookies, 1)
+			require.Equal(t, tokenKey, cookies[0].Name)
+			require.Equal(t, tc.on.tokenString, cookies[0].Value)
+
+			cookies = r.Cookies()
 			require.Len(t, cookies, 1)
 			require.Equal(t, tokenKey, cookies[0].Name)
 			require.Equal(t, tc.on.tokenString, cookies[0].Value)

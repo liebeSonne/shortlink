@@ -142,8 +142,8 @@ type mockCookieService struct {
 	mock.Mock
 }
 
-func (m *mockCookieService) SetAuthToken(tokenString string, w http.ResponseWriter) error {
-	args := m.Called(tokenString, w)
+func (m *mockCookieService) SetAuthToken(tokenString string, w http.ResponseWriter, r *http.Request) error {
+	args := m.Called(tokenString, w, r)
 	return args.Error(0)
 }
 func (m *mockCookieService) GetAuthToken(r *http.Request) (string, error) {

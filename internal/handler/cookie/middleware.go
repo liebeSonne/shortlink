@@ -46,13 +46,13 @@ func NewAuthCookieMiddleware(
 			tokenData := auth.Token{
 				UserID: userID.String(),
 			}
-			tokenString, err := tokenService.Create(tokenData)
+			tokenString, err = tokenService.Create(tokenData)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			err = cookieService.SetAuthToken(tokenString, w)
+			err = cookieService.SetAuthToken(tokenString, w, r)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
