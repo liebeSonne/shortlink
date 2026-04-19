@@ -31,6 +31,9 @@ func (m *mockShortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r
 func (m *mockShortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
 	m.Called(w, r)
 }
+func (m *mockShortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Request) {
+	m.Called(w, r)
+}
 
 type mockService struct {
 	mock.Mock
@@ -50,6 +53,11 @@ func (m *mockService) CreateBatch(ctx context.Context, urlsData []service.InputS
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]service.OutputShortLinkData), args.Error(1)
+}
+
+func (m *mockService) DeleteIDs(ctx context.Context, ids []string, userID *uuid.UUID) error {
+	args := m.Called(ctx, ids, userID)
+	return args.Error(0)
 }
 
 type mockProvider struct {

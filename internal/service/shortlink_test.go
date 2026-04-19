@@ -271,3 +271,8 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 		})
 	}
 }
+
+func TestShortLinkService_DeleteIDs(t *testing.T) {
+	// TODO
+	_ = t
+}

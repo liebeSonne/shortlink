@@ -27,6 +27,7 @@ type ShortLinkHandler interface {
 	HandleCreateShorten(w http.ResponseWriter, r *http.Request)
 	HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request)
 	HandleGetUserUrls(w http.ResponseWriter, r *http.Request)
+	HandleDeleteUrls(w http.ResponseWriter, r *http.Request)
 }
 
 func NewShortLinkHandler(
@@ -233,6 +234,34 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 		fmt.Printf("error: %v", err)
 		return
 	}
+}
+
+func (h *shortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userID, hasUserID := auth.GetUserIDFromContext(ctx)
+
+	if !hasUserID {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var ids []string
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&ids)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	err = h.service.DeleteIDs(ctx, ids, &userID)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (h *shortLinkHandler) createShortLink(ctx context.Context, link string, userID *uuid.UUID) (*model.ShortLink, int, error) {

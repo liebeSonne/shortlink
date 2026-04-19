@@ -494,3 +494,105 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 		})
 	}
 }
+
+func TestShortLinkHandler_HandleDeleteUrls(t *testing.T) {
+	urlAddress := "http://localhost:8080"
+	userID1 := uuid.New()
+
+	type on struct {
+		userID *uuid.UUID
+		body   string
+	}
+	type want struct {
+		code int
+	}
+	type when struct {
+		deleteErr error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		want want
+		when when
+	}{
+		{
+			"empty ids by user",
+			on{&userID1, "[]"},
+			want{http.StatusAccepted},
+			when{nil},
+		},
+		{
+			"empty ids by no user",
+			on{nil, "[]"},
+			want{http.StatusUnauthorized},
+			when{nil},
+		},
+		{
+			"not empty ids by user",
+			on{&userID1, `["id1","id2","id3"]`},
+			want{http.StatusAccepted},
+			when{nil},
+		},
+		{
+			"not empty ids by no user",
+			on{nil, `["id1","id2","id3"]`},
+			want{http.StatusUnauthorized},
+			when{nil},
+		},
+		{
+			"invalid ids",
+			on{&userID1, `"not array of ids"`},
+			want{http.StatusInternalServerError},
+			when{nil},
+		},
+		{
+			"delete error",
+			on{&userID1, `["id1","id2","id3"]`},
+			want{http.StatusInternalServerError},
+			when{errors.New("some server error")},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := new(mockService)
+			s.On("DeleteIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.deleteErr)
+
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
+
+			r := chi.NewRouter()
+			r.Delete("/api/user/urls", handler.HandleDeleteUrls)
+
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			req := client.R()
+			req.Method = resty.MethodDelete
+			req.URL = srv.URL + "/api/user/urls"
+
+			if len(tc.on.body) > 0 {
+				req.SetHeader("Content-Type", "application/json")
+				req.SetBody(tc.on.body)
+			}
+
+			resp, err := req.Send()
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+		})
+	}
+}
