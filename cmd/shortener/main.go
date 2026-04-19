@@ -129,7 +129,10 @@ func initRouter(
 	}
 	shortIDGenerator := service.NewShortIDGenerator()
 	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL)
+	shortLinkDeleter := service.NewShortLinkDeleter(ctx, logger, func(input service.InputDelete) error {
+		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
+	})
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter)
 	db := createDatabase(cfg)
 
 	databaseHandler := handler.NewDatabaseHandler(db, logger)

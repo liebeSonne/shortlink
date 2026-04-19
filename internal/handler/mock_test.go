@@ -172,3 +172,12 @@ func (m *mockTokenService) Parse(tokenString string) (auth.Token, error) {
 	args := m.Called(tokenString)
 	return args.Get(0).(auth.Token), args.Error(1)
 }
+
+type mockShortLinkDeleter struct {
+	mock.Mock
+}
+
+func (m *mockShortLinkDeleter) Add(input service.InputDelete) error {
+	args := m.Called(input)
+	return args.Error(0)
+}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -273,6 +274,71 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 }
 
 func TestShortLinkService_DeleteIDs(t *testing.T) {
-	// TODO
-	_ = t
+	userID1 := uuid.New()
+	err1 := errors.New("some error")
+
+	type on struct {
+		ids    []string
+		userID *uuid.UUID
+	}
+	type when struct {
+		deleteErr error
+	}
+	type want struct {
+		err error
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"by no user",
+			on{[]string{"id1", "id2"}, nil},
+			when{nil},
+			want{nil},
+		},
+		{
+			"by user",
+			on{[]string{"id1", "id2"}, &userID1},
+			when{nil},
+			want{nil},
+		},
+		{
+			"empty by no user",
+			on{[]string{}, nil},
+			when{nil},
+			want{nil},
+		},
+		{
+			"empty by user",
+			on{[]string{}, &userID1},
+			when{nil},
+			want{nil},
+		},
+		{
+			"delete error",
+			on{[]string{"id1", "id2"}, nil},
+			when{err1},
+			want{err1},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := new(mockShortLinkRepository)
+			repo.On("DeleteByShortIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.deleteErr)
+
+			service := NewShortLinkService(repo, new(mockOneIDGenerator), DefaultMaxAttemptsToGenerateUniqueID)
+			err := service.DeleteIDs(t.Context(), tc.on.ids, tc.on.userID)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }

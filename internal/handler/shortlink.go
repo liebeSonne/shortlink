@@ -34,11 +34,13 @@ func NewShortLinkHandler(
 	service service.ShortLinkService,
 	provider provider.ShortLinkProvider,
 	urlAddress string,
+	deleter service.ShortLinkDeleter,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
 		service:    service,
 		provider:   provider,
 		urlAddress: urlAddress,
+		deleter:    deleter,
 	}
 }
 
@@ -48,6 +50,7 @@ type shortLinkHandler struct {
 	urlAddress    string
 	cookieService cookie.Service
 	tokenService  auth.TokenService
+	deleter       service.ShortLinkDeleter
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +257,7 @@ func (h *shortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = h.service.DeleteIDs(ctx, ids, &userID)
+	err = h.deleter.Add(service.InputDelete{IDs: ids, UserID: &userID})
 	if err != nil {
 		h.responseError(w, err)
 		return

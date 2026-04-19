@@ -75,8 +75,11 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 				provider.On("Find", mock.Anything, tc.on.id).Return(nil, tc.when.err)
 			}
 
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything)
+
 			urlAddress := "http://localhost:8080"
-			handler := NewShortLinkHandler(new(mockService), provider, urlAddress)
+			handler := NewShortLinkHandler(new(mockService), provider, urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Get("/", handler.HandleGet)
@@ -175,7 +178,10 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			p := new(mockProvider)
 			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
 
-			handler := NewShortLinkHandler(s, p, urlAddress)
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
@@ -270,7 +276,10 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 			p := new(mockProvider)
 			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
 
-			handler := NewShortLinkHandler(s, p, urlAddress)
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)
@@ -368,7 +377,10 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 			s := new(mockService)
 			s.On("CreateBatch", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
 
-			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything)
+
+			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)
@@ -454,7 +466,10 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 				provider.On("FindByUserID", mock.Anything, *(tc.on.userID)).Return(tc.when.items, tc.when.err)
 			}
 
-			handler := NewShortLinkHandler(new(mockService), provider, urlAddress)
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything)
+
+			handler := NewShortLinkHandler(new(mockService), provider, urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Get("/api/user/urls", handler.HandleGetUserUrls)
@@ -554,10 +569,10 @@ func TestShortLinkHandler_HandleDeleteUrls(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := new(mockService)
-			s.On("DeleteIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.deleteErr)
+			d := new(mockShortLinkDeleter)
+			d.On("Add", mock.Anything).Return(tc.when.deleteErr)
 
-			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress)
+			handler := NewShortLinkHandler(new(mockService), new(mockProvider), urlAddress, d)
 
 			r := chi.NewRouter()
 			r.Delete("/api/user/urls", handler.HandleDeleteUrls)

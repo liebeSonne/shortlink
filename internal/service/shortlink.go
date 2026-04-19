@@ -115,7 +115,6 @@ func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShor
 }
 
 func (s *shortLinkService) DeleteIDs(ctx context.Context, ids []string, userID *uuid.UUID) error {
-	// TODO - удаление через канал, fanIn
 	return s.repository.DeleteByShortIDs(ctx, ids, userID)
 }
 
