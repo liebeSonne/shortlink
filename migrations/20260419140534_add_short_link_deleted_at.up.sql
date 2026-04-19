@@ -1,0 +1,2 @@
+ALTER TABLE short_link
+    ADD COLUMN deleted_at TIMESTAMP WITH TIME ZONE NULL;
