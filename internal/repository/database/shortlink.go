@@ -163,6 +163,9 @@ func (r *shortLinkRepository) DeleteByShortIDs(ctx context.Context, shortIDs []s
 	}
 
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("error on begin transaction: %w", err)
+	}
 
 	const sqlQuery = `
 		UPDATE short_link 
