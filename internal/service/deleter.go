@@ -45,6 +45,7 @@ type deleter struct {
 }
 
 func (s *deleter) Add(input InputDelete) error {
+	s.logger.Debugf("add to deleter, userID: %v, ids: %v", input.UserID, input.IDs)
 	s.inputCh <- input
 	return nil
 }
@@ -53,11 +54,13 @@ func (s *deleter) flush() {
 	for {
 		select {
 		case <-s.ctx.Done():
+			s.logger.Debugf("flush deleter: context closed")
 			return
 		case input := <-s.inputCh:
 			if len(input.IDs) == 0 {
 				continue
 			}
+			s.logger.Debugf("handle deleter for userID: %v, ids: %v", input.UserID, input.IDs)
 			err := s.handler(input)
 			if err != nil {
 				s.logger.Errorf("failed to handle: %w", err)
