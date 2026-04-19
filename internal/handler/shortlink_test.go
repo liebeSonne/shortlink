@@ -61,7 +61,7 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 		{
 			"not found",
 			on{"id1"},
-			want{http.StatusNotFound, nil},
+			want{http.StatusGone, nil},
 			when{nil, nil},
 		},
 	}

@@ -65,7 +65,7 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if item == nil {
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusGone)
 		return
 	}
 
