@@ -573,8 +573,7 @@ func (s *fileShortLinkRepository) updateItemsToWriter(writer *bufio.Writer, item
 		}
 	}
 
-	_, err = writer.WriteString("\n")
-	_, err = writer.WriteString("]")
+	_, err = writer.WriteString("\n]")
 	if err != nil {
 		return fmt.Errorf("failed write end array: %w", err)
 	}
