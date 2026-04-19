@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgerrcode"
@@ -15,6 +17,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
+
+const chunkSize = 500
 
 func NewShortLinkRepository(
 	pool *pgxpool.Pool,
@@ -30,7 +34,10 @@ type shortLinkRepository struct {
 
 func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.ShortLink, error) {
 	const sqlQuery = `
-		SELECT short_id, url FROM short_link WHERE short_id = $1 LIMIT 1
+		SELECT short_id, url 
+		FROM short_link 
+		WHERE short_id = $1 AND deleted_at IS NULL 
+		LIMIT 1
 	`
 
 	var shortLink model.ShortLink
@@ -48,7 +55,10 @@ func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.
 
 func (r *shortLinkRepository) FindByURL(ctx context.Context, url string) (*model.ShortLink, error) {
 	const sqlQuery = `
-		SELECT short_id, url FROM short_link WHERE url = $1 LIMIT 1
+		SELECT short_id, url 
+		FROM short_link 
+		WHERE url = $1 AND deleted_at IS NULL
+		LIMIT 1
 	`
 
 	var shortLink model.ShortLink
@@ -66,7 +76,9 @@ func (r *shortLinkRepository) FindByURL(ctx context.Context, url string) (*model
 
 func (r *shortLinkRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error) {
 	const sqlQuery = `
-		SELECT short_id, url FROM short_link WHERE user_id = $1
+		SELECT short_id, url 
+		FROM short_link 
+		WHERE user_id = $1 AND deleted_at IS NULL
 	`
 
 	rows, err := r.pool.Query(ctx, sqlQuery, userID)
@@ -135,6 +147,49 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 	err = errors.Join(insertErrors...)
 	if err != nil {
 		return fmt.Errorf("error on insert: %w", err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("error on commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *shortLinkRepository) DeleteByShortIDs(ctx context.Context, shortIDs []string, userID *uuid.UUID) error {
+	if len(shortIDs) == 0 {
+		return nil
+	}
+
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+
+	const sqlQuery = `
+		UPDATE short_link 
+		SET deleted_at = NOW() 
+	    WHERE 
+	        short_id = ANY($1) 
+	        AND user_id = $2 
+			AND deleted_at IS NULL
+	`
+
+	stmtName := "update_short_link"
+	_, err = tx.Conn().Prepare(ctx, stmtName, sqlQuery)
+	if err != nil {
+		return fmt.Errorf("error on prepare statement: %w", err)
+	}
+
+	chunkErrors := make([]error, 0)
+	for chunkIDs := range slices.Chunk(shortIDs, chunkSize) {
+		_, err := tx.Exec(ctx, stmtName, pq.Array(chunkIDs), userID)
+		if err != nil {
+			chunkErrors = append(chunkErrors, err)
+		}
+	}
+
+	err = errors.Join(chunkErrors...)
+	if err != nil {
+		return fmt.Errorf("error on update: %w", err)
 	}
 
 	err = tx.Commit(ctx)

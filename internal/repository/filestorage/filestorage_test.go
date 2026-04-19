@@ -1,6 +1,7 @@
 package filestorage
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -397,6 +398,137 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 
 			err = repo.StoreAll(t.Context(), tc.items, tc.userID)
 			assert.ErrorIs(t, err, tc.err)
+		})
+	}
+}
+
+func TestFileShortLinkRepository_DeleteByShortIDs(t *testing.T) {
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+
+	type on struct {
+		shortIDs []string
+		userID   *uuid.UUID
+	}
+	type want struct {
+		deletedIDs    []string
+		notDeletedIDs []string
+		err           error
+	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
+	}
+	type when struct {
+		userItems []userItems
+	}
+	testCases := []struct {
+		name string
+		on   on
+		when when
+		want want
+	}{
+		{
+			"empty ids by no user when no items",
+			on{[]string{}, nil},
+			when{},
+			want{[]string{}, nil, nil},
+		},
+		{
+			"empty ids by user when no items",
+			on{[]string{}, &userID1},
+			when{},
+			want{[]string{}, nil, nil},
+		},
+		{
+			"empty ids by no user when has items",
+			on{[]string{}, nil},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+					{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+					{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
+				},
+			},
+			want{[]string{}, []string{"id1", "id2", "id3", "id4", "id5", "id6"}, nil},
+		},
+		{
+			"empty ids by user when has items",
+			on{[]string{}, &userID1},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+					{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+					{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
+				},
+			},
+			want{[]string{}, []string{"id1", "id2", "id3", "id4", "id5", "id6"}, nil},
+		},
+		{
+			"by user",
+			on{[]string{"id1", "id3", "id5"}, &userID1},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+					{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+					{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
+				},
+			},
+			want{[]string{"id3"}, []string{"id1", "id2", "id4", "id5", "id6"}, nil},
+		},
+		{
+			"by no user",
+			on{[]string{"id1", "id3", "id5"}, nil},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+					{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+					{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
+				},
+			},
+			want{[]string{"id1"}, []string{"id2", "id3", "id4", "id5", "id6"}, nil},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			repo, err := NewFileShortLinkRepository(filePath)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err = repo.Close()
+				require.NoError(t, err)
+			})
+
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(ctx, item, userItem.userID)
+					require.NoError(t, err)
+				}
+			}
+
+			err = repo.DeleteByShortIDs(ctx, tc.on.shortIDs, tc.on.userID)
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			for _, deletedID := range tc.want.deletedIDs {
+				result, err := repo.Find(ctx, deletedID)
+				require.NoError(t, err)
+				assert.Nil(t, result, fmt.Sprintf("must be deleted id: %s", deletedID))
+			}
+			for _, notDeletedID := range tc.want.notDeletedIDs {
+				result, err := repo.Find(ctx, notDeletedID)
+				require.NoError(t, err)
+				assert.NotNil(t, result, fmt.Sprintf("must be not deleted id: %s", notDeletedID))
+			}
 		})
 	}
 }

@@ -20,6 +20,7 @@ type shortLinkStorageData struct {
 	ShortURL    string     `json:"short_url"`
 	OriginalURL string     `json:"original_url"`
 	UserID      *uuid.UUID `json:"user_id"`
+	Deleted     bool       `json:"deleted"`
 }
 
 func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepositoryWithCloser, error) {
@@ -53,7 +54,7 @@ func (s *fileShortLinkRepository) Find(_ context.Context, shortID string) (*mode
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	itemPtr, err := s.findItem(shortID)
+	itemPtr, err := s.findFirstByShortID(shortID)
 	if err != nil {
 		return nil, fmt.Errorf("failed find item: %w", err)
 	}
@@ -113,7 +114,7 @@ func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.Short
 
 	items := []shortLinkStorageData{item}
 
-	err := s.save(items)
+	err := s.addAndSave(items)
 	if err != nil {
 		return fmt.Errorf("failed save items: %w", err)
 	}
@@ -137,12 +138,36 @@ func (s *fileShortLinkRepository) StoreAll(_ context.Context, shortLinks []model
 		items = append(items, item)
 	}
 
-	err := s.save(items)
+	err := s.addAndSave(items)
 	if err != nil {
 		return fmt.Errorf("failed save items: %w", err)
 	}
 
 	return nil
+}
+
+func (s *fileShortLinkRepository) DeleteByShortIDs(_ context.Context, shortIDs []string, userID *uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	items, err := s.findByShortIDs(shortIDs)
+	if err != nil {
+		return fmt.Errorf("failed find items: %w", err)
+	}
+
+	updateItems := make([]shortLinkStorageData, 0, len(items))
+	for _, item := range items {
+		if (userID == nil && item.UserID == nil) || (userID != nil && item.UserID != nil && *userID == *item.UserID) {
+			item.Deleted = true
+			updateItems = append(updateItems, item)
+		}
+	}
+
+	if len(updateItems) == 0 {
+		return nil
+	}
+
+	return s.saveToFile(updateItems, s.updateItemsToWriter)
 }
 
 func (s *fileShortLinkRepository) Close() error {
@@ -222,7 +247,7 @@ func (s *fileShortLinkRepository) nextID() int {
 	return nextID
 }
 
-func (s *fileShortLinkRepository) findItem(id string) (*shortLinkStorageData, error) {
+func (s *fileShortLinkRepository) findFirstByShortID(id string) (*shortLinkStorageData, error) {
 	_, err := s.file.Seek(0, 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed seek file: %w", err)
@@ -238,7 +263,7 @@ func (s *fileShortLinkRepository) findItem(id string) (*shortLinkStorageData, er
 			return nil, fmt.Errorf("failed parse item: %w", err)
 		}
 
-		if itemPtr != nil && itemPtr.ShortURL == id {
+		if itemPtr != nil && itemPtr.ShortURL == id && !itemPtr.Deleted {
 			return itemPtr, nil
 		}
 	}
@@ -248,6 +273,48 @@ func (s *fileShortLinkRepository) findItem(id string) (*shortLinkStorageData, er
 	}
 
 	return nil, nil
+}
+
+func (s *fileShortLinkRepository) findByShortIDs(shortIDs []string) ([]shortLinkStorageData, error) {
+	if len(shortIDs) == 0 {
+		return nil, nil
+	}
+
+	_, err := s.file.Seek(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed seek file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(s.file)
+
+	result := make([]shortLinkStorageData, 0)
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		itemPtr, err := s.parseItem(b)
+		if err != nil {
+			return nil, fmt.Errorf("failed parse item: %w", err)
+		}
+
+		if itemPtr != nil && !itemPtr.Deleted {
+			isNeeded := false
+			for _, shortID := range shortIDs {
+				if itemPtr.ShortURL == shortID {
+					isNeeded = true
+				}
+			}
+			if isNeeded {
+				result = append(result, *itemPtr)
+			}
+		}
+	}
+	err = scanner.Err()
+	if err != nil {
+		return nil, fmt.Errorf("failed scan file: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *fileShortLinkRepository) findItemByURL(url string) (*shortLinkStorageData, error) {
@@ -266,7 +333,7 @@ func (s *fileShortLinkRepository) findItemByURL(url string) (*shortLinkStorageDa
 			return nil, fmt.Errorf("failed parse item: %w", err)
 		}
 
-		if itemPtr != nil && itemPtr.OriginalURL == url {
+		if itemPtr != nil && itemPtr.OriginalURL == url && !itemPtr.Deleted {
 			return itemPtr, nil
 		}
 	}
@@ -296,7 +363,7 @@ func (s *fileShortLinkRepository) findItemsByUserUD(userID uuid.UUID) ([]shortLi
 			return nil, fmt.Errorf("failed parse item: %w", err)
 		}
 
-		if itemPtr != nil && itemPtr.UserID != nil && *(itemPtr.UserID) == userID {
+		if itemPtr != nil && itemPtr.UserID != nil && *(itemPtr.UserID) == userID && !itemPtr.Deleted {
 			result = append(result, *itemPtr)
 		}
 	}
@@ -327,7 +394,14 @@ func (s *fileShortLinkRepository) parseItem(b []byte) (*shortLinkStorageData, er
 	return &item, nil
 }
 
-func (s *fileShortLinkRepository) save(items []shortLinkStorageData) error {
+func (s *fileShortLinkRepository) addAndSave(items []shortLinkStorageData) error {
+	return s.saveToFile(items, s.appendItemsToWriter)
+}
+
+func (s *fileShortLinkRepository) saveToFile(
+	items []shortLinkStorageData,
+	f func(writer *bufio.Writer, items []shortLinkStorageData) error,
+) error {
 	tmpDir, err := os.MkdirTemp("", "tmp-*")
 	defer func() {
 		err = os.RemoveAll(tmpDir)
@@ -343,7 +417,7 @@ func (s *fileShortLinkRepository) save(items []shortLinkStorageData) error {
 
 	writer := bufio.NewWriter(tmpFile)
 
-	err = s.savaItemsToWriter(writer, items)
+	err = f(writer, items)
 	if err != nil {
 		return fmt.Errorf("failed save to file: %w", err)
 	}
@@ -386,7 +460,7 @@ func (s *fileShortLinkRepository) reopenFile() error {
 	return nil
 }
 
-func (s *fileShortLinkRepository) savaItemsToWriter(writer *bufio.Writer, items []shortLinkStorageData) error {
+func (s *fileShortLinkRepository) appendItemsToWriter(writer *bufio.Writer, items []shortLinkStorageData) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -437,6 +511,74 @@ func (s *fileShortLinkRepository) savaItemsToWriter(writer *bufio.Writer, items 
 			}
 		}
 	}
+	err = scanner.Err()
+	if err != nil {
+		return fmt.Errorf("failed scan file: %w", err)
+	}
+
+	return nil
+}
+
+func (s *fileShortLinkRepository) updateItemsToWriter(writer *bufio.Writer, items []shortLinkStorageData) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	_, err := s.file.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed seek file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(s.file)
+
+	_, err = writer.WriteString("[\n")
+	if err != nil {
+		return fmt.Errorf("failed write begin array: %w", err)
+	}
+
+	isFirst := true
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		itemPtr, err := s.parseItem(b)
+		if err != nil {
+			return fmt.Errorf("failed parse item: %w", err)
+		}
+
+		if itemPtr != nil {
+			newItem := *itemPtr
+			for _, item := range items {
+				if itemPtr.ID == item.ID {
+					newItem = item
+					break
+				}
+			}
+
+			data, err := json.Marshal(&newItem)
+			if err != nil {
+				return fmt.Errorf("failed encode item: %w", err)
+			}
+
+			newStr := string(data)
+
+			if !isFirst {
+				newStr = ",\n" + newStr
+			}
+			isFirst = false
+
+			_, err = writer.WriteString(newStr)
+			if err != nil {
+				return fmt.Errorf("failed write new item: %w", err)
+			}
+		}
+	}
+
+	_, err = writer.WriteString("\n")
+	_, err = writer.WriteString("]")
+	if err != nil {
+		return fmt.Errorf("failed write end array: %w", err)
+	}
+
 	err = scanner.Err()
 	if err != nil {
 		return fmt.Errorf("failed scan file: %w", err)

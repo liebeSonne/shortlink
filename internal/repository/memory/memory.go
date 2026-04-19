@@ -12,17 +12,19 @@ import (
 
 func NewMemoryShortLinkRepository() repository.ShortLinkRepository {
 	return &memoryShortLinkRepository{
-		linksMap:    make(map[string]model.ShortLink),
-		urlToIDMap:  make(map[string]string),
-		userIDToIDs: make(map[uuid.UUID]map[string]bool),
+		linksMap:        make(map[string]model.ShortLink),
+		urlToIDMap:      make(map[string]string),
+		userIDToIDs:     make(map[uuid.UUID]map[string]bool),
+		shortIDToUserID: make(map[string]uuid.UUID),
 	}
 }
 
 type memoryShortLinkRepository struct {
-	linksMap    map[string]model.ShortLink
-	urlToIDMap  map[string]string
-	userIDToIDs map[uuid.UUID]map[string]bool
-	mu          sync.RWMutex
+	linksMap        map[string]model.ShortLink
+	urlToIDMap      map[string]string
+	userIDToIDs     map[uuid.UUID]map[string]bool
+	shortIDToUserID map[string]uuid.UUID
+	mu              sync.RWMutex
 }
 
 func (s *memoryShortLinkRepository) Find(_ context.Context, shortID string) (*model.ShortLink, error) {
@@ -57,8 +59,10 @@ func (s *memoryShortLinkRepository) FindByUserID(_ context.Context, userID uuid.
 
 	if idMap, ok := s.userIDToIDs[userID]; ok {
 		for id := range idMap {
-			if link, ok := s.linksMap[id]; ok {
-				result = append(result, link)
+			if idMap[id] {
+				if link, ok := s.linksMap[id]; ok {
+					result = append(result, link)
+				}
 			}
 		}
 	}
@@ -76,6 +80,7 @@ func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.Sho
 			s.userIDToIDs[*userID] = make(map[string]bool)
 		}
 		s.userIDToIDs[*userID][shortLink.ID] = true
+		s.shortIDToUserID[shortLink.ID] = *userID
 	}
 	return nil
 }
@@ -91,7 +96,48 @@ func (s *memoryShortLinkRepository) StoreAll(_ context.Context, shortLinks []mod
 				s.userIDToIDs[*userID] = make(map[string]bool)
 			}
 			s.userIDToIDs[*userID][shortLink.ID] = true
+			s.shortIDToUserID[shortLink.ID] = *userID
 		}
 	}
 	return nil
+}
+
+func (s *memoryShortLinkRepository) DeleteByShortIDs(ctx context.Context, shortIDs []string, userID *uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, shortID := range shortIDs {
+		if shortLink, ok := s.linksMap[shortID]; ok {
+			isUserLink := s.isUserLink(shortLink, userID)
+			if !isUserLink {
+				continue
+			}
+
+			delete(s.urlToIDMap, shortLink.URL)
+			delete(s.linksMap, shortID)
+			delete(s.shortIDToUserID, shortID)
+			if userID != nil {
+				if userIDsMap, ok := s.userIDToIDs[*userID]; ok {
+					if _, exist := userIDsMap[shortLink.ID]; exist {
+						s.userIDToIDs[*userID][shortLink.ID] = false
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *memoryShortLinkRepository) isUserLink(shortLink model.ShortLink, userID *uuid.UUID) bool {
+	isUserLink := false
+
+	linkUserID, hasUser := s.shortIDToUserID[shortLink.ID]
+	if hasUser && userID != nil && linkUserID == *userID {
+		isUserLink = true
+	}
+	if !hasUser && userID == nil {
+		isUserLink = true
+	}
+
+	return isUserLink
 }

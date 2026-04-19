@@ -15,6 +15,7 @@ type ShortLinkRepository interface {
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error)
 	Store(ctx context.Context, shortLink model.ShortLink, userID *uuid.UUID) error
 	StoreAll(ctx context.Context, shortLinks []model.ShortLink, userID *uuid.UUID) error
+	DeleteByShortIDs(ctx context.Context, shortIDs []string, userID *uuid.UUID) error
 }
 
 type ShortLinkRepositoryWithCloser interface {

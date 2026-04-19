@@ -115,11 +115,8 @@ func (s *shortLinkService) CreateBatch(ctx context.Context, urlsData []InputShor
 }
 
 func (s *shortLinkService) DeleteIDs(ctx context.Context, ids []string, userID *uuid.UUID) error {
-	// TODO - удаление
-	_ = ctx
-	_ = ids
-	_ = userID
-	return nil
+	// TODO - удаление через канал, fanIn
+	return s.repository.DeleteByShortIDs(ctx, ids, userID)
 }
 
 func (s *shortLinkService) nextID(ctx context.Context, exceptions []string) (string, error) {
