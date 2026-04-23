@@ -132,7 +132,7 @@ func initRouter(
 	shortLinkDeleter := service.NewShortLinkDeleter(ctx, logger, func(input service.InputDelete) error {
 		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
 	})
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter)
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger)
 	db := createDatabase(cfg)
 
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
@@ -140,8 +140,8 @@ func initRouter(
 
 	router := rootRouter.Router().(http.Handler)
 
-	router = handlerauth.NewAuthMiddleware(router, tokenService, cookieService)
-	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService)
+	router = handlerauth.NewAuthMiddleware(router, tokenService, cookieService, logger)
+	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService, logger)
 
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
 		Encodings:    []compress.Encoding{compress.GzipEncoding},

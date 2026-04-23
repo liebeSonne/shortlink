@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
@@ -15,11 +16,13 @@ func NewAuthCookieMiddleware(
 	tokenService auth.TokenService,
 	cookieService Service,
 	userService service.UserService,
+	logger logger.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString, err := cookieService.GetAuthToken(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Errorf("get cookie auth token error: %w", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -28,8 +31,9 @@ func NewAuthCookieMiddleware(
 		if tokenString != "" {
 			tokenData, err := tokenService.Parse(tokenString)
 			if err != nil {
+				logger.Errorf("parse token error: %w", err)
 				if !errors.Is(err, auth.ErrTokenIsNotValid) {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
 			} else {
@@ -48,13 +52,15 @@ func NewAuthCookieMiddleware(
 			}
 			tokenString, err = tokenService.Create(tokenData)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.Errorf("create token error: %w", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 
 			err = cookieService.SetAuthToken(tokenString, w, r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				logger.Errorf("set cookie auth token error: %w", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 		}

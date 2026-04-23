@@ -13,6 +13,7 @@ import (
 
 	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/repository"
@@ -35,12 +36,14 @@ func NewShortLinkHandler(
 	provider provider.ShortLinkProvider,
 	urlAddress string,
 	deleter service.ShortLinkDeleter,
+	logger logger.Logger,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
 		service:    service,
 		provider:   provider,
 		urlAddress: urlAddress,
 		deleter:    deleter,
+		logger:     logger,
 	}
 }
 
@@ -51,6 +54,7 @@ type shortLinkHandler struct {
 	cookieService cookie.Service
 	tokenService  auth.TokenService
 	deleter       service.ShortLinkDeleter
+	logger        logger.Logger
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +107,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(status)
 	_, err = w.Write([]byte(url))
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		h.logger.Errorf("response write error: %w", err)
 		return
 	}
 }
@@ -142,7 +146,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		h.logger.Errorf("response write error: %w", err)
 		return
 	}
 }
@@ -192,7 +196,7 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		h.logger.Errorf("response write error: %w", err)
 		return
 	}
 }
@@ -298,13 +302,14 @@ func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}
+	h.logger.Errorf("response error: %w", err)
 	if errors.Is(err, service.ErrInvalidURL) || errors.Is(err, service.ErrEmptyURL) {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 	if errors.Is(err, ErrNotCreated) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }

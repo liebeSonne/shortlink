@@ -78,7 +78,10 @@ func TestNewAuthMiddleware(t *testing.T) {
 				contextUserID, existContextUserID = auth.GetUserIDFromContext(ctx)
 			}).Return()
 
-			handler := NewAuthMiddleware(h, tokenService, cookieService)
+			logger := new(mockLogger)
+			logger.On("Errorf", mock.Anything, mock.Anything)
+
+			handler := NewAuthMiddleware(h, tokenService, cookieService, logger)
 
 			srv := httptest.NewServer(handler)
 			defer srv.Close()

@@ -113,7 +113,10 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 				require.NoError(t, err)
 			}).Return()
 
-			handler := NewAuthCookieMiddleware(h, tokenService, cookieService, userService)
+			logger := new(mockLogger)
+			logger.On("Errorf", mock.Anything, mock.Anything)
+
+			handler := NewAuthCookieMiddleware(h, tokenService, cookieService, userService, logger)
 
 			srv := httptest.NewServer(handler)
 			defer srv.Close()
