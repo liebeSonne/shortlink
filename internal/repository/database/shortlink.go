@@ -167,6 +167,13 @@ func (r *shortLinkRepository) DeleteByShortIDs(ctx context.Context, shortIDs []s
 		return fmt.Errorf("error on begin transaction: %w", err)
 	}
 
+	defer func() {
+		err = tx.Rollback(ctx)
+		if err != nil {
+			fmt.Printf("error on rollback transaction: %v\n", err)
+		}
+	}()
+
 	const sqlQuery = `
 		UPDATE short_link 
 		SET deleted_at = NOW() 
