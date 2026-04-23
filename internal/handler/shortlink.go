@@ -92,7 +92,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	link := string(body)
 
 	var userIDPtr *uuid.UUID
-	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+	if userID, ok := auth.GetUserIDFromContext(ctx); ok {
 		userIDPtr = &userID
 	}
 
@@ -124,7 +124,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	}
 
 	var userIDPtr *uuid.UUID
-	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+	if userID, ok := auth.GetUserIDFromContext(ctx); ok {
 		userIDPtr = &userID
 	}
 
@@ -171,7 +171,7 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 	}
 
 	var userIDPtr *uuid.UUID
-	if userID, hasUserID := auth.GetUserIDFromContext(ctx); hasUserID {
+	if userID, ok := auth.GetUserIDFromContext(ctx); ok {
 		userIDPtr = &userID
 	}
 
@@ -204,9 +204,9 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, hasUserID := auth.GetUserIDFromContext(ctx)
+	userID, ok := auth.GetUserIDFromContext(ctx)
 
-	if !hasUserID {
+	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -246,9 +246,9 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 func (h *shortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, hasUserID := auth.GetUserIDFromContext(ctx)
+	userID, ok := auth.GetUserIDFromContext(ctx)
 
-	if !hasUserID {
+	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
