@@ -7,7 +7,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
-const deleterChanSize = 100
+const deleterChanSize = 5
+const deleterWorkersCount = 5
 
 type InputDelete struct {
 	IDs    []string
@@ -31,7 +32,9 @@ func NewShortLinkDeleter(
 		inputCh: make(chan InputDelete, deleterChanSize),
 	}
 
-	go instance.flush()
+	for i := 0; i < deleterWorkersCount; i++ {
+		go instance.flush()
+	}
 
 	return instance
 }
