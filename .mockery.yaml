@@ -29,3 +29,7 @@ packages:
   github.com/liebeSonne/shortlink/internal/repository/database:
     interfaces:
       Database: {}
+  github.com/liebeSonne/shortlink/internal/auth:
+    interfaces:
+      TokenService: { }
+
