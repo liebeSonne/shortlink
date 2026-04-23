@@ -25,3 +25,7 @@ clean-bin:
 create-migration:
 	# example: make create-migration name=add_short_link_table
 	migrate create -ext sql -dir ./migrations -format "20060102150405" $(name)
+
+.PHONY: mocks
+mocks:
+	mockery

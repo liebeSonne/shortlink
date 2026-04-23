@@ -1,0 +1,27 @@
+dir: "{{.InterfaceDir}}/mocks"
+filename: "{{ .InterfaceName | snakecase }}.go"
+pkgname: 'mocks'
+structname: '{{.Mock}}{{.InterfaceName}}'
+template: testify
+packages:
+  github.com/liebeSonne/shortlink/internal/logger:
+    interfaces:
+      Logger: {}
+  github.com/liebeSonne/shortlink/internal/handler:
+    interfaces:
+      ShortLinkHandler: {}
+      DatabaseHandler: {}
+  github.com/liebeSonne/shortlink/internal/handler/cookie:
+    interfaces:
+      Service: {}
+  github.com/liebeSonne/shortlink/internal/service:
+    interfaces:
+      ShortLinkService: {}
+      ShortIDGenerator: {}
+  github.com/liebeSonne/shortlink/internal/provider:
+    interfaces:
+      ShortLinkProvider: {}
+  github.com/liebeSonne/shortlink/internal/repository:
+    interfaces:
+      ShortLinkRepository: {}
+
