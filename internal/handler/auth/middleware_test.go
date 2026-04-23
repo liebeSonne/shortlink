@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -16,6 +17,7 @@ import (
 
 func TestNewAuthMiddleware(t *testing.T) {
 	defaultCode := http.StatusOK
+	userID1 := uuid.New()
 
 	type when struct {
 		getTokenString string
@@ -24,8 +26,8 @@ func TestNewAuthMiddleware(t *testing.T) {
 		parseTokenErr  error
 	}
 	type want struct {
-		code         int
-		contextToken *auth.Token
+		code          int
+		contextUserID uuid.UUID
 	}
 	testCases := []struct {
 		name string
@@ -35,22 +37,22 @@ func TestNewAuthMiddleware(t *testing.T) {
 		{
 			"error on get cookies token",
 			when{getTokenErr: errors.New("error")},
-			want{http.StatusInternalServerError, nil},
+			want{http.StatusInternalServerError, uuid.Nil},
 		},
 		{
 			"empty cookies token",
 			when{getTokenString: ""},
-			want{defaultCode, nil},
+			want{defaultCode, uuid.Nil},
 		},
 		{
 			"error on parse token",
 			when{getTokenString: "111", parseTokenErr: errors.New("error")},
-			want{defaultCode, nil},
+			want{defaultCode, uuid.Nil},
 		},
 		{
 			"context token",
-			when{getTokenString: "111", parseTokenData: auth.Token{UserID: "user1"}},
-			want{defaultCode, &auth.Token{UserID: "user1"}},
+			when{getTokenString: "111", parseTokenData: auth.Token{UserID: userID1.String()}},
+			want{defaultCode, userID1},
 		},
 	}
 
@@ -62,8 +64,8 @@ func TestNewAuthMiddleware(t *testing.T) {
 			cookieService := new(mockService)
 			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
 
-			contextToken := auth.Token{}
-			existContextToken := false
+			contextUserID := uuid.Nil
+			existContextUserID := false
 			h := new(mockHandler)
 			h.On("ServeHTTP", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 				w := args.Get(0).(http.ResponseWriter)
@@ -73,7 +75,7 @@ func TestNewAuthMiddleware(t *testing.T) {
 
 				r := args.Get(1).(*http.Request)
 				ctx := r.Context()
-				contextToken, existContextToken = auth.GetTokenFromContext(ctx)
+				contextUserID, existContextUserID = auth.GetUserIDFromContext(ctx)
 			}).Return()
 
 			handler := NewAuthMiddleware(h, tokenService, cookieService)
@@ -93,9 +95,9 @@ func TestNewAuthMiddleware(t *testing.T) {
 
 			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
 
-			require.Equal(t, tc.want.contextToken != nil, existContextToken)
-			if tc.want.contextToken != nil {
-				require.Equal(t, tc.want.contextToken.UserID, contextToken.UserID)
+			require.Equal(t, tc.want.contextUserID != uuid.Nil, existContextUserID)
+			if tc.want.contextUserID != uuid.Nil {
+				require.Equal(t, tc.want.contextUserID, contextUserID)
 			}
 		})
 	}

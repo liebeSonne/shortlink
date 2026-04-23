@@ -14,17 +14,8 @@ func CreateTokenContext(ctx context.Context, token Token) context.Context {
 	return context.WithValue(ctx, tokenKey, token)
 }
 
-func GetTokenFromContext(ctx context.Context) (Token, bool) {
-	token, ok := ctx.Value(tokenKey).(Token)
-	if !ok {
-		return Token{}, false
-	}
-
-	return token, true
-}
-
 func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
-	tokenPtr, ok := GetTokenFromContext(ctx)
+	tokenPtr, ok := getTokenFromContext(ctx)
 	if !ok || tokenPtr.UserID == "" {
 		return uuid.UUID{}, false
 	}
@@ -35,4 +26,13 @@ func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	}
 
 	return userID, true
+}
+
+func getTokenFromContext(ctx context.Context) (Token, bool) {
+	token, ok := ctx.Value(tokenKey).(Token)
+	if !ok {
+		return Token{}, false
+	}
+
+	return token, true
 }
