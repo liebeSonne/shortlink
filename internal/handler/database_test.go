@@ -11,6 +11,9 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
+	"github.com/liebeSonne/shortlink/internal/repository/database"
 )
 
 func TestDatabaseHandler_HandlePing(t *testing.T) {
@@ -38,13 +41,13 @@ func TestDatabaseHandler_HandlePing(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := new(mockDatabase)
-			db.On("Ping", mock.Anything).Return(tc.when.err)
+			db := database.NewMockDatabase(t)
+			db.EXPECT().Ping(mock.Anything).Return(tc.when.err)
 
-			logger := new(mockLogger)
-			logger.On("Debugf", mock.Anything, mock.Anything).Return()
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Debugf(mock.Anything, mock.Anything).Maybe()
 
-			handler := NewDatabaseHandler(db, logger)
+			handler := NewDatabaseHandler(db, l)
 
 			r := chi.NewRouter()
 			r.Get("/ping", handler.HandlePing)

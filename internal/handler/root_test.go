@@ -18,39 +18,39 @@ func TestRootHandler_Handle(t *testing.T) {
 	getResponse := "get"
 	postResponse := "post"
 
-	mockHandler := new(mockShortLinkHandler)
+	mockHandler := NewMockShortLinkHandler(t)
 	mockHandler.On("HandleGet", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codeGetResult)
 		_, err := w.Write([]byte(getResponse))
 		require.NoError(t, err)
-	}).Return()
+	}).Return().Maybe()
 	mockHandler.On("HandleCreate", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codePostResult)
 		_, err := w.Write([]byte(postResponse))
 		require.NoError(t, err)
-	}).Return()
+	}).Return().Maybe()
 	mockHandler.On("HandleCreateShorten", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codePostResult)
 		_, err := w.Write([]byte(postResponse))
 		require.NoError(t, err)
-	}).Return()
+	}).Return().Maybe()
 	mockHandler.On("HandleCreateShortenBatch", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codePostResult)
 		_, err := w.Write([]byte(postResponse))
 		require.NoError(t, err)
-	}).Return()
+	}).Return().Maybe()
 	mockHandler.On("HandleGetUserUrls", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codeGetResult)
 		_, err := w.Write([]byte(getResponse))
 		require.NoError(t, err)
-	}).Return()
+	}).Return().Maybe()
 
-	mockDBHandler := new(mockDatabaseHandler)
+	mockDBHandler := NewMockDatabaseHandler(t)
 	mockDBHandler.On("HandlePing", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		w := args.Get(0).(http.ResponseWriter)
 		w.WriteHeader(codeGetResult)

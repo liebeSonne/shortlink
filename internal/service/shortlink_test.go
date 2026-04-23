@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/repository/memory"
 )
 
@@ -89,8 +90,8 @@ func TestShortLinkService_Create(t *testing.T) {
 				}
 			}
 
-			generator := new(mockOneIDGenerator)
-			generator.On("GenerateID", mock.Anything).Return(tc.when.generateID)
+			generator := NewMockShortIDGenerator(t)
+			generator.EXPECT().GenerateID(mock.Anything).Return(tc.when.generateID).Maybe()
 
 			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
 			item, err := service.Create(t.Context(), tc.on.url, tc.on.userID)
@@ -236,17 +237,17 @@ func TestShortLinkService_CreateBatch(t *testing.T) {
 			}
 
 			lastGenerateIndex := 0
-			generator := new(mockOneIDGenerator)
-			generator.On("GenerateID", mock.Anything).Return(func(_ uint) string {
+			idGenerator := NewMockShortIDGenerator(t)
+			idGenerator.EXPECT().GenerateID(mock.Anything).RunAndReturn(func(_ uint) string {
 				if lastGenerateIndex >= len(tc.when.generateIDs) {
 					return ""
 				}
 				id := tc.when.generateIDs[lastGenerateIndex]
 				lastGenerateIndex++
 				return id
-			})
+			}).Maybe()
 
-			service := NewShortLinkService(repo, generator, tc.when.maxAttempts)
+			service := NewShortLinkService(repo, idGenerator, tc.when.maxAttempts)
 			outputItems, err := service.CreateBatch(t.Context(), tc.on.inputData, tc.on.userID)
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -327,10 +328,11 @@ func TestShortLinkService_DeleteIDs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := new(mockShortLinkRepository)
-			repo.On("DeleteByShortIDs", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.deleteErr)
+			repo := repository.NewMockShortLinkRepository(t)
+			repo.EXPECT().DeleteByShortIDs(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.deleteErr)
+			idGenerator := NewMockShortIDGenerator(t)
 
-			service := NewShortLinkService(repo, new(mockOneIDGenerator), DefaultMaxAttemptsToGenerateUniqueID)
+			service := NewShortLinkService(repo, idGenerator, DefaultMaxAttemptsToGenerateUniqueID)
 			err := service.DeleteIDs(t.Context(), tc.on.ids, tc.on.userID)
 			if tc.want.err != nil {
 				require.Error(t, err)

@@ -15,7 +15,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
+	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/service"
 )
@@ -67,21 +69,23 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := new(mockProvider)
+			p := provider.NewMockShortLinkProvider(t)
 			if tc.when.err == nil && tc.when.link != nil {
 				item := &model.ShortLink{ID: tc.on.id, URL: *tc.when.link}
-				provider.On("Find", mock.Anything, tc.on.id).Return(item, tc.when.err)
+				p.EXPECT().Find(mock.Anything, tc.on.id).Return(item, tc.when.err)
 			} else {
-				provider.On("Find", mock.Anything, tc.on.id).Return(nil, tc.when.err)
+				p.EXPECT().Find(mock.Anything, tc.on.id).Return(nil, tc.when.err).Maybe()
 			}
 
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
+
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
+
+			s := service.NewMockShortLinkService(t)
 
 			urlAddress := "http://localhost:8080"
-			handler := NewShortLinkHandler(new(mockService), provider, urlAddress, d, l)
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
 			r := chi.NewRouter()
 			r.Get("/", handler.HandleGet)
@@ -174,16 +178,16 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := new(mockService)
-			s.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			s := service.NewMockShortLinkService(t)
+			s.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
-			p := new(mockProvider)
-			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
+			p := provider.NewMockShortLinkProvider(t)
+			p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr).Maybe()
 
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
+
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
 
 			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
@@ -274,16 +278,16 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := new(mockService)
-			s.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			s := service.NewMockShortLinkService(t)
+			s.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
-			p := new(mockProvider)
-			p.On("FindByURL", mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
+			p := provider.NewMockShortLinkProvider(t)
+			p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr).Maybe()
 
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
+
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
 
 			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
@@ -380,15 +384,17 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := new(mockService)
-			s.On("CreateBatch", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
+			s := service.NewMockShortLinkService(t)
+			s.EXPECT().CreateBatch(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
 
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
 
-			handler := NewShortLinkHandler(s, new(mockProvider), urlAddress, d, l)
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
+
+			p := provider.NewMockShortLinkProvider(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)
@@ -469,17 +475,19 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := new(mockProvider)
+			p := provider.NewMockShortLinkProvider(t)
 			if tc.on.userID != nil {
-				provider.On("FindByUserID", mock.Anything, *(tc.on.userID)).Return(tc.when.items, tc.when.err)
+				p.EXPECT().FindByUserID(mock.Anything, *(tc.on.userID)).Return(tc.when.items, tc.when.err)
 			}
 
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
 
-			handler := NewShortLinkHandler(new(mockService), provider, urlAddress, d, l)
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
+
+			s := service.NewMockShortLinkService(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
 			r := chi.NewRouter()
 			r.Get("/api/user/urls", handler.HandleGetUserUrls)
@@ -579,12 +587,16 @@ func TestShortLinkHandler_HandleDeleteUrls(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			d := new(mockShortLinkDeleter)
-			d.On("Add", mock.Anything).Return(tc.when.deleteErr)
-			l := new(mockLogger)
-			l.On("Errorf", mock.Anything, mock.Anything)
+			d := service.NewMockShortLinkDeleter(t)
+			d.EXPECT().Add(mock.Anything).Return(tc.when.deleteErr).Maybe()
 
-			handler := NewShortLinkHandler(new(mockService), new(mockProvider), urlAddress, d, l)
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
+
+			s := service.NewMockShortLinkService(t)
+			p := provider.NewMockShortLinkProvider(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
 
 			r := chi.NewRouter()
 			r.Delete("/api/user/urls", handler.HandleDeleteUrls)

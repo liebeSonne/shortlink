@@ -3,6 +3,8 @@ package cookie
 import (
 	"errors"
 	"fmt"
+	"github.com/liebeSonne/shortlink/internal/logger"
+	"github.com/liebeSonne/shortlink/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -91,19 +93,19 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tokenService := new(mockTokenService)
-			tokenService.On("Parse", mock.Anything).Return(tc.when.parseTokenData, tc.when.parseTokenErr)
-			tokenService.On("Create", mock.Anything).Return(tc.when.createTokenString, tc.when.createTokenErr)
+			tokenService := auth.NewMockTokenService(t)
+			tokenService.EXPECT().Parse(mock.Anything).Return(tc.when.parseTokenData, tc.when.parseTokenErr).Maybe()
+			tokenService.EXPECT().Create(mock.Anything).Return(tc.when.createTokenString, tc.when.createTokenErr).Maybe()
 
-			cookieService := new(mockService)
-			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
+			cookieService := NewMockService(t)
+			cookieService.EXPECT().GetAuthToken(mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr).Maybe()
 			lastSetTokenString := ""
-			cookieService.On("SetAuthToken", mock.Anything, mock.Anything, mock.Anything).Return(tc.when.setTokenErr).Run(func(args mock.Arguments) {
-				lastSetTokenString = args.String(0)
-			})
+			cookieService.EXPECT().SetAuthToken(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.setTokenErr).Run(func(tokenString string, w http.ResponseWriter, r *http.Request) {
+				lastSetTokenString = tokenString
+			}).Maybe()
 
-			userService := new(mockUserService)
-			userService.On("NextID", mock.Anything).Return(userID1, nil)
+			userService := service.NewMockUserService(t)
+			userService.EXPECT().NextID().Return(userID1).Maybe()
 
 			h := new(mockHandler)
 			h.On("ServeHTTP", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
@@ -113,10 +115,10 @@ func TestNewAuthCookieMiddleware(t *testing.T) {
 				require.NoError(t, err)
 			}).Return()
 
-			logger := new(mockLogger)
-			logger.On("Errorf", mock.Anything, mock.Anything)
+			l := logger.NewMockLogger(t)
+			l.On("Errorf", mock.Anything, mock.Anything).Maybe()
 
-			handler := NewAuthCookieMiddleware(h, tokenService, cookieService, userService, logger)
+			handler := NewAuthCookieMiddleware(h, tokenService, cookieService, userService, l)
 
 			srv := httptest.NewServer(handler)
 			defer srv.Close()

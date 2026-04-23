@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/handler/cookie"
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func TestNewAuthMiddleware(t *testing.T) {
@@ -58,11 +60,11 @@ func TestNewAuthMiddleware(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tokenService := new(mockTokenService)
-			tokenService.On("Parse", mock.Anything).Return(tc.when.parseTokenData, tc.when.parseTokenErr)
+			tokenService := auth.NewMockTokenService(t)
+			tokenService.EXPECT().Parse(mock.Anything).Return(tc.when.parseTokenData, tc.when.parseTokenErr).Maybe()
 
-			cookieService := new(mockService)
-			cookieService.On("GetAuthToken", mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
+			cookieService := cookie.NewMockService(t)
+			cookieService.EXPECT().GetAuthToken(mock.Anything).Return(tc.when.getTokenString, tc.when.getTokenErr)
 
 			contextUserID := uuid.Nil
 			existContextUserID := false
@@ -78,10 +80,10 @@ func TestNewAuthMiddleware(t *testing.T) {
 				contextUserID, existContextUserID = auth.GetUserIDFromContext(ctx)
 			}).Return()
 
-			logger := new(mockLogger)
-			logger.On("Errorf", mock.Anything, mock.Anything)
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
 
-			handler := NewAuthMiddleware(h, tokenService, cookieService, logger)
+			handler := NewAuthMiddleware(h, tokenService, cookieService, l)
 
 			srv := httptest.NewServer(handler)
 			defer srv.Close()
