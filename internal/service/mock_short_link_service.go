@@ -2,14 +2,13 @@
 // github.com/vektra/mockery
 // template: testify
 
-package mocks
+package service
 
 import (
 	"context"
 
 	"github.com/google/uuid"
 	"github.com/liebeSonne/shortlink/internal/model"
-	"github.com/liebeSonne/shortlink/internal/service"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -115,26 +114,26 @@ func (_c *MockShortLinkService_Create_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // CreateBatch provides a mock function for the type MockShortLinkService
-func (_mock *MockShortLinkService) CreateBatch(ctx context.Context, urlsData []service.InputShortLinkData, userID *uuid.UUID) ([]service.OutputShortLinkData, error) {
+func (_mock *MockShortLinkService) CreateBatch(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID) ([]OutputShortLinkData, error) {
 	ret := _mock.Called(ctx, urlsData, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateBatch")
 	}
 
-	var r0 []service.OutputShortLinkData
+	var r0 []OutputShortLinkData
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []service.InputShortLinkData, *uuid.UUID) ([]service.OutputShortLinkData, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []InputShortLinkData, *uuid.UUID) ([]OutputShortLinkData, error)); ok {
 		return returnFunc(ctx, urlsData, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []service.InputShortLinkData, *uuid.UUID) []service.OutputShortLinkData); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []InputShortLinkData, *uuid.UUID) []OutputShortLinkData); ok {
 		r0 = returnFunc(ctx, urlsData, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]service.OutputShortLinkData)
+			r0 = ret.Get(0).([]OutputShortLinkData)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []service.InputShortLinkData, *uuid.UUID) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []InputShortLinkData, *uuid.UUID) error); ok {
 		r1 = returnFunc(ctx, urlsData, userID)
 	} else {
 		r1 = ret.Error(1)
@@ -149,21 +148,21 @@ type MockShortLinkService_CreateBatch_Call struct {
 
 // CreateBatch is a helper method to define mock.On call
 //   - ctx context.Context
-//   - urlsData []service.InputShortLinkData
+//   - urlsData []InputShortLinkData
 //   - userID *uuid.UUID
 func (_e *MockShortLinkService_Expecter) CreateBatch(ctx interface{}, urlsData interface{}, userID interface{}) *MockShortLinkService_CreateBatch_Call {
 	return &MockShortLinkService_CreateBatch_Call{Call: _e.mock.On("CreateBatch", ctx, urlsData, userID)}
 }
 
-func (_c *MockShortLinkService_CreateBatch_Call) Run(run func(ctx context.Context, urlsData []service.InputShortLinkData, userID *uuid.UUID)) *MockShortLinkService_CreateBatch_Call {
+func (_c *MockShortLinkService_CreateBatch_Call) Run(run func(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID)) *MockShortLinkService_CreateBatch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []service.InputShortLinkData
+		var arg1 []InputShortLinkData
 		if args[1] != nil {
-			arg1 = args[1].([]service.InputShortLinkData)
+			arg1 = args[1].([]InputShortLinkData)
 		}
 		var arg2 *uuid.UUID
 		if args[2] != nil {
@@ -178,12 +177,12 @@ func (_c *MockShortLinkService_CreateBatch_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockShortLinkService_CreateBatch_Call) Return(outputShortLinkDatas []service.OutputShortLinkData, err error) *MockShortLinkService_CreateBatch_Call {
+func (_c *MockShortLinkService_CreateBatch_Call) Return(outputShortLinkDatas []OutputShortLinkData, err error) *MockShortLinkService_CreateBatch_Call {
 	_c.Call.Return(outputShortLinkDatas, err)
 	return _c
 }
 
-func (_c *MockShortLinkService_CreateBatch_Call) RunAndReturn(run func(ctx context.Context, urlsData []service.InputShortLinkData, userID *uuid.UUID) ([]service.OutputShortLinkData, error)) *MockShortLinkService_CreateBatch_Call {
+func (_c *MockShortLinkService_CreateBatch_Call) RunAndReturn(run func(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID) ([]OutputShortLinkData, error)) *MockShortLinkService_CreateBatch_Call {
 	_c.Call.Return(run)
 	return _c
 }
