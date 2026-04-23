@@ -25,4 +25,6 @@ packages:
   github.com/liebeSonne/shortlink/internal/repository:
     interfaces:
       ShortLinkRepository: {}
-
+  github.com/liebeSonne/shortlink/internal/repository/database:
+    interfaces:
+      Database: {}
