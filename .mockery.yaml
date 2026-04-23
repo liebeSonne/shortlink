@@ -18,6 +18,7 @@ packages:
     interfaces:
       ShortLinkService: {}
       ShortIDGenerator: {}
+      ShortLinkDeleter: {}
   github.com/liebeSonne/shortlink/internal/provider:
     interfaces:
       ShortLinkProvider: {}
