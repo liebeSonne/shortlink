@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"github.com/liebeSonne/shortlink/internal/handler/audit"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -84,8 +85,16 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 
 			s := service.NewMockShortLinkService(t)
 
+			mockAuditPublisher := audit.NewMockPublisher(t)
+			mockAuditPublisher.EXPECT().Notify(mock.Anything).Run(func(event audit.Event) {
+				if tc.want.code == http.StatusTemporaryRedirect && tc.want.location != nil {
+					assert.Equal(t, *tc.want.location, event.URL)
+					assert.Equal(t, audit.ActionFollow, event.Action)
+				}
+			}).Maybe()
+
 			urlAddress := "http://localhost:8080"
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Get("/", handler.HandleGet)
@@ -189,7 +198,15 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			l := logger.NewMockLogger(t)
 			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
 
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			mockAuditPublisher := audit.NewMockPublisher(t)
+			mockAuditPublisher.EXPECT().Notify(mock.Anything).Run(func(event audit.Event) {
+				if tc.want.code == http.StatusCreated {
+					assert.Equal(t, tc.on.link, event.URL)
+					assert.Equal(t, audit.ActionShorted, event.Action)
+				}
+			}).Maybe()
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
@@ -222,6 +239,7 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 
 	type on struct {
 		body string
+		link string
 	}
 	type when struct {
 		createItem *model.ShortLink
@@ -241,37 +259,37 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	}{
 		{
 			"success create",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusCreated, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
 			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
 		},
 		{
 			"error in service",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusInternalServerError, ""},
 			when{nil, errors.New("some service error"), nil, nil},
 		},
 		{
 			"error empty url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrEmptyURL, nil, nil},
 		},
 		{
 			"error invalid url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrInvalidURL, nil, nil},
 		},
 		{
 			"conflict unique url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusConflict, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), &model.ShortLink{ID: id1, URL: link1}, nil},
 		},
 		{
 			"conflict unique url and not found",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1)},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
 			want{http.StatusInternalServerError, ""},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, nil},
 		},
@@ -289,7 +307,15 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 			l := logger.NewMockLogger(t)
 			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
 
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			mockAuditPublisher := audit.NewMockPublisher(t)
+			mockAuditPublisher.EXPECT().Notify(mock.Anything).Run(func(event audit.Event) {
+				if tc.want.code == http.StatusCreated {
+					assert.Equal(t, tc.on.link, event.URL)
+					assert.Equal(t, audit.ActionShorted, event.Action)
+				}
+			}).Maybe()
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)
@@ -394,7 +420,9 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 
 			p := provider.NewMockShortLinkProvider(t)
 
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			mockAuditPublisher := audit.NewMockPublisher(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)
@@ -487,7 +515,9 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 
 			s := service.NewMockShortLinkService(t)
 
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			mockAuditPublisher := audit.NewMockPublisher(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Get("/api/user/urls", handler.HandleGetUserUrls)
@@ -596,7 +626,9 @@ func TestShortLinkHandler_HandleDeleteUrls(t *testing.T) {
 			s := service.NewMockShortLinkService(t)
 			p := provider.NewMockShortLinkProvider(t)
 
-			handler := NewShortLinkHandler(s, p, urlAddress, d, l)
+			mockAuditPublisher := audit.NewMockPublisher(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
 
 			r := chi.NewRouter()
 			r.Delete("/api/user/urls", handler.HandleDeleteUrls)

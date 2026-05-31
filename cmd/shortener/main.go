@@ -15,6 +15,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/config"
 	"github.com/liebeSonne/shortlink/internal/handler"
+	"github.com/liebeSonne/shortlink/internal/handler/audit"
 	handlerauth "github.com/liebeSonne/shortlink/internal/handler/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/compress"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
@@ -132,7 +133,28 @@ func initRouter(
 	shortLinkDeleter := service.NewShortLinkDeleter(ctx, logger, func(input service.InputDelete) error {
 		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
 	})
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger)
+
+	auditPublisher := audit.NewPublisher()
+	if cfg.AuditFile != nil && *cfg.AuditFile != "" {
+		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditURL, logger)
+		if err != nil {
+			return nil, fmt.Errorf("error initializing audit file observer: %w", err)
+		}
+		if closer != nil {
+			closer.AddCloser(internalio.CloserFunc(
+				func() error {
+					return auditFileObserver.Close()
+				},
+			))
+		}
+		auditPublisher.Subscribe(auditFileObserver)
+	}
+	if cfg.AuditURL != nil && *cfg.AuditURL != "" {
+		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, logger)
+		auditPublisher.Subscribe(auditURLObserver)
+	}
+
+	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger, auditPublisher)
 	db := createDatabase(cfg)
 
 	databaseHandler := handler.NewDatabaseHandler(db, logger)

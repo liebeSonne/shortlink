@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/handler/audit"
 	"github.com/liebeSonne/shortlink/internal/handler/cookie"
 	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
@@ -37,24 +39,27 @@ func NewShortLinkHandler(
 	urlAddress string,
 	deleter service.ShortLinkDeleter,
 	logger logger.Logger,
+	auditPublisher audit.Publisher,
 ) ShortLinkHandler {
 	return &shortLinkHandler{
-		service:    service,
-		provider:   provider,
-		urlAddress: urlAddress,
-		deleter:    deleter,
-		logger:     logger,
+		service:        service,
+		provider:       provider,
+		urlAddress:     urlAddress,
+		deleter:        deleter,
+		logger:         logger,
+		auditPublisher: auditPublisher,
 	}
 }
 
 type shortLinkHandler struct {
-	service       service.ShortLinkService
-	provider      provider.ShortLinkProvider
-	urlAddress    string
-	cookieService cookie.Service
-	tokenService  auth.TokenService
-	deleter       service.ShortLinkDeleter
-	logger        logger.Logger
+	service        service.ShortLinkService
+	provider       provider.ShortLinkProvider
+	urlAddress     string
+	cookieService  cookie.Service
+	tokenService   auth.TokenService
+	deleter        service.ShortLinkDeleter
+	logger         logger.Logger
+	auditPublisher audit.Publisher
 }
 
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +69,11 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		http.Error(w, "empty id", http.StatusBadRequest)
 		return
+	}
+
+	var userIDPtr *uuid.UUID
+	if userID, ok := auth.GetUserIDFromContext(ctx); ok {
+		userIDPtr = &userID
 	}
 
 	item, err := h.provider.Find(ctx, id)
@@ -77,6 +87,8 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	url := item.URL
+
+	h.sendAuditEvent(audit.ActionFollow, userIDPtr, url)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -110,6 +122,8 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 		h.logger.Errorf("response write error: %w", err)
 		return
 	}
+
+	h.sendAuditEvent(audit.ActionShorted, userIDPtr, shortLink.URL)
 }
 
 func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +163,8 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 		h.logger.Errorf("response write error: %w", err)
 		return
 	}
+
+	h.sendAuditEvent(audit.ActionShorted, userIDPtr, shortLink.URL)
 }
 
 func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request) {
@@ -312,4 +328,18 @@ func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
 		return
 	}
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func (h *shortLinkHandler) sendAuditEvent(action audit.Action, userIDPtr *uuid.UUID, link string) {
+	var userIDStrPtr *string
+	if userIDPtr != nil {
+		userIDStr := userIDPtr.String()
+		userIDStrPtr = &userIDStr
+	}
+	h.auditPublisher.Notify(audit.Event{
+		Time:   time.Now(),
+		Action: action,
+		UserID: userIDStrPtr,
+		URL:    link,
+	})
 }
