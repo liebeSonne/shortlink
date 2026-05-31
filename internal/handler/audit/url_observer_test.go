@@ -62,7 +62,7 @@ func TestNewURLObserver_Update(t *testing.T) {
 			defer mockServer.Close()
 
 			l := logger.NewMockLogger(t)
-			observer := NewURLObserver(mockServer.URL, l)
+			observer := NewURLObserver(mockServer.URL, 3, time.Millisecond*10, l)
 
 			for _, event := range tc.on.events {
 				observer.Update(event)

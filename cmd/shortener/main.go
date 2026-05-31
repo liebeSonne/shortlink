@@ -150,7 +150,7 @@ func initRouter(
 		auditPublisher.Subscribe(auditFileObserver)
 	}
 	if cfg.AuditURL != nil && *cfg.AuditURL != "" {
-		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, logger)
+		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, 3, time.Second*3, logger)
 		auditPublisher.Subscribe(auditURLObserver)
 	}
 
