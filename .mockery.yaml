@@ -32,4 +32,7 @@ packages:
   github.com/liebeSonne/shortlink/internal/auth:
     interfaces:
       TokenService: { }
-
+  github.com/liebeSonne/shortlink/internal/handler/audit:
+    interfaces:
+      Publisher: {}
+      Observer: {}
