@@ -12,6 +12,8 @@ func TestParseFlags(t *testing.T) {
 	appLog1 := "app.log"
 	fileStoragePath1 := "./file/path"
 	databaseDSN1 := "host=localhost user=username password=123 dbname=db sslmode=disable"
+	auditFile1 := "audit1.log"
+	auditURL1 := "https://audit.url1.com"
 
 	type want struct {
 		cfg Config
@@ -50,6 +52,12 @@ func TestParseFlags(t *testing.T) {
 		{"set -d flag", []string{"-d", databaseDSN1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, DatabaseDSN: &databaseDSN1}, nil}},
 		{"set -d flag empty", []string{"-d", ""}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, DatabaseDSN: nil}, nil}},
 		{"set --d flag", []string{"--d", databaseDSN1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, DatabaseDSN: &databaseDSN1}, nil}},
+		{"set -audit-file flag", []string{"-audit-file", auditFile1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditFile: &auditFile1}, nil}},
+		{"set --audit-file flag", []string{"--audit-file", auditFile1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditFile: &auditFile1}, nil}},
+		{"set --audit-file flag empty", []string{"--audit-file", ""}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditFile: nil}, nil}},
+		{"set -audit-url flag", []string{"-audit-url", auditURL1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditURL: &auditURL1}, nil}},
+		{"set --audit-url flag", []string{"-audit-url", auditURL1}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditURL: &auditURL1}, nil}},
+		{"set --audit-url flag empty", []string{"-audit-url", ""}, want{Config{ServerAddress: DefaultServerAddress, BaseURL: DefaultBaseURL, EnableLogs: DefaultEnableLogs, LogLevel: DefaultLogLevel, AuditURL: nil}, nil}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

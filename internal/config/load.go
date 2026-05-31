@@ -28,6 +28,8 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 		prefix + AuthCookieTokenKeyEnvName: AuthCookieTokenKeyEnvName,
 		prefix + AuthTokenExpiresEnvName:   AuthTokenExpiresEnvName,
 		prefix + AuthSecretKeyEnvName:      AuthSecretKeyEnvName,
+		prefix + AuditFileEnvName:          AuditFileEnvName,
+		prefix + AuditURLEnvName:           AuditURLEnvName,
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
@@ -92,7 +94,14 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 			if fCfg.DatabaseDSN != nil && *fCfg.DatabaseDSN != "" {
 				cfg.DatabaseDSN = fCfg.DatabaseDSN
 			}
+		case AuditFileEnvName:
+			if fCfg.AuditFile != nil && *fCfg.AuditFile != "" {
+				cfg.AuditFile = fCfg.AuditFile
+			}
+		case AuditURLEnvName:
+			if fCfg.AuditURL != nil && *fCfg.AuditURL != "" {
+				cfg.AuditURL = fCfg.AuditURL
+			}
 		}
-
 	}
 }

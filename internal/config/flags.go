@@ -18,6 +18,8 @@ const (
 	LogFileFlagName         = "lf"
 	FileStoragePathFlagName = "f"
 	DatabaseDSNFlagName     = "d"
+	AuditFileFlagName       = "audit-file"
+	AuditURLFlagName        = "audit-url"
 )
 
 var ErrInvalidFlagValue = errors.New("invalid flag value")
@@ -31,6 +33,8 @@ type flagsConfig struct {
 	LogFile         *string
 	FileStoragePath *string
 	DatabaseDSN     *string
+	AuditFile       *string
+	AuditURL        *string
 }
 
 func parseFlags(appID string, config *Config) error {
@@ -62,6 +66,12 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.DatabaseDSN != nil {
 			config.DatabaseDSN = flagsConf.DatabaseDSN
 		}
+		if flagsConf.AuditFile != nil {
+			config.AuditFile = flagsConf.AuditFile
+		}
+		if flagsConf.AuditURL != nil {
+			config.AuditURL = flagsConf.AuditURL
+		}
 	}
 
 	return nil
@@ -83,6 +93,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	logFile := fs.String(LogFileFlagName, "", "log file")
 	fileStoragePath := fs.String(FileStoragePathFlagName, "", "file storage path")
 	databaseDSN := fs.String(DatabaseDSNFlagName, "", "database DSN")
+	auditFile := fs.String(AuditFileFlagName, "", "audit file")
+	auditURL := fs.String(AuditURLFlagName, "", "audit URL")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -103,6 +115,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			LogFileFlagName:         false,
 			FileStoragePathFlagName: false,
 			DatabaseDSNFlagName:     false,
+			AuditFileFlagName:       false,
+			AuditURLFlagName:        false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -137,6 +151,16 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 				config.DatabaseDSN = databaseDSN
 			}
 		}
+		if isSet, ok := isSetFlagMap[AuditFileFlagName]; ok && isSet {
+			if auditFile != nil && *auditFile != "" {
+				config.AuditFile = auditFile
+			}
+		}
+		if isSet, ok := isSetFlagMap[AuditURLFlagName]; ok && isSet {
+			if auditURL != nil && *auditURL != "" {
+				config.AuditURL = auditURL
+			}
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
@@ -151,6 +175,12 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		}
 		if databaseDSN != nil && *databaseDSN != "" {
 			config.DatabaseDSN = databaseDSN
+		}
+		if auditFile != nil && *auditFile != "" {
+			config.AuditFile = auditFile
+		}
+		if auditURL != nil && *auditURL != "" {
+			config.AuditURL = auditURL
 		}
 	}
 

@@ -17,6 +17,8 @@ func TestLoadConfig(t *testing.T) {
 	authTokenExpiresStr1 := "10m"
 	authTokenExpiresDuration1 := time.Minute * 10
 	authSecretKey1 := "secret123"
+	auditFile1 := "audit1.log"
+	auditURL1 := "https://audit.url1.com"
 
 	type when struct {
 		appID     string
@@ -65,6 +67,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 					getEnvNameWithPrefix("prefix", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("prefix", AuthSecretKeyEnvName):      authSecretKey1,
+					getEnvNameWithPrefix("prefix", AuditFileEnvName):          auditFile1,
+					getEnvNameWithPrefix("prefix", AuditURLEnvName):           auditURL1,
 				},
 			},
 			want{
@@ -79,6 +83,8 @@ func TestLoadConfig(t *testing.T) {
 					AuthCookieTokenKey: authCookieTokenKey1,
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
+					AuditFile:          &auditFile1,
+					AuditURL:           &auditURL1,
 				},
 				nil,
 			},
@@ -99,6 +105,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
+					getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
+					getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 				},
 			},
 			want{
@@ -113,6 +121,8 @@ func TestLoadConfig(t *testing.T) {
 					AuthCookieTokenKey: authCookieTokenKey1,
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
+					AuditFile:          &auditFile1,
+					AuditURL:           &auditURL1,
 				},
 				nil,
 			},
@@ -129,6 +139,8 @@ func TestLoadConfig(t *testing.T) {
 					"-lf", appLog1,
 					"-f", fileStoragePath1,
 					"-d", databaseDSN1,
+					"--audit-file", auditFile1,
+					"--audit-url", auditURL1,
 				},
 				map[string]string{},
 			},
@@ -144,6 +156,8 @@ func TestLoadConfig(t *testing.T) {
 					AuthCookieTokenKey: DefaultAuthCookieTokenKey,
 					AuthTokenExpires:   DefaultAuthTokenExpires,
 					AuthSecretKey:      DefaultAuthSecretKey,
+					AuditFile:          &auditFile1,
+					AuditURL:           &auditURL1,
 				},
 				nil,
 			},
@@ -260,6 +274,8 @@ func TestMergeFlagsConfig(t *testing.T) {
 	logFile1 := "app.log"
 	fileStoragePath1 := "./file/path"
 	databaseDSN1 := "host=localhost user=username password=password dbname=db sslmode=disable"
+	auditFile1 := "audit1.log"
+	auditURL1 := "https://audit.url1.com"
 
 	flagConfig1 := flagsConfig{
 		&serverAddress1,
@@ -269,6 +285,8 @@ func TestMergeFlagsConfig(t *testing.T) {
 		&logFile1,
 		&fileStoragePath1,
 		&databaseDSN1,
+		&auditFile1,
+		&auditURL1,
 	}
 
 	type on struct {
@@ -332,6 +350,16 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"database DSN env name",
 			on{flagConfig1, []string{DatabaseDSNEnvName}},
 			want{Config{DatabaseDSN: &databaseDSN1}},
+		},
+		{
+			"audit file env name",
+			on{flagConfig1, []string{AuditFileEnvName}},
+			want{Config{AuditFile: &auditFile1}},
+		},
+		{
+			"audit url env name",
+			on{flagConfig1, []string{AuditURLEnvName}},
+			want{Config{AuditURL: &auditURL1}},
 		},
 	}
 

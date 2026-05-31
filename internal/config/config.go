@@ -38,6 +38,8 @@ const (
 	AuthCookieTokenKeyEnvName = "AUTH_COOKIE_TOKEN_KEY"
 	AuthSecretKeyEnvName      = "AUTH_SECRET_KEY"
 	AuthTokenExpiresEnvName   = "AUTH_TOKEN_EXPIRE"
+	AuditFileEnvName          = "AUDIT_FILE"
+	AuditURLEnvName           = "AUDIT_URL"
 )
 
 type Config struct {
@@ -52,6 +54,9 @@ type Config struct {
 	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token"`
 	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123"`
 	AuthTokenExpires   time.Duration `env:"AUTH_TOKEN_EXPIRE" default:"24h"`
+
+	AuditFile *string `env:"AUDIT_FILE" default:""`
+	AuditURL  *string `env:"AUDIT_URL" default:""`
 }
 
 func ParseEnv(prefix string, cfg *Config) error {

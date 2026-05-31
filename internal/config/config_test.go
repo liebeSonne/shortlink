@@ -17,6 +17,8 @@ func TestParseEnv(t *testing.T) {
 	authTokenExpiresStr1 := "10m"
 	authTokenExpiresDuration1 := time.Minute * 10
 	authSecretKey1 := "secret123"
+	auditFile1 := "audit1.log"
+	auditURL1 := "https://audit.url1.com"
 
 	type on struct {
 		prefix string
@@ -180,6 +182,40 @@ func TestParseEnv(t *testing.T) {
 			}, nil},
 		},
 		{
+			"audit file",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", AuditFileEnvName): auditFile1,
+			}},
+			want{Config{
+				ServerAddress:      DefaultServerAddress,
+				BaseURL:            DefaultBaseURL,
+				EnableLogs:         DefaultEnableLogs,
+				LogLevel:           DefaultLogLevel,
+				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
+				AuthTokenExpires:   DefaultAuthTokenExpires,
+				AuthSecretKey:      DefaultAuthSecretKey,
+				AuditFile:          &auditFile1,
+			}, nil},
+		},
+		{
+			"audit url",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", AuditURLEnvName): auditURL1,
+			}},
+			want{Config{
+				ServerAddress:      DefaultServerAddress,
+				BaseURL:            DefaultBaseURL,
+				EnableLogs:         DefaultEnableLogs,
+				LogLevel:           DefaultLogLevel,
+				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
+				AuthTokenExpires:   DefaultAuthTokenExpires,
+				AuthSecretKey:      DefaultAuthSecretKey,
+				AuditURL:           &auditURL1,
+			}, nil},
+		},
+		{
 			"all env",
 			on{""},
 			when{map[string]string{
@@ -193,6 +229,8 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 				getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 				getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
+				getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
+				getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -205,6 +243,8 @@ func TestParseEnv(t *testing.T) {
 				AuthCookieTokenKey: authCookieTokenKey1,
 				AuthTokenExpires:   authTokenExpiresDuration1,
 				AuthSecretKey:      authSecretKey1,
+				AuditFile:          &auditFile1,
+				AuditURL:           &auditURL1,
 			}, nil},
 		},
 		{
@@ -221,6 +261,8 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 				getEnvNameWithPrefix("APP_ID", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 				getEnvNameWithPrefix("APP_ID", AuthSecretKeyEnvName):      authSecretKey1,
+				getEnvNameWithPrefix("APP_ID", AuditFileEnvName):          auditFile1,
+				getEnvNameWithPrefix("APP_ID", AuditURLEnvName):           auditURL1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -233,6 +275,8 @@ func TestParseEnv(t *testing.T) {
 				AuthCookieTokenKey: authCookieTokenKey1,
 				AuthTokenExpires:   authTokenExpiresDuration1,
 				AuthSecretKey:      authSecretKey1,
+				AuditFile:          &auditFile1,
+				AuditURL:           &auditURL1,
 			}, nil},
 		},
 	}
