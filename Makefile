@@ -87,6 +87,10 @@ analyze-diff:
 	#	make analyze-diff base=./profiles/base.pprof result=./profiles/result.pprof
 	go tool pprof -top -diff_base=$(base) $(result)
 
+.PHONY: bench
+bench:
+	go test -bench=. -benchmem ./...
+
 .PHONY: fmt
 fmt:
 	gofmt -w .

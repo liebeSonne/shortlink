@@ -22,3 +22,10 @@ func TestShortIDGenerator_GenerateID(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkShortIDGenerator_GenerateID(b *testing.B) {
+	generator := NewShortIDGenerator()
+	for i := 0; i < b.N; i++ {
+		generator.GenerateID(16)
+	}
+}
