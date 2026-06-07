@@ -95,3 +95,8 @@ bench:
 fmt:
 	gofmt -w .
 	goimports -local "github.com/liebeSonne/shortlink" -w .
+
+.PHONY: doc
+doc:
+	@(sleep 2 && xdg-open "http://localhost:6060/pkg/github.com/liebeSonne/shortlink/?m=all") & \
+	godoc -http=:6060 -play
