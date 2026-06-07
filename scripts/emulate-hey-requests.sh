@@ -16,66 +16,78 @@ get_random_string() {
     tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c "$length"
 }
 
-hey -n 100 -c 5 -m POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)"
-hey -n 100 -c 5 -m POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)"
-hey -n 100 -c 5 -m POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
 
-hey -n 100 -c 5 -m POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)" \
-  -H "Cookie: session_token=${SESSION_TOKEN_1}"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
+  -H "Cookie: session_token=${SESSION_TOKEN_1}" \
+  "${URL}"
 
-hey -n 100 -c 5 -m POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)" \
-  -H "Cookie: session_token=${SESSION_TOKEN_1}"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
+  -H "Cookie: session_token=${SESSION_TOKEN_1}" \
+  "${URL}"
 
-  curl -i -X POST "${URL}" -d "${LINK_HOST_1}?post=$(get_random_string)" \
-  -H "Cookie: session_token=${SESSION_TOKEN_2}"
+hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
+  -H "Cookie: session_token=${SESSION_TOKEN_2}" \
+  "${URL}"
 
 hey -n 100 -c 5 -m GET "${URL}/eO6YcxVN"
 hey -n 100 -c 5 -m GET "${URL}/BlSbIVpT"
 hey -n 100 -c 5 -m GET "${URL}/YSy2U5"
-hey -n 100 -c 5 -m GET "${URL}/sFDqs3LH" \
-  -H "Cookie: session_token=${SESSION_TOKEN_3}"
+hey -n 100 -c 5 -m GET -H "Cookie: session_token=${SESSION_TOKEN_3}" "${URL}/sFDqs3LH"
 
-hey -n 100 -c 5 -m POST "${URL}/api/shorten" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}'
-
-hey -n 100 -c 5 -m POST "${URL}/api/shorten" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}'
-
-hey -n 100 -c 5 -m POST "${URL}/api/shorten" \
+hey -n 100 -c 5 -m POST \
   -H "Content-Type: application/json" \
   -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
-  -H "Cookie: session_token=${SESSION_TOKEN_4}"
+  "${URL}/api/shorten"
 
-hey -n 100 -c 5 -m GET "${URL}/Z1kONUpy" \
-  -H "Cookie: session_token=${SESSION_TOKEN_4}"
+hey -n 100 -c 5 -m POST \
+  -H "Content-Type: application/json" \
+  -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
+  "${URL}/api/shorten"
 
-hey -n 100 -c 5 -m POST "${URL}/api/shorten" \
+hey -n 100 -c 5 -m POST \
+  -H "Content-Type: application/json" \
+  -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
+  -H "Cookie: session_token=${SESSION_TOKEN_4}" \
+  "${URL}/api/shorten"
+
+hey -n 100 -c 5 -m GET \
+  -H "Cookie: session_token=${SESSION_TOKEN_4}" \
+  "${URL}/Z1kONUpy"
+
+hey -n 100 -c 5 -m POST \
   -H "Content-Type: application/json" \
   -H "Accept-Encoding: deflate" \
-  -d '{"url":"'"${LINK_HOST_1}"'?deflate='"$(get_random_string)"'"}'
+  -d '{"url":"'"${LINK_HOST_1}"'?deflate='"$(get_random_string)"'"}' \
+  "${URL}/api/shorten"
 
 hey -n 100 -c 5 -m GET "${URL}/ping"
 
-hey -n 100 -c 5 -m POST "${URL}/api/shorten/batch" \
+hey -n 100 -c 5 -m POST \
   -H "Content-Type: application/json" \
-  -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]'
+  -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]' \
+  "${URL}/api/shorten/batch"
 
-hey -n 100 -c 5 -m POST "${URL}/api/shorten/batch" \
+hey -n 100 -c 5 -m POST \
   -H "Content-Type: application/json" \
-  -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]'
+  -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]' \
+  "${URL}/api/shorten/batch"
 
-hey -n 100 -c 5 -m GET "${URL}/api/user/urls" -H "Content-Type: application/json"
+hey -n 100 -c 5 -m GET -H "Content-Type: application/json" "${URL}/api/user/urls"
 
-hey -n 100 -c 5 -m GET "${URL}/api/user/urls" \
+hey -n 100 -c 5 -m GET \
   -H "Content-Type: application/json" \
-  -H "Cookie: session_token=${SESSION_TOKEN_2}"
+  -H "Cookie: session_token=${SESSION_TOKEN_2}" \
+  "${URL}/api/user/urls"
 
-hey -n 100 -c 5 -m GET "${URL}/api/user/urls" \
+hey -n 100 -c 5 -m GET \
   -H "Content-Type: application/json" \
-  -H "Cookie: session_token=$(SESSION_TOKEN_5)"
+  -H "Cookie: session_token=$(SESSION_TOKEN_5)" \
+  "${URL}/api/user/urls"
 
-hey -n 100 -c 5 -m GET "${URL}/api/user/urls" \
+hey -n 100 -c 5 -m GET \
   -H "Content-Type: application/json" \
-  -H "Cookie: session_token=${SESSION_TOKEN_1}"
+  -H "Cookie: session_token=${SESSION_TOKEN_1}" \
+  "${URL}/api/user/urls"
