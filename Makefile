@@ -58,14 +58,14 @@ profile:
 	# examples:
 	# 	make profile host=http://localhost:8080 out=./profiles/base.pprof
 	# 	make profile host=http://localhost:8080 out=./profiles/result.pprof
-	curl -sK -v $(host)/debug/pprof/profile?seconds=30 > $(out)
+	curl -sK -v $(host)/debug/pprof/profile?seconds=60 > $(out)
 
 .PHONY: heap
 heap:
 	# examples:
 	# 	make heap host=http://localhost:8080 out=./profiles/base.heap.pprof
 	# 	make heap host=http://localhost:8080 out=./profiles/result.heap.pprof
-	curl -sK -v $(host)/debug/pprof/heap?seconds=30 > $(out)
+	curl -sK -v $(host)/debug/pprof/heap?seconds=60 > $(out)
 
 .PHONY: analyze
 analyze:

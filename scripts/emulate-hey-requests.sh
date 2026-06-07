@@ -18,11 +18,10 @@ get_random_string() {
 
 hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
 hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
-hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}"
 
-hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
-  -H "Cookie: session_token=${SESSION_TOKEN_1}" \
-  "${URL}"
+for i in $(seq 1 100); do
+  hey -n 1 -c 1 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" "${URL}" &
+done
 
 hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
   -H "Cookie: session_token=${SESSION_TOKEN_1}" \
@@ -32,9 +31,15 @@ hey -n 100 -c 5 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
   -H "Cookie: session_token=${SESSION_TOKEN_2}" \
   "${URL}"
 
+for i in $(seq 1 100); do
+  hey -n 1 -c 1 -m POST -d "${LINK_HOST_1}?post=$(get_random_string)" \
+    -H "Cookie: session_token=${SESSION_TOKEN_3}" \
+    "${URL}"
+done
+
 hey -n 100 -c 5 -m GET "${URL}/eO6YcxVN"
 hey -n 100 -c 5 -m GET "${URL}/BlSbIVpT"
-hey -n 100 -c 5 -m GET "${URL}/YSy2U5"
+hey -n 100 -c 5 -m GET "${URL}/$(get_random_string)"
 hey -n 100 -c 5 -m GET -H "Cookie: session_token=${SESSION_TOKEN_3}" "${URL}/sFDqs3LH"
 
 hey -n 100 -c 5 -m POST \
@@ -42,6 +47,13 @@ hey -n 100 -c 5 -m POST \
   -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
   "${URL}/api/shorten"
 
+for i in $(seq 1 100); do
+  hey -n 1 -c 1 -m POST \
+    -H "Content-Type: application/json" \
+    -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
+    "${URL}/api/shorten"
+done
+
 hey -n 100 -c 5 -m POST \
   -H "Content-Type: application/json" \
   -d '{"url":"'"${LINK_HOST_2}"'?api='"$(get_random_string)"'"}' \
@@ -53,15 +65,13 @@ hey -n 100 -c 5 -m POST \
   -H "Cookie: session_token=${SESSION_TOKEN_4}" \
   "${URL}/api/shorten"
 
-hey -n 100 -c 5 -m GET \
-  -H "Cookie: session_token=${SESSION_TOKEN_4}" \
-  "${URL}/Z1kONUpy"
-
-hey -n 100 -c 5 -m POST \
-  -H "Content-Type: application/json" \
-  -H "Accept-Encoding: deflate" \
-  -d '{"url":"'"${LINK_HOST_1}"'?deflate='"$(get_random_string)"'"}' \
-  "${URL}/api/shorten"
+for i in $(seq 1 100); do
+  hey -n 10 -c 3 -m POST \
+    -H "Content-Type: application/json" \
+    -H "Accept-Encoding: deflate" \
+    -d '{"url":"'"${LINK_HOST_1}"'?deflate='"$(get_random_string)"'"}' \
+    "${URL}/api/shorten"
+done
 
 hey -n 100 -c 5 -m GET "${URL}/ping"
 
@@ -70,10 +80,12 @@ hey -n 100 -c 5 -m POST \
   -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]' \
   "${URL}/api/shorten/batch"
 
-hey -n 100 -c 5 -m POST \
-  -H "Content-Type: application/json" \
-  -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]' \
-  "${URL}/api/shorten/batch"
+for i in $(seq 1 50); do
+  hey -n 6 -c 3 -m POST \
+    -H "Content-Type: application/json" \
+    -d '[{"correlation_id": "c1", "original_url": "'"${LINK_HOST_1}"'?batch='"$(get_random_string)"'"}, {"correlation_id": "с2", "original_url": "'"${LINK_HOST_2}"'?batch='"$(get_random_string)"'"}]' \
+    "${URL}/api/shorten/batch"
+done
 
 hey -n 100 -c 5 -m GET -H "Content-Type: application/json" "${URL}/api/user/urls"
 
@@ -84,10 +96,11 @@ hey -n 100 -c 5 -m GET \
 
 hey -n 100 -c 5 -m GET \
   -H "Content-Type: application/json" \
-  -H "Cookie: session_token=$(SESSION_TOKEN_5)" \
+  -H "Cookie: session_token=${SESSION_TOKEN_5}" \
   "${URL}/api/user/urls"
 
 hey -n 100 -c 5 -m GET \
   -H "Content-Type: application/json" \
   -H "Cookie: session_token=${SESSION_TOKEN_1}" \
   "${URL}/api/user/urls"
+
