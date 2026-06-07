@@ -47,20 +47,20 @@ const (
 
 // Config - настройки.
 type Config struct {
-	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080"`
-	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080"`
-	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false"`
-	LogLevel        string  `env:"LOG_LEVEL" default:"info"`
-	LogFile         *string `env:"LOG_FILE" default:""`
-	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:""`
-	DatabaseDSN     *string `env:"DATABASE_DSN" default:""`
+	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080"`           // Адрес сервера.
+	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080"` // Базовая ссылка создаваемых сокращенных ссылок.
+	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false"`              // Включение логирования.
+	LogLevel        string  `env:"LOG_LEVEL" default:"info"`                 // Уровень логирования.
+	LogFile         *string `env:"LOG_FILE" default:""`                      // Файл для сохранения логов.
+	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:""`             // Файловое хранилище для сокращенных ссылок.
+	DatabaseDSN     *string `env:"DATABASE_DSN" default:""`                  // Параметры соединения с базой данных.
 
-	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token"`
-	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123"`
-	AuthTokenExpires   time.Duration `env:"AUTH_TOKEN_EXPIRE" default:"24h"`
+	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token"` // Название токена авторизации с cookie.
+	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123"`      // Секретный код для подписи токена.
+	AuthTokenExpires   time.Duration `env:"AUTH_TOKEN_EXPIRE" default:"24h"`               // Время жизни токена.
 
-	AuditFile *string `env:"AUDIT_FILE" default:""`
-	AuditURL  *string `env:"AUDIT_URL" default:""`
+	AuditFile *string `env:"AUDIT_FILE" default:""` // Файл для сохранения данных аудита.
+	AuditURL  *string `env:"AUDIT_URL" default:""`  // Ссылка для сохранения данных аудита.
 }
 
 // ParseEnv - парсинг настроек из переменных окружения.
