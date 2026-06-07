@@ -100,3 +100,7 @@ fmt:
 doc:
 	@(sleep 2 && xdg-open "http://localhost:6060/pkg/github.com/liebeSonne/shortlink/?m=all") & \
 	godoc -http=:6060 -play
+
+.PHONY: swag
+swag:
+	swag init --output ./api/swagger/ -g ./cmd/shortener/main.go

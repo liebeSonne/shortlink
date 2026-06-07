@@ -1,0 +1,358 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Сервис сокращенных ссылок.",
+        "title": "Shortener API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "paths": {
+        "/": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Создание сокращенной ссылки",
+                "parameters": [
+                    {
+                        "description": "URL",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/shorten": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Создание сокращенной ссылки",
+                "parameters": [
+                    {
+                        "description": "Данные ссылки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ShortenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ShortenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/shorten/batch": {
+            "post": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Создание сокращенных ссылок",
+                "parameters": [
+                    {
+                        "description": "Данные ссылок",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.ShortenBatchRequestItem"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.ShortenBatchResponseItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "description": "Conflict"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/api/user/urls": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Получение сокращенных ссылок пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные ссылок",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.ShortenBatchRequestItem"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.UserUrlsResponseItem"
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Удаление сокращенных ссылок",
+                "parameters": [
+                    {
+                        "description": "Массив сокращенных ссылок",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "tags": [
+                    "database"
+                ],
+                "summary": "Проверка соединения с базой данных",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "cookieAuth": []
+                    }
+                ],
+                "tags": [
+                    "shortener"
+                ],
+                "summary": "Переход на ссылку по сокращенной ссылке",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ShortLink ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Temporary Redirect"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "410": {
+                        "description": "Gone"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handler.ShortenBatchRequestItem": {
+            "type": "object",
+            "properties": {
+                "correlation_id": {
+                    "type": "string"
+                },
+                "original_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.ShortenBatchResponseItem": {
+            "type": "object",
+            "properties": {
+                "correlation_id": {
+                    "type": "string"
+                },
+                "short_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.ShortenRequest": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.ShortenResponse": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.UserUrlsResponseItem": {
+            "type": "object",
+            "properties": {
+                "original_url": {
+                    "type": "string"
+                },
+                "short_url": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "cookieAuth": {
+            "type": "apiKey",
+            "name": "session_token",
+            "in": "cookie"
+        }
+    }
+}

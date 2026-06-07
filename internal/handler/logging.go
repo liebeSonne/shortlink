@@ -7,6 +7,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
+// LoggingMiddleware - создание посредника логирования запросов.
 func LoggingMiddleware(next http.Handler, logger logger.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

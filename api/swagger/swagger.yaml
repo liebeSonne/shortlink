@@ -1,0 +1,223 @@
+definitions:
+  handler.ShortenBatchRequestItem:
+    properties:
+      correlation_id:
+        type: string
+      original_url:
+        type: string
+    type: object
+  handler.ShortenBatchResponseItem:
+    properties:
+      correlation_id:
+        type: string
+      short_url:
+        type: string
+    type: object
+  handler.ShortenRequest:
+    properties:
+      url:
+        type: string
+    type: object
+  handler.ShortenResponse:
+    properties:
+      result:
+        type: string
+    type: object
+  handler.UserUrlsResponseItem:
+    properties:
+      original_url:
+        type: string
+      short_url:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Сервис сокращенных ссылок.
+  title: Shortener API
+  version: "1.0"
+paths:
+  /:
+    post:
+      parameters:
+      - description: URL
+        in: body
+        name: request
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "409":
+          description: Conflict
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Создание сокращенной ссылки
+      tags:
+      - shortener
+  /{id}:
+    get:
+      parameters:
+      - description: ShortLink ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "307":
+          description: Temporary Redirect
+        "400":
+          description: Bad Request
+        "410":
+          description: Gone
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Переход на ссылку по сокращенной ссылке
+      tags:
+      - shortener
+  /api/shorten:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные ссылки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ShortenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.ShortenResponse'
+        "400":
+          description: Bad Request
+        "409":
+          description: Conflict
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Создание сокращенной ссылки
+      tags:
+      - shortener
+  /api/shorten/batch:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные ссылок
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/handler.ShortenBatchRequestItem'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            items:
+              $ref: '#/definitions/handler.ShortenBatchResponseItem'
+            type: array
+        "400":
+          description: Bad Request
+        "409":
+          description: Conflict
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Создание сокращенных ссылок
+      tags:
+      - shortener
+  /api/user/urls:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Массив сокращенных ссылок
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Удаление сокращенных ссылок
+      tags:
+      - shortener
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные ссылок
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/handler.ShortenBatchRequestItem'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.UserUrlsResponseItem'
+            type: array
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+      security:
+      - cookieAuth: []
+      summary: Получение сокращенных ссылок пользователя
+      tags:
+      - shortener
+  /ping:
+    get:
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+      summary: Проверка соединения с базой данных
+      tags:
+      - database
+securityDefinitions:
+  cookieAuth:
+    in: cookie
+    name: session_token
+    type: apiKey
+swagger: "2.0"

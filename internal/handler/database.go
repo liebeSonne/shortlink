@@ -7,10 +7,13 @@ import (
 	"github.com/liebeSonne/shortlink/internal/repository/database"
 )
 
+// DatabaseHandler - интерфейс обработчика событий к базе данных.
 type DatabaseHandler interface {
+	// HandlePing - обработчик запроса проверки соединения с базой данных.
 	HandlePing(w http.ResponseWriter, r *http.Request)
 }
 
+// NewDatabaseHandler - создание экземпляра обработчика запросов к базе данных.
 func NewDatabaseHandler(
 	database database.Database,
 	logger logger.Logger,
@@ -26,6 +29,12 @@ type databaseHandler struct {
 	logger   logger.Logger
 }
 
+// HandlePing    godoc
+// @Summary      Проверка соединения с базой данных
+// @Tags         database
+// @Success      200
+// @Failure      500
+// @Router       /ping [get]
 func (h *databaseHandler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
