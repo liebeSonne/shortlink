@@ -46,3 +46,36 @@ create-migration:
 .PHONY: mocks
 mocks:
 	mockery
+
+.PHONY: emulate
+emulate:
+	# examples:
+	#	make emulate host="http://localhost:8080"
+	"./scripts/emulate-hey-requests.sh" $(host)
+
+.PHONY: profile
+profile:
+	# examples:
+	# 	make profile host=http://localhost:8080 out=./profiles/base.pprof
+	# 	make profile host=http://localhost:8080 out=./profiles/result.pprof
+	curl -sK -v $(host)/debug/pprof/profile?seconds=30 > $(out)
+
+.PHONY: analyze
+analyze:
+	# examples:
+	#	make analyze file=./profiles/base.pprof
+	#	make analyze file=./profiles/result.pprof
+	go tool pprof $(file)
+
+.PHONY: analyze-web
+analyze-web:
+	# examples:
+	#	make analyze-web file=./profiles/base.pprof
+	#	make analyze-web file=./profiles/result.pprof
+	go tool pprof -http=":9090" $(file)
+
+.PHONY: analyze-diff
+analyze-diff:
+	# examples:
+	#	make analyze-diff base=./profiles/base.pprof result=./profiles/result.pprof
+	go tool pprof -top -diff_base=$(base) $(result)
