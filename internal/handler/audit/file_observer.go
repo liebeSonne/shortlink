@@ -8,6 +8,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
+// NewFileObserver - создание экземпляра наблюдателя сохраняющего данные в файл.
 func NewFileObserver(
 	filePath string,
 	logger logger.Logger,
@@ -24,6 +25,7 @@ func NewFileObserver(
 	}, nil
 }
 
+// FileObserver - структура наблюдателя сохраняющего данные в файл.
 type FileObserver struct {
 	filePath string
 	file     *os.File

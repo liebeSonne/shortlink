@@ -8,10 +8,13 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// Database - интерфейс методов взаимодействия с базой данных.
 type Database interface {
+	// Ping - проверка соединения с базой данных.
 	Ping(ctx context.Context) error
 }
 
+// NewDatabase - создание экземпляра базы данных.
 func NewDatabase(
 	dataSourceName string,
 ) Database {

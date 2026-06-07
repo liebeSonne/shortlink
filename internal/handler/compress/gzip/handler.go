@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// NewGzipHandlerMiddleware - создание экземпляра посредника для gzip.
 func NewGzipHandlerMiddleware(h http.Handler, contentTypes *[]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		allowedContentType := true

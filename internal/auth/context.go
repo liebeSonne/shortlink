@@ -10,10 +10,12 @@ type tokenContextKey struct{}
 
 var tokenKey = tokenContextKey{}
 
+// CreateTokenContext - создание контекста с токеном.
 func CreateTokenContext(ctx context.Context, token Token) context.Context {
 	return context.WithValue(ctx, tokenKey, token)
 }
 
+// GetUserIDFromContext - получение идентификатора пользователя зи контекста.
 func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	tokenPtr, ok := getTokenFromContext(ctx)
 	if !ok || tokenPtr.UserID == "" {
@@ -28,6 +30,7 @@ func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	return userID, true
 }
 
+// getTokenFromContext - получение токена из контекста.
 func getTokenFromContext(ctx context.Context) (Token, bool) {
 	token, ok := ctx.Value(tokenKey).(Token)
 	if !ok {

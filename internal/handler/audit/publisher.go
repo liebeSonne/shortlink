@@ -2,11 +2,15 @@ package audit
 
 import "sync"
 
+// Publisher - интерфейс издателя событий.
 type Publisher interface {
+	// Subscribe - подписать наблюдателя.
 	Subscribe(observer Observer)
+	// Notify - уведомить о событии.
 	Notify(event Event)
 }
 
+// NewPublisher - создание экземпляра издателя событий.
 func NewPublisher() Publisher {
 	return &publisher{}
 }

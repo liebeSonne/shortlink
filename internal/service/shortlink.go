@@ -11,30 +11,41 @@ import (
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
+// ShortLinkSize - длина строки сокращенной ссылки.
 const ShortLinkSize = 8
+
+// DefaultMaxAttemptsToGenerateUniqueID - количество попыток сгенерировать уникальную сокращенную ссылку.
 const DefaultMaxAttemptsToGenerateUniqueID = 5
 
+// ErrTooManyAttempts - ошибка при превышении количества попыток создать уникальную сокращенную ссылку.
 var ErrTooManyAttempts = errors.New("too many attempts to generate unique short id")
 
 var errIDAlreadyExists = errors.New("id already exists")
 var errEmptyID = errors.New("empty ID")
 
+// InputShortLinkData - набор данных для создания сокращенной ссылки.
 type InputShortLinkData struct {
 	CorrelationID string
 	URL           string
 }
 
+// OutputShortLinkData - набор данных созданной сокращенной ссылки.
 type OutputShortLinkData struct {
 	CorrelationID string
 	ShortLink     model.ShortLink
 }
 
+// ShortLinkService - интерфейс сервиса управления сокращенными ссылками.
 type ShortLinkService interface {
+	// Create - создание сокращенной ссылки.
 	Create(ctx context.Context, url string, userID *uuid.UUID) (*model.ShortLink, error)
+	// CreateBatch - создание массива сокращенных ссылок.
 	CreateBatch(ctx context.Context, urlsData []InputShortLinkData, userID *uuid.UUID) ([]OutputShortLinkData, error)
+	// DeleteIDs - удаление сокращенных ссылок.
 	DeleteIDs(ctx context.Context, ids []string, userID *uuid.UUID) error
 }
 
+// NewShortLinkService - создание экземпляра сервиса управления сокращенными ссылками.
 func NewShortLinkService(
 	repository repository.ShortLinkRepository,
 	generator ShortIDGenerator,

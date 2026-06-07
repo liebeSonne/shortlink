@@ -10,6 +10,7 @@ import (
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
+// NewMemoryShortLinkRepository - создание экземпляра репозитория сокращенных ссылок реализованного в памяти.
 func NewMemoryShortLinkRepository() repository.ShortLinkRepository {
 	return &memoryShortLinkRepository{
 		linksMap:        make(map[string]model.ShortLink),

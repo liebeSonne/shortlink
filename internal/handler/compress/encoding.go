@@ -10,13 +10,16 @@ import (
 
 var ErrUnknownEncoding = errors.New("unknown encoding")
 
+// Encoding - тип кодировщика.
 type Encoding int
 
+// Значения кодировщиков.
 const (
 	GzipEncoding Encoding = iota
 	DeflateEncoding
 )
 
+// NewEncodingMiddleware - создание экземпляра посредников кодировщиков.
 func NewEncodingMiddleware(
 	h http.Handler,
 	encoding Encoding,

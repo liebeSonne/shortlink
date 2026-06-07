@@ -15,6 +15,7 @@ import (
 
 var errUnexpectedStatusCode = errors.New("unexpected status code")
 
+// NewURLObserver - создание экземпляра наблюдателя сохраняющего данные по ссылке.
 func NewURLObserver(
 	host string,
 	maxAttempts uint,
@@ -29,6 +30,7 @@ func NewURLObserver(
 	}
 }
 
+// URLObserver - структура наблюдателя сохраняющего данные по ссылке.
 type URLObserver struct {
 	host        string
 	maxAttempts uint

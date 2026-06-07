@@ -11,6 +11,8 @@ import (
 
 var ErrInvalidTokenUserID = errors.New("invalid token user id")
 
+// NewAuthCookieMiddleware - создание экземпляра посредника авторизации через cookie.
+// Получает токен авторизации из cookie.
 func NewAuthCookieMiddleware(
 	next http.Handler,
 	tokenService auth.TokenService,

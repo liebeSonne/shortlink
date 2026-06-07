@@ -8,12 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Client - интерфейс клиента к базе данных.
 type Client interface {
+	// Pool - возвращает пул соединений с базой данных.
 	Pool() *pgxpool.Pool
 
 	io.Closer
 }
 
+// NewClient - создание экземпляра клиента к базе данных.
 func NewClient(
 	ctx context.Context,
 	dataSourceName string,

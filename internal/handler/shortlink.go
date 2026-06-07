@@ -24,6 +24,7 @@ import (
 
 var ErrNotCreated = errors.New("short link not created")
 
+// ShortLinkHandler - интерфейс обработчиков запросов сокращенных ссылок.
 type ShortLinkHandler interface {
 	HandleGet(w http.ResponseWriter, r *http.Request)
 	HandleCreate(w http.ResponseWriter, r *http.Request)
@@ -33,6 +34,7 @@ type ShortLinkHandler interface {
 	HandleDeleteUrls(w http.ResponseWriter, r *http.Request)
 }
 
+// NewShortLinkHandler - создание экземпляра обработчиков запросов сокращенных ссылок.
 func NewShortLinkHandler(
 	service service.ShortLinkService,
 	provider provider.ShortLinkProvider,

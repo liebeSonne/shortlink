@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// NewDeflateHandlerMiddleware - создание экземпляра посредника для deflate.
 func NewDeflateHandlerMiddleware(h http.Handler, contentTypes *[]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		allowedContentType := true

@@ -8,6 +8,8 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
+// NewAuthMiddleware - создание экземпляра посредника авторизации.
+// Добавляет в контекст токен авторизации.
 func NewAuthMiddleware(
 	next http.Handler,
 	tokenService auth.TokenService,

@@ -5,11 +5,15 @@ import (
 	"net/http"
 )
 
+// Service - интерфейс сервиса управления авторизацией через cookie.
 type Service interface {
+	// SetAuthToken - установка токена авторизации в cookie.
 	SetAuthToken(tokenString string, w http.ResponseWriter, r *http.Request) error
+	// GetAuthToken - получение токена авторизации из cookie.
 	GetAuthToken(r *http.Request) (string, error)
 }
 
+// NewService - создание экземпляра сервиса управления авторизацией.
 func NewService(
 	tokenKey string,
 ) Service {

@@ -5,10 +5,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+// RootRouter - интерфейс корневого роутера.
 type RootRouter interface {
+	// Router - возвращает роутер.
 	Router() chi.Router
 }
 
+// NewRootRouter - создание экземпляра корневого роутера.
 func NewRootRouter(
 	shortLinkHandler ShortLinkHandler,
 	databaseHandler DatabaseHandler,

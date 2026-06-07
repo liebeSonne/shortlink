@@ -6,9 +6,13 @@ import (
 	"net/url"
 )
 
-var ErrEmptyURL = errors.New("empty URL")
-var ErrInvalidURL = errors.New("invalid URL")
+// Ошибки валидации ссылок.
+var (
+	ErrEmptyURL   = errors.New("empty URL")
+	ErrInvalidURL = errors.New("invalid URL")
+)
 
+// validateLink - валидация формата ссылки.
 func validateLink(str string) error {
 	if len(str) == 0 {
 		return ErrEmptyURL

@@ -8,6 +8,7 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
+// Значения уровней логирования.
 const (
 	LogLevelDebug = "debug"
 	LogLevelInfo  = "info"
@@ -17,6 +18,7 @@ const (
 	LogLevelFatal = "fatal"
 )
 
+// Значения по умолчанию.
 const (
 	DefaultBaseURL            = "http://localhost:8080"
 	DefaultServerAddress      = ":8080"
@@ -27,6 +29,7 @@ const (
 	DefaultAuthTokenExpires   = time.Hour * 24
 )
 
+// Названия настроек в переменных окружения.
 const (
 	ServerAddressEnvName      = "SERVER_ADDRESS"
 	BaseURLEnvName            = "BASE_URL"
@@ -42,6 +45,7 @@ const (
 	AuditURLEnvName           = "AUDIT_URL"
 )
 
+// Config - настройки.
 type Config struct {
 	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080"`
 	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080"`
@@ -59,6 +63,7 @@ type Config struct {
 	AuditURL  *string `env:"AUDIT_URL" default:""`
 }
 
+// ParseEnv - парсинг настроек из переменных окружения.
 func ParseEnv(prefix string, cfg *Config) error {
 	if cfg == nil {
 		return nil

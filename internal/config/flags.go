@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Названия флагов.
 const (
 	ServerAddressFlagName   = "a"
 	BaseURLFlagName         = "b"
@@ -21,9 +22,13 @@ const (
 	AuditURLFlagName        = "audit-url"
 )
 
-var ErrInvalidFlagValue = errors.New("invalid flag value")
-var ErrInvalidDefaultServerAddress = errors.New("invalid default server address")
+// Ошибки разора флагов.
+var (
+	ErrInvalidFlagValue            = errors.New("invalid flag value")
+	ErrInvalidDefaultServerAddress = errors.New("invalid default server address")
+)
 
+// flagsConfig - настройки получаемые из флагов.
 type flagsConfig struct {
 	ServerAddress   *string
 	BaseURL         *string
@@ -36,6 +41,7 @@ type flagsConfig struct {
 	AuditURL        *string
 }
 
+// parseFlags - получение настроек из флагов.
 func parseFlags(appID string, config *Config) error {
 	flagsConf := flagsConfig{}
 	err := parseFlagsConfig(appID, &flagsConf, false)
@@ -76,6 +82,7 @@ func parseFlags(appID string, config *Config) error {
 	return nil
 }
 
+// parseFlagsConfig - инициализация настроек флагов из флагов.
 func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	fs := flag.NewFlagSet(appID, flag.ContinueOnError)
 
@@ -185,6 +192,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	return nil
 }
 
+// Address - параметры настройки адреса.
 type address struct {
 	Host string
 	Port int

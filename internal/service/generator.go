@@ -4,10 +4,13 @@ import (
 	"math/rand"
 )
 
+// ShortIDGenerator - интерфейс генератора имен сокращенных ссылок.
 type ShortIDGenerator interface {
+	// GenerateID - генерация имени сокращенной ссылки указанного размера.
 	GenerateID(size uint) string
 }
 
+// NewShortIDGenerator - создание экземпляра генератора названий сокращенных ссылок.
 func NewShortIDGenerator() ShortIDGenerator {
 	return &shortIDGenerator{
 		symbols: []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"),

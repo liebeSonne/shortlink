@@ -18,8 +18,10 @@ import (
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
 
+// chunkSize - количество элементов в одном запросе в базе данных.
 const chunkSize = 500
 
+// NewShortLinkRepository - создание экземпляра репозитория сокращенных ссылок реализованного в базе данных.
 func NewShortLinkRepository(
 	pool *pgxpool.Pool,
 ) repository.ShortLinkRepository {

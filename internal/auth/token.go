@@ -15,15 +15,20 @@ type Claims struct {
 	Token
 }
 
+// Token - данные токена.
 type Token struct {
 	UserID string
 }
 
+// TokenService - интерфейс сервиса управления токенами.
 type TokenService interface {
+	// Create - создание токена.
 	Create(tokenData Token) (string, error)
+	// Parse - формирование токена из строки.
 	Parse(tokenString string) (Token, error)
 }
 
+// NewTokenService - создание экземпляра сервиса управления токенами.
 func NewTokenService(
 	secretKey string,
 	tokenExpiry time.Duration,

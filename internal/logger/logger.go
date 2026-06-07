@@ -1,7 +1,9 @@
 package logger
 
+// LogLevel - тип уровня логирования.
 type LogLevel int
 
+// Значения уровней логирования.
 const (
 	DebugLevel LogLevel = iota
 	InfoLevel
@@ -11,6 +13,7 @@ const (
 	PanicLevel
 )
 
+// Logger - Интерфейс логгера.
 type Logger interface {
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})

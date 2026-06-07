@@ -8,18 +8,25 @@ import (
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
+// deleterChanSize - размер канала удаляемых ссылок.
 const deleterChanSize = 5
+
+// deleterWorkersCount - количество обработчиков удаления сокращенных ссылок.
 const deleterWorkersCount = 5
 
+// InputDelete - набор данных для удаления сокращенных ссылок.
 type InputDelete struct {
 	IDs    []string
 	UserID *uuid.UUID
 }
 
+// ShortLinkDeleter - интерфейс сервиса отложенного удаления сокращенных ссылок.
 type ShortLinkDeleter interface {
+	// Add - добавление в пул отложено удаляемых сокращенных ссылок.
 	Add(input InputDelete) error
 }
 
+// NewShortLinkDeleter - создание экземпляра сервиса отложенного удаления сокращенных ссылок.
 func NewShortLinkDeleter(
 	ctx context.Context,
 	logger logger.Logger,

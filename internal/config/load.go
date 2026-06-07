@@ -7,7 +7,7 @@ import (
 	"github.com/caarlos0/env/v11"
 )
 
-// LoadConfig - Load config from env (first priority) and from flags (second priority)
+// LoadConfig - загружает настройки из переменных окружения (первый приоритет) и из флагов (второй приоритет).
 func LoadConfig(appID, envPrefix string) (Config, error) {
 	fCfg := flagsConfig{}
 	err := parseFlagsConfig(appID, &fCfg, true)
@@ -59,6 +59,7 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 	return cfg, nil
 }
 
+// mergeFlagsConfig - слияние настроек с настройками из флага для перечисленных переменных окружения.
 func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 	if cfg == nil {
 		return

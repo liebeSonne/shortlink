@@ -23,6 +23,7 @@ type shortLinkStorageData struct {
 	Deleted     bool       `json:"deleted"`
 }
 
+// NewFileShortLinkRepository - создание экземпляра репозитория сокращенных ссылок реализованного в файлах.
 func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepositoryWithCloser, error) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {

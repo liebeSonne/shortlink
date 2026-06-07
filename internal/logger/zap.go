@@ -23,6 +23,7 @@ var zapLogLevelMap = map[LogLevel]zapcore.Level{
 	FatalLevel: zapcore.FatalLevel,
 }
 
+// NewZapLogger - создание экземпляра логгера с реализацией через zap логгер.
 func NewZapLogger(level LogLevel, w io.Writer) (Logger, error) {
 	zapLevel, ok := zapLogLevelMap[level]
 	if !ok {
