@@ -34,6 +34,8 @@ func (h *rootHandler) Router() chi.Router {
 		r.Use(middleware.Logger)
 	}
 
+	r.Mount("/debug", middleware.Profiler())
+
 	r.Get("/ping", h.databaseHandler.HandlePing)
 	r.Get("/{id}", h.shortLinkHandler.HandleGet)
 	r.Post("/", h.shortLinkHandler.HandleCreate)
