@@ -4,7 +4,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -98,8 +97,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
-		log.Printf("error parsing config flags: %v", err)
-		return err
+		return fmt.Errorf("error parsing config flags: %w", err)
 	}
 
 	if config == nil {
