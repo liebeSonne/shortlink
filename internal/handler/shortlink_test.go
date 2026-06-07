@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/liebeSonne/shortlink/internal/handler/audit"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/handler/audit"
 	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/provider"

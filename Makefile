@@ -86,3 +86,8 @@ analyze-diff:
 	# examples:
 	#	make analyze-diff base=./profiles/base.pprof result=./profiles/result.pprof
 	go tool pprof -top -diff_base=$(base) $(result)
+
+.PHONY: fmt
+fmt:
+	gofmt -w .
+	goimports -local "github.com/liebeSonne/shortlink" -w .

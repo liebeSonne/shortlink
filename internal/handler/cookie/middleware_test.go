@@ -3,8 +3,6 @@ package cookie
 import (
 	"errors"
 	"fmt"
-	"github.com/liebeSonne/shortlink/internal/logger"
-	"github.com/liebeSonne/shortlink/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/liebeSonne/shortlink/internal/auth"
+	"github.com/liebeSonne/shortlink/internal/logger"
+	"github.com/liebeSonne/shortlink/internal/service"
 )
 
 func TestNewAuthCookieMiddleware(t *testing.T) {
