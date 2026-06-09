@@ -65,15 +65,16 @@ type shortLinkHandler struct {
 }
 
 // HandleGet     godoc
-// @Summary      Переход на ссылку по сокращенной ссылке
-// @Tags         shortener
-// @Param        id path string true "ShortLink ID"
-// @Success      307
-// @Failure      400
-// @Failure      410
-// @Failure      500
-// @Security     cookieAuth
-// @Router       /{id} [get]
+//
+//	@Summary	Переход на ссылку по сокращенной ссылке
+//	@Tags		shortener
+//	@Param		id	path	string	true	"ShortLink ID"
+//	@Success	307
+//	@Failure	400
+//	@Failure	410
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/{id} [get]
 func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
@@ -106,15 +107,16 @@ func (h *shortLinkHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleCreate  godoc
-// @Summary      Создание сокращенной ссылки
-// @Tags         shortener
-// @Param        request body string true "URL"
-// @Success      201
-// @Failure      400
-// @Failure      409
-// @Failure      500
-// @Security     cookieAuth
-// @Router       / [post]
+//
+//	@Summary	Создание сокращенной ссылки
+//	@Tags		shortener
+//	@Param		request	body	string	true	"URL"
+//	@Success	201
+//	@Failure	400
+//	@Failure	409
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/ [post]
 func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -149,17 +151,18 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 }
 
 // HandleCreateShorten  godoc
-// @Summary      Создание сокращенной ссылки
-// @Tags         shortener
-// @Accept       json
-// @Produce      json
-// @Param        request body ShortenRequest true "Данные ссылки"
-// @Success      201 {object} ShortenResponse
-// @Failure      400
-// @Failure      409
-// @Failure      500
-// @Security     cookieAuth
-// @Router       /api/shorten [post]
+//
+//	@Summary	Создание сокращенной ссылки
+//	@Tags		shortener
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body		ShortenRequest	true	"Данные ссылки"
+//	@Success	201		{object}	ShortenResponse
+//	@Failure	400
+//	@Failure	409
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/api/shorten [post]
 func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -202,17 +205,18 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 }
 
 // HandleCreateShortenBatch  godoc
-// @Summary      Создание сокращенных ссылок
-// @Tags         shortener
-// @Accept       json
-// @Produce      json
-// @Param        request body ShortenBatchRequest true "Данные ссылок"
-// @Success      201 {object} ShortenBatchResponse
-// @Failure      400
-// @Failure      409
-// @Failure      500
-// @Security     cookieAuth
-// @Router       /api/shorten/batch [post]
+//
+//	@Summary	Создание сокращенных ссылок
+//	@Tags		shortener
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body		ShortenBatchRequest	true	"Данные ссылок"
+//	@Success	201		{object}	ShortenBatchResponse
+//	@Failure	400
+//	@Failure	409
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/api/shorten/batch [post]
 func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -264,17 +268,18 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 }
 
 // HandleGetUserUrls  godoc
-// @Summary      Получение сокращенных ссылок пользователя
-// @Tags         shortener
-// @Accept       json
-// @Produce      json
-// @Param        request body ShortenBatchRequest true "Данные ссылок"
-// @Success      200 {object} UserUrlsResponse
-// @Success      204
-// @Failure      401
-// @Failure      500
-// @Security     cookieAuth
-// @Router       /api/user/urls [get]
+//
+//	@Summary	Получение сокращенных ссылок пользователя
+//	@Tags		shortener
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body		ShortenBatchRequest	true	"Данные ссылок"
+//	@Success	200		{object}	UserUrlsResponse
+//	@Success	204
+//	@Failure	401
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/api/user/urls [get]
 func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -318,17 +323,18 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 }
 
 // HandleDeleteUrls  godoc
-// @Summary      Удаление сокращенных ссылок
-// @Tags         shortener
-// @Accept       json
-// @Produce      json
-// @Param        request body []string true "Массив сокращенных ссылок"
-// @Success      202
-// @Failure      400
-// @Failure      401
-// @Failure      500
-// @Security     cookieAuth
-// @Router       /api/user/urls [delete]
+//
+//	@Summary	Удаление сокращенных ссылок
+//	@Tags		shortener
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body	[]string	true	"Массив сокращенных ссылок"
+//	@Success	202
+//	@Failure	400
+//	@Failure	401
+//	@Failure	500
+//	@Security	cookieAuth
+//	@Router		/api/user/urls [delete]
 func (h *shortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

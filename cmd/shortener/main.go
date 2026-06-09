@@ -29,13 +29,13 @@ import (
 	"github.com/liebeSonne/shortlink/internal/service"
 )
 
-// @title Shortener API
-// @description Сервис сокращенных ссылок.
-// @version 1.0
-// @host	localhost:8080
-// @SecurityDefinitions.apikey cookieAuth
-// @In cookie
-// @Name session_token
+//	@title						Shortener API
+//	@description				Сервис сокращенных ссылок.
+//	@version					1.0
+//	@host						localhost:8080
+//	@SecurityDefinitions.apikey	cookieAuth
+//	@In							cookie
+//	@Name						session_token
 
 const appID = "shortlink"
 const envPrefix = ""

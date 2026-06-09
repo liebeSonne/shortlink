@@ -104,3 +104,7 @@ doc:
 .PHONY: swag
 swag:
 	swag init --output ./api/swagger/ -g ./cmd/shortener/main.go
+
+.PHONY: swag-fmt
+swag-fmt:
+	swag fmt

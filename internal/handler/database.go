@@ -30,11 +30,12 @@ type databaseHandler struct {
 }
 
 // HandlePing    godoc
-// @Summary      Проверка соединения с базой данных
-// @Tags         database
-// @Success      200
-// @Failure      500
-// @Router       /ping [get]
+//
+//	@Summary	Проверка соединения с базой данных
+//	@Tags		database
+//	@Success	200
+//	@Failure	500
+//	@Router		/ping [get]
 func (h *databaseHandler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
