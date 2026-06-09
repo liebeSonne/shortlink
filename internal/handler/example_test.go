@@ -136,7 +136,7 @@ func ExampleShortLinkHandler_handleCreateShortenBatch() {
 	l := logger.NewMockLogger(t)
 	s := service.NewMockShortLinkService(t)
 	s.EXPECT().CreateBatch(mock.Anything, mock.Anything, mock.Anything).Return([]service.OutputShortLinkData{
-		{"c1", model.ShortLink{ID: id, URL: link}},
+		{CorrelationID: "c1", ShortLink: model.ShortLink{ID: id, URL: link}},
 	}, nil)
 
 	ap := audit.NewMockPublisher(t)
