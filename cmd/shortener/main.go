@@ -145,7 +145,7 @@ func initRouter(
 
 	auditPublisher := audit.NewPublisher()
 	if cfg.AuditFile != nil && *cfg.AuditFile != "" {
-		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditURL, logger)
+		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditFile, logger)
 		if err != nil {
 			return nil, fmt.Errorf("error initializing audit file observer: %w", err)
 		}
