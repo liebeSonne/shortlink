@@ -143,24 +143,9 @@ func initRouter(
 		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
 	})
 
-	auditPublisher := audit.NewPublisher()
-	if cfg.AuditFile != nil && *cfg.AuditFile != "" {
-		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditFile, logger)
-		if err != nil {
-			return nil, fmt.Errorf("error initializing audit file observer: %w", err)
-		}
-		if closer != nil {
-			closer.AddCloser(internalio.CloserFunc(
-				func() error {
-					return auditFileObserver.Close()
-				},
-			))
-		}
-		auditPublisher.Subscribe(auditFileObserver)
-	}
-	if cfg.AuditURL != nil && *cfg.AuditURL != "" {
-		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, 3, time.Second*3, logger)
-		auditPublisher.Subscribe(auditURLObserver)
+	auditPublisher, err := initAuditPublisher(ctx, cfg, logger, closer)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing audit publisher: %w", err)
 	}
 
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger, auditPublisher)
@@ -279,4 +264,35 @@ func crateFileShortLinkRepository(
 	}
 
 	return repo, nil
+}
+
+func initAuditPublisher(
+	ctx context.Context,
+	cfg config.Config,
+	logger applogger.Logger,
+	closer *internalio.MultiCloser,
+) (audit.Publisher, error) {
+	auditPublisher := audit.NewPublisher(ctx, 5, 5, logger)
+
+	if cfg.AuditFile != nil && *cfg.AuditFile != "" {
+		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditFile, logger)
+		if err != nil {
+			return nil, fmt.Errorf("error initializing audit file observer: %w", err)
+		}
+		if closer != nil {
+			closer.AddCloser(internalio.CloserFunc(
+				func() error {
+					return auditFileObserver.Close()
+				},
+			))
+		}
+		auditPublisher.Subscribe(auditFileObserver)
+	}
+
+	if cfg.AuditURL != nil && *cfg.AuditURL != "" {
+		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, 3, time.Second*3, logger)
+		auditPublisher.Subscribe(auditURLObserver)
+	}
+
+	return auditPublisher, nil
 }
