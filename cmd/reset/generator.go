@@ -48,6 +48,8 @@ func run() error {
 		}
 	}
 
+	fmt.Printf("Generated reset files for %d packages\n", len(packageStructsMap))
+
 	return nil
 }
 
@@ -61,6 +63,8 @@ func collectPackageStructsMap() (map[string][]StructInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error on load packages: %w", err)
 	}
+
+	fmt.Printf("Loaded %d packages\n", len(pkgs))
 
 	packageStructsMap := make(map[string][]StructInfo)
 
