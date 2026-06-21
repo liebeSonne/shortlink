@@ -3,8 +3,9 @@ package service
 import (
 	"testing"
 
-	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func BenchmarkDeleter_Add(b *testing.B) {

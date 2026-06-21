@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func TestPublisher(t *testing.T) {
