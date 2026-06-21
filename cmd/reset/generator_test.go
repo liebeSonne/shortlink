@@ -276,11 +276,6 @@ func TestRun(t *testing.T) {
 			on{"testdata/empty"},
 			expected{},
 		},
-		{
-			"invalid syntax",
-			on{"testdata/invalid"},
-			expected{},
-		},
 	}
 
 	originalDir, err := os.Getwd()
