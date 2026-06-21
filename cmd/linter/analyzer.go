@@ -3,6 +3,8 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -15,12 +17,17 @@ const (
 
 var Analyzer = &analysis.Analyzer{
 	Name: "linter",
-	Doc:  "check panic, log.Fatal, os.Exit",
+	Doc:  "check panic, log.Fatal, os.Exit (exclude files with `mock` prefix)",
 	Run:  run,
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
+		filename := pass.Fset.File(file.Pos()).Name()
+		if isFileWithMockPrefix(filename) {
+			continue
+		}
+
 		isMainPkg := pass.Pkg.Name() == "main"
 
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -92,4 +99,10 @@ func isInMainFunction(file *ast.File, pos token.Pos) bool {
 	})
 
 	return inMain
+}
+
+func isFileWithMockPrefix(filename string) bool {
+	base := filepath.Base(filename)
+	base = strings.ToLower(base)
+	return strings.HasPrefix(base, "mock")
 }
