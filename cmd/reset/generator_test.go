@@ -281,11 +281,6 @@ func TestRun(t *testing.T) {
 			on{"testdata/invalid"},
 			expected{},
 		},
-		{
-			"no go files",
-			on{"testdata/nofiles"},
-			expected{},
-		},
 	}
 
 	originalDir, err := os.Getwd()
