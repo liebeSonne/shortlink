@@ -1,0 +1,38 @@
+package main
+
+const zeroValue = "zeroValue"
+
+const resetMethodTemplate = `
+// Reset resets the state of {{.Name}}
+func (r *{{.Name}}) Reset() {
+	if r == nil {
+		return
+	}
+{{range .Fields}}
+{{- if .IsSlice}}
+	r.{{.Name}} = r.{{.Name}}[:0]
+{{- else if .IsMap}}
+	clear(r.{{.Name}})
+{{- else if .IsPtr}}
+	if r.{{.Name}} != nil {
+		{{- if .IsStruct}}
+		if resetter, ok := r.{{.Name}}.(interface{ Reset() }); ok {
+			resetter.Reset()
+		} else {
+			*r.{{.Name}} = {{zeroValue .Type}}
+		}
+		{{- else}}
+		*r.{{.Name}} = {{zeroValue .Type}}
+		{{- end}}
+	}
+{{- else if .IsStruct}}
+	if resetter, ok := r.{{.Name}}.(interface{ Reset() }); ok {
+		resetter.Reset()
+	} else {
+		r.{{.Name}} = {{zeroValue .StructName}}
+	}
+{{- else}}
+	r.{{.Name}} = {{zeroValue .Type}}
+{{- end}}
+{{end}}}
+`

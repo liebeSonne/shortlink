@@ -5,6 +5,7 @@ all: build generate tests
 build:
 	go build -o cmd/shortener/shortener ./cmd/shortener
 	go build -o cmd/linter/linter ./cmd/linter
+	go build -o cmd/reset/reset ./cmd/reset
 
 .PHONY: lint
 lint:
@@ -13,6 +14,14 @@ lint:
 .PHONY: generate
 generate:
 	go generate ./...
+
+.PHONY: generate-reset
+generate-reset:
+	./cmd/reset/reset  .
+
+.PHONY: clean-reset
+clean-reset:
+	find . -name "reset.gen.go" -delete
 
 .PHONY: tests
 tests:
@@ -42,6 +51,8 @@ tests-cover-html: tests-make-coverage
 .PHONY: clean-bin
 clean-bin:
 	rm -f cmd/shortener/shortener
+	rm -f cmd/linter/linter
+	rm -f cmd/reset/reset
 
 .PHONY: create-migration
 create-migration:
