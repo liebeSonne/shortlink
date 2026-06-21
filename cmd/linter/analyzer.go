@@ -1,0 +1,95 @@
+package main
+
+import (
+	"go/ast"
+	"go/token"
+
+	"golang.org/x/tools/go/analysis"
+)
+
+const (
+	panicCallErrText    = "panic call is not allowed"
+	logFatalCallErrText = "log.Fatal call in main package not in main function is not allowed"
+	osExitCallErrText   = "os.Exit call in main package not in main function is not allowed"
+)
+
+var Analyzer = &analysis.Analyzer{
+	Name: "linter",
+	Doc:  "check panic, log.Fatal, os.Exit",
+	Run:  run,
+}
+
+func run(pass *analysis.Pass) (interface{}, error) {
+	for _, file := range pass.Files {
+		isMainPkg := pass.Pkg.Name() == "main"
+
+		ast.Inspect(file, func(n ast.Node) bool {
+			switch x := n.(type) {
+			case *ast.CallExpr:
+				if isPanicCall(x) {
+					pass.Reportf(x.Pos(), panicCallErrText)
+				}
+				if isLogFatalCall(x) {
+					if isMainPkg && !isInMainFunction(file, x.Pos()) {
+						pass.Reportf(x.Pos(), logFatalCallErrText)
+					}
+				}
+				if isOsExitCall(x) {
+					if isMainPkg && !isInMainFunction(file, x.Pos()) {
+						pass.Reportf(x.Pos(), osExitCallErrText)
+					}
+				}
+			}
+			return true
+		})
+	}
+
+	return nil, nil
+}
+
+func isPanicCall(call *ast.CallExpr) bool {
+	if f, ok := call.Fun.(*ast.Ident); ok {
+		return f.Name == "panic"
+	}
+	return false
+}
+
+func isLogFatalCall(call *ast.CallExpr) bool {
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+		if pkg, ok := sel.X.(*ast.Ident); ok {
+			if pkg.Name == "log" && sel.Sel.Name == "Fatal" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isOsExitCall(call *ast.CallExpr) bool {
+	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
+		if pkg, ok := sel.X.(*ast.Ident); ok {
+			if pkg.Name == "os" && sel.Sel.Name == "Exit" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isInMainFunction(file *ast.File, pos token.Pos) bool {
+	inMain := false
+
+	ast.Inspect(file, func(n ast.Node) bool {
+		if f, ok := n.(*ast.FuncDecl); ok {
+			if f.Name.Name == "main" && f.Recv == nil {
+				if pos >= f.Pos() && pos <= f.End() {
+					inMain = true
+					return false
+				}
+			}
+		}
+		return true
+	})
+
+	return inMain
+}

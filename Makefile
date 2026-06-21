@@ -4,6 +4,11 @@ all: build generate tests
 .PHONY: build
 build:
 	go build -o cmd/shortener/shortener ./cmd/shortener
+	go build -o cmd/linter/linter ./cmd/linter
+
+.PHONY: lint
+lint:
+	./cmd/linter/linter  ./...
 
 .PHONY: generate
 generate:
