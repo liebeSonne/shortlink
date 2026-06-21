@@ -54,9 +54,12 @@ func main() {
 	}()
 
 	cfg := initConfig()
-	logger := initLogger(cfg, &closer)
+	logger, err := initLogger(cfg, &closer)
+	if err != nil {
+		log.Fatalf("error initializing logger: %v", err)
+	}
 
-	err := runMigrator(cfg)
+	err = runMigrator(cfg)
 	if err != nil {
 		logger.Fatalw("error run migrator", "error", err)
 	}
@@ -189,26 +192,29 @@ func initConfig() config.Config {
 	return cfg
 }
 
-func initLogger(cfg config.Config, closer *internalio.MultiCloser) applogger.Logger {
+func initLogger(cfg config.Config, closer *internalio.MultiCloser) (applogger.Logger, error) {
 	loggerLevel, ok := configToLoggerLogLevelMap[cfg.LogLevel]
 	if !ok {
 		log.Fatalf("unknown log level: %s", cfg.LogLevel)
 	}
 
-	logWriter := initLogWriter(cfg, closer)
+	logWriter, err := initLogWriter(cfg, closer)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing log writer: %w", err)
+	}
 
 	logger, err := applogger.NewZapLogger(loggerLevel, logWriter)
 	if err != nil {
 		log.Fatalf("error init logger: %s", err.Error())
 	}
-	return logger
+	return logger, nil
 }
 
-func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer {
+func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) (io.Writer, error) {
 	if cfg.LogFile != nil && *cfg.LogFile != "" {
 		file, err := os.OpenFile(*cfg.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("error opening log file: %w", err)
 		}
 
 		if closer != nil {
@@ -219,10 +225,10 @@ func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) io.Writer 
 			))
 		}
 
-		return file
+		return file, nil
 	}
 
-	return os.Stderr
+	return os.Stderr, nil
 }
 
 func initShortLinkRepository(
