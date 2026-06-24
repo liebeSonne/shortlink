@@ -1,3 +1,8 @@
+VERSION := v1.0.1
+COMMIT := $(shell git rev-parse HEAD)
+BUILD_TIME := $(shell date +'%Y/%m/%d %H:%M:%S')
+LDFLAGS := -X main.buildVersion=$(VERSION) -X 'main.buildDate=$(BUILD_TIME)' -X main.buildCommit=$(COMMIT)
+
 .PHONY: all
 all: build generate tests
 
@@ -124,3 +129,7 @@ swag:
 .PHONY: swag-fmt
 swag-fmt:
 	swag fmt
+
+.PHONY: run
+run:
+	go run -ldflags="$(LDFLAGS)" ./cmd/shortener/
