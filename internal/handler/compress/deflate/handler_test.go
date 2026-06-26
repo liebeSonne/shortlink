@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func TestNewDeflateHandlerMiddleware2(t *testing.T) {
@@ -23,7 +25,8 @@ func TestNewDeflateHandlerMiddleware2(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewDeflateHandlerMiddleware(tc.on.h, tc.on.contentTypes)
+			l := logger.NewMockLogger(t)
+			h := NewDeflateHandlerMiddleware(tc.on.h, tc.on.contentTypes, l)
 			require.NotNil(t, h)
 		})
 	}

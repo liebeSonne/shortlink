@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 )
 
@@ -79,7 +80,8 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()
@@ -177,7 +179,8 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()
@@ -287,7 +290,8 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()
@@ -350,7 +354,8 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()
@@ -389,7 +394,8 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()
@@ -496,7 +502,8 @@ func TestFileShortLinkRepository_DeleteByShortIDs(t *testing.T) {
 			tempDir := t.TempDir()
 			filePath := filepath.Join(tempDir, "tmp-1.json")
 
-			repo, err := NewFileShortLinkRepository(filePath)
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				err = repo.Close()

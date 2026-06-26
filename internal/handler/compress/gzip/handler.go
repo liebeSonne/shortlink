@@ -1,14 +1,15 @@
 package gzip
 
 import (
-	"fmt"
 	"net/http"
 	"slices"
 	"strings"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 // NewGzipHandlerMiddleware - создание экземпляра посредника для gzip.
-func NewGzipHandlerMiddleware(h http.Handler, contentTypes *[]string) http.HandlerFunc {
+func NewGzipHandlerMiddleware(h http.Handler, contentTypes *[]string, logger logger.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		allowedContentType := true
 		if contentTypes != nil {
@@ -32,7 +33,7 @@ func NewGzipHandlerMiddleware(h http.Handler, contentTypes *[]string) http.Handl
 				defer func() {
 					err := cw.Close()
 					if err != nil {
-						fmt.Printf("error closing gzip writer: %v\n", err)
+						logger.Errorf("error closing gzip writer: %v", err)
 					}
 				}()
 				writer = cw
@@ -46,14 +47,14 @@ func NewGzipHandlerMiddleware(h http.Handler, contentTypes *[]string) http.Handl
 		if contentEncoding {
 			cr, err := NewGzipReader(r.Body)
 			if err != nil {
-				fmt.Printf("error creating gzip reader: %v\n", err)
+				logger.Errorf("error creating gzip reader: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			defer func() {
 				err := cr.Close()
 				if err != nil {
-					fmt.Printf("error closing gzip writer: %v\n", err)
+					logger.Errorf("error closing gzip writer: %v", err)
 				}
 			}()
 			r.Body = cr

@@ -21,7 +21,7 @@ func NewAuthMiddleware(
 
 		tokenString, err := cookieService.GetAuthToken(r)
 		if err != nil {
-			logger.Errorf("get cookie auth token error: %w", err)
+			logger.Errorf("get cookie auth token error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -31,7 +31,7 @@ func NewAuthMiddleware(
 			if err == nil {
 				ctx = auth.CreateTokenContext(ctx, tokenData)
 			} else {
-				logger.Errorf("parse token error: %w", err)
+				logger.Errorf("parse token error: %v", err)
 			}
 		}
 

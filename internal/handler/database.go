@@ -41,7 +41,7 @@ func (h *databaseHandler) HandlePing(w http.ResponseWriter, r *http.Request) {
 
 	err := h.database.Ping(ctx)
 	if err != nil {
-		h.logger.Debugf("ping database error: %w", err)
+		h.logger.Debugf("ping database error: %v", err)
 	}
 	isPing := err == nil
 

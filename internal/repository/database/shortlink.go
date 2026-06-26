@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lib/pq"
 
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
@@ -24,14 +25,17 @@ const chunkSize = 500
 // NewShortLinkRepository - создание экземпляра репозитория сокращенных ссылок реализованного в базе данных.
 func NewShortLinkRepository(
 	pool *pgxpool.Pool,
+	logger logger.Logger,
 ) repository.ShortLinkRepository {
 	return &shortLinkRepository{
-		pool: pool,
+		pool:   pool,
+		logger: logger,
 	}
 }
 
 type shortLinkRepository struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger logger.Logger
 }
 
 func (r *shortLinkRepository) Find(ctx context.Context, shortID string) (*model.ShortLink, error) {
@@ -120,7 +124,7 @@ func (r *shortLinkRepository) StoreAll(ctx context.Context, shortLinks []model.S
 	defer func() {
 		err = tx.Rollback(ctx)
 		if err != nil {
-			fmt.Printf("error on rollback transaction: %v\n", err)
+			r.logger.Errorf("error on rollback transaction: %v", err)
 		}
 	}()
 
@@ -172,7 +176,7 @@ func (r *shortLinkRepository) DeleteByShortIDs(ctx context.Context, shortIDs []s
 	defer func() {
 		err = tx.Rollback(ctx)
 		if err != nil {
-			fmt.Printf("error on rollback transaction: %v\n", err)
+			r.logger.Errorf("error on rollback transaction: %v", err)
 		}
 	}()
 

@@ -74,7 +74,7 @@ func (s *deleter) flush() {
 			s.logger.Debugf("handle deleter for userID: %v, ids: %v", input.UserID, input.IDs)
 			err := s.handler(input)
 			if err != nil {
-				s.logger.Errorf("failed to handle: %w", err)
+				s.logger.Errorf("failed to handle: %v", err)
 				continue
 			}
 		}

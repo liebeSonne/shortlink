@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func TestNewCompressorMiddleware(t *testing.T) {
@@ -48,7 +50,8 @@ func TestNewCompressorMiddleware(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := NewCompressorMiddleware(tc.on.h, tc.on.cfg)
+			l := logger.NewMockLogger(t)
+			h, err := NewCompressorMiddleware(tc.on.h, tc.on.cfg, l)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				require.ErrorIs(t, err, tc.want.err)
@@ -269,11 +272,12 @@ func TestHandleWithCompressor(t *testing.T) {
 				_, err := w.Write([]byte(generateResponse(tc.on.body)))
 				require.NoError(t, err)
 			}).Return()
+			l := logger.NewMockLogger(t)
 
 			router, err := NewCompressorMiddleware(h, CompressorConfig{
 				Encodings:    tc.when.encodings,
 				ContentTypes: tc.when.contentTypes,
-			})
+			}, l)
 			require.NoError(t, err)
 
 			srv := httptest.NewServer(router)

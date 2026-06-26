@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/liebeSonne/shortlink/internal/logger"
 	"github.com/liebeSonne/shortlink/internal/model"
 	"github.com/liebeSonne/shortlink/internal/repository"
 )
@@ -24,7 +25,7 @@ type shortLinkStorageData struct {
 }
 
 // NewFileShortLinkRepository - создание экземпляра репозитория сокращенных ссылок реализованного в файлах.
-func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepositoryWithCloser, error) {
+func NewFileShortLinkRepository(filePath string, logger logger.Logger) (repository.ShortLinkRepositoryWithCloser, error) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
@@ -34,6 +35,7 @@ func NewFileShortLinkRepository(filePath string) (repository.ShortLinkRepository
 		filePath: filePath,
 		file:     file,
 		lastID:   0,
+		logger:   logger,
 	}
 
 	err = storage.init()
@@ -49,6 +51,7 @@ type fileShortLinkRepository struct {
 	file     *os.File
 	lastID   int
 	mu       sync.Mutex
+	logger   logger.Logger
 }
 
 func (s *fileShortLinkRepository) Find(_ context.Context, shortID string) (*model.ShortLink, error) {
@@ -407,7 +410,7 @@ func (s *fileShortLinkRepository) saveToFile(
 	defer func() {
 		err = os.RemoveAll(tmpDir)
 		if err != nil {
-			fmt.Printf("failed remove tmp dir: %v", err)
+			s.logger.Errorf("failed remove tmp dir: %v", err)
 		}
 	}()
 

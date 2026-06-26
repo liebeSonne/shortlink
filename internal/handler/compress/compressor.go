@@ -1,6 +1,10 @@
 package compress
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
+)
 
 // CompressorConfig - настройки компрессоров.
 type CompressorConfig struct {
@@ -9,9 +13,9 @@ type CompressorConfig struct {
 }
 
 // NewCompressorMiddleware - создание экземпляра посредника компрессоров.
-func NewCompressorMiddleware(h http.Handler, cfg CompressorConfig) (http.Handler, error) {
+func NewCompressorMiddleware(h http.Handler, cfg CompressorConfig, logger logger.Logger) (http.Handler, error) {
 	for _, encoding := range cfg.Encodings {
-		next, err := NewEncodingMiddleware(h, encoding, cfg.ContentTypes)
+		next, err := NewEncodingMiddleware(h, encoding, cfg.ContentTypes, logger)
 		if err != nil {
 			return nil, err
 		}

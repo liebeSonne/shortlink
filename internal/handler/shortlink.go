@@ -143,7 +143,7 @@ func (h *shortLinkHandler) HandleCreate(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(status)
 	_, err = w.Write([]byte(url))
 	if err != nil {
-		h.logger.Errorf("response write error: %w", err)
+		h.logger.Errorf("response write error: %v", err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *shortLinkHandler) HandleCreateShorten(w http.ResponseWriter, r *http.Re
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)
 	if err != nil {
-		h.logger.Errorf("response write error: %w", err)
+		h.logger.Errorf("response write error: %v", err)
 		return
 	}
 
@@ -262,7 +262,7 @@ func (h *shortLinkHandler) HandleCreateShortenBatch(w http.ResponseWriter, r *ht
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)
 	if err != nil {
-		h.logger.Errorf("response write error: %w", err)
+		h.logger.Errorf("response write error: %v", err)
 		return
 	}
 }
@@ -317,7 +317,7 @@ func (h *shortLinkHandler) HandleGetUserUrls(w http.ResponseWriter, r *http.Requ
 	enc := json.NewEncoder(w)
 	err = enc.Encode(resp)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		h.logger.Errorf("response write error: %v", err)
 		return
 	}
 }
@@ -394,7 +394,7 @@ func (h *shortLinkHandler) responseError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}
-	h.logger.Errorf("response error: %w", err)
+	h.logger.Errorf("response error: %v", err)
 	if errors.Is(err, service.ErrInvalidURL) || errors.Is(err, service.ErrEmptyURL) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return

@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/liebeSonne/shortlink/internal/logger"
 )
 
 func TestNewEncodingMiddleware(t *testing.T) {
@@ -34,7 +36,8 @@ func TestNewEncodingMiddleware(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := NewEncodingMiddleware(tc.on.h, tc.on.encoding, tc.on.contentTypes)
+			l := logger.NewMockLogger(t)
+			h, err := NewEncodingMiddleware(tc.on.h, tc.on.encoding, tc.on.contentTypes, l)
 			if tc.want.err != nil {
 				require.Error(t, err)
 				require.ErrorIs(t, err, tc.want.err)

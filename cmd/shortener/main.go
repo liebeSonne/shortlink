@@ -148,7 +148,7 @@ func initRouter(
 	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
 	userService := service.NewUserService()
 
-	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient)
+	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing short link repository: %w", err)
 	}
@@ -177,7 +177,7 @@ func initRouter(
 	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
 		Encodings:    []compress.Encoding{compress.GzipEncoding},
 		ContentTypes: &[]string{"application/json", "text/html"},
-	})
+	}, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -247,14 +247,15 @@ func initShortLinkRepository(
 	cfg config.Config,
 	closer *internalio.MultiCloser,
 	dbClient *database.Client,
+	logger applogger.Logger,
 ) (repository.ShortLinkRepository, error) {
 	if dbClient != nil {
-		repo := database.NewShortLinkRepository((*dbClient).Pool())
+		repo := database.NewShortLinkRepository((*dbClient).Pool(), logger)
 		return repo, nil
 	}
 
 	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := crateFileShortLinkRepository(*cfg.FileStoragePath, closer)
+		repo, err := crateFileShortLinkRepository(*cfg.FileStoragePath, closer, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -267,8 +268,9 @@ func initShortLinkRepository(
 func crateFileShortLinkRepository(
 	fileStoragePath string,
 	closer *internalio.MultiCloser,
+	logger applogger.Logger,
 ) (repository.ShortLinkRepository, error) {
-	repo, err := filestorage.NewFileShortLinkRepository(fileStoragePath)
+	repo, err := filestorage.NewFileShortLinkRepository(fileStoragePath, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error on init file short link repository: %w", err)
 	}
