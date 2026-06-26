@@ -9,7 +9,7 @@ func main() {
 	fmt.Printf("Start generate struct reset methods\n")
 	err := run()
 	if err != nil {
-		log.Fatal(fmt.Errorf("error on run generate reset: %w", err))
+		log.Fatalf("error on run generate reset: %v", err)
 	}
 	fmt.Printf("Complete generate struct reset methods\n")
 }
