@@ -16,6 +16,8 @@ func DoSomethingWithPanic() {
 
 func DoSomethingWithLofFatal() {
 	log.Fatal("ok")
+	log.Fatalf("ok %d", 1)
+	log.Fatalln("ok")
 }
 
 func DoSomethingWithOsExit() {

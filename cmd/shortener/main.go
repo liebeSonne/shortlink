@@ -61,7 +61,11 @@ func main() {
 		}
 	}()
 
-	cfg := initConfig()
+	cfg, err := initConfig()
+	if err != nil {
+		log.Fatalf("error initializing config: %v", err)
+	}
+
 	logger, err := initLogger(cfg, &closer)
 	if err != nil {
 		log.Fatalf("error initializing logger: %v", err)
@@ -192,18 +196,18 @@ var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
 	config.LogLevelPanic: applogger.PanicLevel,
 }
 
-func initConfig() config.Config {
+func initConfig() (config.Config, error) {
 	cfg, err := config.LoadConfig(appID, envPrefix)
 	if err != nil {
-		log.Fatalf("error get config: %s", err.Error())
+		return config.Config{}, fmt.Errorf("error get config: %s", err.Error())
 	}
-	return cfg
+	return cfg, nil
 }
 
 func initLogger(cfg config.Config, closer *internalio.MultiCloser) (applogger.Logger, error) {
 	loggerLevel, ok := configToLoggerLogLevelMap[cfg.LogLevel]
 	if !ok {
-		log.Fatalf("unknown log level: %s", cfg.LogLevel)
+		return nil, fmt.Errorf("unknown log level: %s", cfg.LogLevel)
 	}
 
 	logWriter, err := initLogWriter(cfg, closer)
@@ -213,7 +217,7 @@ func initLogger(cfg config.Config, closer *internalio.MultiCloser) (applogger.Lo
 
 	logger, err := applogger.NewZapLogger(loggerLevel, logWriter)
 	if err != nil {
-		log.Fatalf("error init logger: %s", err.Error())
+		return nil, fmt.Errorf("error init logger: %w", err)
 	}
 	return logger, nil
 }

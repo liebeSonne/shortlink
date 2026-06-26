@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	panicCallErrText    = "panic call is not allowed"
-	logFatalCallErrText = "log.Fatal call in main package not in main function is not allowed"
-	osExitCallErrText   = "os.Exit call in main package not in main function is not allowed"
+	panicCallErrText      = "panic call is not allowed"
+	logFatalCallErrText   = "log.Fatal call in main package not in main function is not allowed"
+	logFatalfCallErrText  = "log.Fatalf call in main package not in main function is not allowed"
+	logFatallnCallErrText = "log.Fatalln call in main package not in main function is not allowed"
+	osExitCallErrText     = "os.Exit call in main package not in main function is not allowed"
 )
 
 var Analyzer = &analysis.Analyzer{
@@ -42,6 +44,16 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						pass.Reportf(x.Pos(), logFatalCallErrText)
 					}
 				}
+				if isLogFatalfCall(pass, x) {
+					if isMainPkg && !isInMainFunction(file, x.Pos()) {
+						pass.Reportf(x.Pos(), logFatalfCallErrText)
+					}
+				}
+				if isLogFatallnCall(pass, x) {
+					if isMainPkg && !isInMainFunction(file, x.Pos()) {
+						pass.Reportf(x.Pos(), logFatallnCallErrText)
+					}
+				}
 				if isOsExitCall(pass, x) {
 					if isMainPkg && !isInMainFunction(file, x.Pos()) {
 						pass.Reportf(x.Pos(), osExitCallErrText)
@@ -64,6 +76,14 @@ func isPanicCall(call *ast.CallExpr) bool {
 
 func isLogFatalCall(pass *analysis.Pass, call *ast.CallExpr) bool {
 	return isPkgMethodCall(pass, call, "log", "Fatal")
+}
+
+func isLogFatalfCall(pass *analysis.Pass, call *ast.CallExpr) bool {
+	return isPkgMethodCall(pass, call, "log", "Fatalf")
+}
+
+func isLogFatallnCall(pass *analysis.Pass, call *ast.CallExpr) bool {
+	return isPkgMethodCall(pass, call, "log", "Fatalln")
 }
 
 func isOsExitCall(pass *analysis.Pass, call *ast.CallExpr) bool {
