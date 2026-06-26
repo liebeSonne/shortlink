@@ -104,21 +104,20 @@ func isPkgMethodCall(pass *analysis.Pass, call *ast.CallExpr, pkgName, methodNam
 }
 
 func isInMainFunction(file *ast.File, pos token.Pos) bool {
-	inMain := false
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
 
-	ast.Inspect(file, func(n ast.Node) bool {
-		if f, ok := n.(*ast.FuncDecl); ok {
-			if f.Name.Name == "main" && f.Recv == nil {
-				if pos >= f.Pos() && pos <= f.End() {
-					inMain = true
-					return false
-				}
+		if fn.Name.Name == "main" && fn.Recv == nil {
+			if pos >= fn.Pos() && pos <= fn.End() {
+				return true
 			}
 		}
-		return true
-	})
+	}
 
-	return inMain
+	return false
 }
 
 func isFileWithMockPrefix(filename string) bool {
