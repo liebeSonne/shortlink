@@ -45,10 +45,12 @@ func TestPool_NewPool(t *testing.T) {
 	tests := []struct {
 		name    string
 		newFunc func() *testStruct
+		err     error
 	}{
 		{
 			name:    "create pool with valid constructor",
 			newFunc: newTestStruct,
+			err:     nil,
 		},
 		{
 			name: "create pool with custom constructor",
@@ -59,13 +61,26 @@ func TestPool_NewPool(t *testing.T) {
 					name:  "custom",
 				}
 			},
+			err: nil,
+		},
+		{
+			name:    "create pool with nil constructor should return error",
+			newFunc: nil,
+			err:     InvalidPoolConstructorFuncErr,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pool := NewPool(tt.newFunc)
+			pool, err := NewPool(tt.newFunc)
 
+			if tt.err != nil {
+				require.Error(t, err)
+				require.ErrorIs(t, err, tt.err)
+				return
+			}
+
+			require.NoError(t, err)
 			assert.NotNil(t, pool, "Pool should not be nil")
 
 			obj := pool.Get()
@@ -83,14 +98,18 @@ func TestPool_Get(t *testing.T) {
 		{
 			name: "get from empty pool creates new object",
 			setupFunc: func() *Pool[*testStruct] {
-				return NewPool(newTestStruct)
+				p, err := NewPool(newTestStruct)
+				require.NoError(t, err)
+				return p
 			},
 			expectReset: false,
 		},
 		{
 			name: "get from pool with objects returns existing object",
 			setupFunc: func() *Pool[*testStruct] {
-				p := NewPool(newTestStruct)
+				p, err := NewPool(newTestStruct)
+				require.NoError(t, err)
+
 				obj := newTestStruct()
 				obj.value = 999
 				obj.data = append(obj.data, 1, 2, 3)
@@ -103,7 +122,9 @@ func TestPool_Get(t *testing.T) {
 		{
 			name: "get multiple times from pool",
 			setupFunc: func() *Pool[*testStruct] {
-				return NewPool(newTestStruct)
+				p, err := NewPool(newTestStruct)
+				require.NoError(t, err)
+				return p
 			},
 			expectReset: false,
 		},
@@ -158,7 +179,9 @@ func TestPool_Put(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPool(newTestStruct)
+			p, err := NewPool(newTestStruct)
+			require.NoError(t, err)
+
 			obj := newTestStruct()
 
 			tt.modifyObj(obj)
@@ -207,7 +230,9 @@ func TestPool_Concurrent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPool(newTestStruct)
+			p, err := NewPool(newTestStruct)
+			require.NoError(t, err)
+
 			var wg sync.WaitGroup
 
 			for i := 0; i < tt.goroutine; i++ {
@@ -260,7 +285,9 @@ func TestPool_GetPutIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPool(newTestStruct)
+			p, err := NewPool(newTestStruct)
+			require.NoError(t, err)
+
 			objects := make([]*testStruct, 0, tt.operations)
 
 			for i := 0; i < tt.operations; i++ {
@@ -295,7 +322,9 @@ func TestPool_GetPutIntegration(t *testing.T) {
 
 func TestPool_WithDifferentTypes(t *testing.T) {
 	t.Run("works with pointer type", func(t *testing.T) {
-		p := NewPool(newTestStruct)
+		p, err := NewPool(newTestStruct)
+		require.NoError(t, err)
+
 		obj := p.Get()
 		assert.NotNil(t, obj)
 		p.Put(obj)
@@ -311,7 +340,9 @@ func TestPool_WithDifferentTypes(t *testing.T) {
 			return &testValueStruct{value: 42, name: "test"}
 		}
 
-		p := NewPool(newValue)
+		p, err := NewPool(newValue)
+		require.NoError(t, err)
+
 		obj := p.Get()
 		assert.NotNil(t, obj)
 		p.Put(obj)
@@ -326,7 +357,9 @@ func TestPool_EdgeCases(t *testing.T) {
 		{
 			name: "multiple get without put",
 			testFunc: func(t *testing.T) {
-				p := NewPool(newTestStruct)
+				p, err := NewPool(newTestStruct)
+				require.NoError(t, err)
+
 				obj1 := p.Get()
 				obj2 := p.Get()
 
@@ -340,7 +373,8 @@ func TestPool_EdgeCases(t *testing.T) {
 		{
 			name: "put and get many times",
 			testFunc: func(t *testing.T) {
-				p := NewPool(newTestStruct)
+				p, err := NewPool(newTestStruct)
+				require.NoError(t, err)
 
 				for i := 0; i < 100; i++ {
 					obj := p.Get()
@@ -363,7 +397,8 @@ func TestPool_EdgeCases(t *testing.T) {
 // Benchmarks
 
 func BenchmarkPool_GetPut(b *testing.B) {
-	p := NewPool(newTestStruct)
+	p, err := NewPool(newTestStruct)
+	require.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -375,7 +410,8 @@ func BenchmarkPool_GetPut(b *testing.B) {
 }
 
 func BenchmarkPool_GetPutParallel(b *testing.B) {
-	p := NewPool(newTestStruct)
+	p, err := NewPool(newTestStruct)
+	require.NoError(b, err)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -388,7 +424,8 @@ func BenchmarkPool_GetPutParallel(b *testing.B) {
 }
 
 func BenchmarkPool_GetOnly(b *testing.B) {
-	p := NewPool(newTestStruct)
+	p, err := NewPool(newTestStruct)
+	require.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -398,7 +435,9 @@ func BenchmarkPool_GetOnly(b *testing.B) {
 }
 
 func BenchmarkPool_PutOnly(b *testing.B) {
-	p := NewPool(newTestStruct)
+	p, err := NewPool(newTestStruct)
+	require.NoError(b, err)
+
 	objects := make([]*testStruct, b.N)
 
 	for i := 0; i < b.N; i++ {
