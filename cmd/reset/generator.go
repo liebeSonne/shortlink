@@ -273,15 +273,7 @@ func parseField(expr ast.Expr, fieldName string) FieldInfo {
 }
 
 func isStructType(typeName string) bool {
-	if isBasicType(typeName) {
-		return false
-	}
-
-	if strings.Contains(typeName, ".") {
-		return true
-	}
-
-	return true
+	return !isBasicType(typeName)
 }
 
 func isBasicType(typeName string) bool {
