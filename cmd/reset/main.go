@@ -1,15 +1,16 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
+	"os"
 )
 
 func main() {
-	fmt.Printf("Start generate struct reset methods\n")
+	slog.Info("Start generate struct reset methods")
 	err := run()
 	if err != nil {
-		log.Fatalf("error on run generate reset: %v", err)
+		slog.Error("error on run generate reset", "error", err)
+		os.Exit(1)
 	}
-	fmt.Printf("Complete generate struct reset methods\n")
+	slog.Info("Complete generate struct reset methods")
 }

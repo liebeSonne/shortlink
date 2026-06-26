@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,7 +49,7 @@ func run() error {
 		}
 	}
 
-	fmt.Printf("Generated reset files for %d packages\n", len(packageStructsMap))
+	slog.Info("Generated reset files for packages", "countPackages", len(packageStructsMap))
 
 	return nil
 }
@@ -64,13 +65,13 @@ func collectPackageStructsMap() (map[string][]StructInfo, error) {
 		return nil, fmt.Errorf("error on load packages: %w", err)
 	}
 
-	fmt.Printf("Loaded %d packages\n", len(pkgs))
+	slog.Info("Loaded packages", "countPackages", len(pkgs))
 
 	packageStructsMap := make(map[string][]StructInfo)
 
 	for _, pkg := range pkgs {
 		if len(pkg.Errors) > 0 {
-			fmt.Printf("skip package '%s' with errors: %v\n", pkg.PkgPath, pkg.Errors)
+			slog.Info("skip package with errors: %v", "pkg", pkg.PkgPath, "errors", pkg.Errors)
 			continue
 		}
 
