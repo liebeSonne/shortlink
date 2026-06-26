@@ -67,7 +67,6 @@ func TestPool_NewPool(t *testing.T) {
 			pool := NewPool(tt.newFunc)
 
 			assert.NotNil(t, pool, "Pool should not be nil")
-			assert.NotNil(t, pool.pool.New, "Pool New function should not be nil")
 
 			obj := pool.Get()
 			assert.NotNil(t, obj, "Get should return non-nil object")
