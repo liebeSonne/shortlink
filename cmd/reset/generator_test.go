@@ -296,7 +296,8 @@ func TestRun(t *testing.T) {
 
 			err := os.Chdir(tc.on.testdataDir)
 			if err != nil {
-				t.Fatalf("faile to chdir to test data directory: %v", err)
+				t.Errorf("faile to chdir to test data directory: %v", err)
+				return
 			}
 
 			err = run()
@@ -354,7 +355,8 @@ func TestRun(t *testing.T) {
 
 			err = os.Chdir(originalDir)
 			if err != nil {
-				t.Fatalf("failed to change back to original directory: %v", err)
+				t.Errorf("failed to change back to original directory: %v", err)
+				return
 			}
 		})
 	}
@@ -624,7 +626,8 @@ type TestStruct struct {
 			fset := token.NewFileSet()
 			file, err := parser.ParseFile(fset, "test.go", tc.code, parser.ParseComments)
 			if err != nil {
-				t.Fatalf("Failed to parse code: %v", err)
+				t.Errorf("Failed to parse code: %v", err)
+				return
 			}
 
 			var structType *ast.StructType
@@ -641,7 +644,8 @@ type TestStruct struct {
 			})
 
 			if structType == nil {
-				t.Fatal("No struct found in test code")
+				t.Error("No struct found in test code")
+				return
 			}
 
 			fields := parseFields(structType)
