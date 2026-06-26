@@ -3,6 +3,7 @@ package main
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 	"path/filepath"
 	"strings"
 
@@ -36,12 +37,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				if isPanicCall(x) {
 					pass.Reportf(x.Pos(), panicCallErrText)
 				}
-				if isLogFatalCall(x) {
+				if isLogFatalCall(pass, x) {
 					if isMainPkg && !isInMainFunction(file, x.Pos()) {
 						pass.Reportf(x.Pos(), logFatalCallErrText)
 					}
 				}
-				if isOsExitCall(x) {
+				if isOsExitCall(pass, x) {
 					if isMainPkg && !isInMainFunction(file, x.Pos()) {
 						pass.Reportf(x.Pos(), osExitCallErrText)
 					}
@@ -61,26 +62,45 @@ func isPanicCall(call *ast.CallExpr) bool {
 	return false
 }
 
-func isLogFatalCall(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		if pkg, ok := sel.X.(*ast.Ident); ok {
-			if pkg.Name == "log" && sel.Sel.Name == "Fatal" {
-				return true
-			}
-		}
-	}
-	return false
+func isLogFatalCall(pass *analysis.Pass, call *ast.CallExpr) bool {
+	return isPkgMethodCall(pass, call, "log", "Fatal")
 }
 
-func isOsExitCall(call *ast.CallExpr) bool {
-	if sel, ok := call.Fun.(*ast.SelectorExpr); ok {
-		if pkg, ok := sel.X.(*ast.Ident); ok {
-			if pkg.Name == "os" && sel.Sel.Name == "Exit" {
-				return true
-			}
-		}
+func isOsExitCall(pass *analysis.Pass, call *ast.CallExpr) bool {
+	return isPkgMethodCall(pass, call, "os", "Exit")
+}
+
+func isPkgMethodCall(pass *analysis.Pass, call *ast.CallExpr, pkgName, methodName string) bool {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
 	}
-	return false
+
+	if pass.TypesInfo == nil {
+		return false
+	}
+
+	obj := pass.TypesInfo.Uses[sel.Sel]
+	if obj == nil {
+		return false
+	}
+
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return false
+	}
+
+	sig := fn.Type().(*types.Signature)
+	if sig.Recv() != nil {
+		return false
+	}
+
+	pkg := fn.Pkg()
+	if pkg == nil {
+		return false
+	}
+
+	return pkg.Path() == pkgName && sel.Sel.Name == methodName
 }
 
 func isInMainFunction(file *ast.File, pos token.Pos) bool {
