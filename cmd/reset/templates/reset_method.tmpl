@@ -1,14 +1,10 @@
-package main
-
-const zeroValue = "zeroValue"
-
-const resetMethodTemplate = `
+{{define "resetMethod"}}
 // Reset resets the state of {{.Name}}
 func (r *{{.Name}}) Reset() {
 	if r == nil {
 		return
 	}
-{{range .Fields}}
+{{- range .Fields}}
 {{- if .IsSlice}}
 	r.{{.Name}} = r.{{.Name}}[:0]
 {{- else if .IsMap}}
@@ -34,5 +30,6 @@ func (r *{{.Name}}) Reset() {
 {{- else}}
 	r.{{.Name}} = {{zeroValue .Type}}
 {{- end}}
-{{end}}}
-`
+{{- end}}
+}
+{{end}}
