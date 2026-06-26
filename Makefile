@@ -8,7 +8,8 @@ all: build generate tests
 
 .PHONY: build
 build:
-	go build -o cmd/shortener/shortener ./cmd/shortener
+	# example: make build VERSION=2.0 BUILD_TIME=2000-01-01 COMMIT=123
+	go build -ldflags="$(LDFLAGS)" -o cmd/shortener/shortener ./cmd/shortener
 	go build -o cmd/linter/linter ./cmd/linter
 	go build -o cmd/reset/reset ./cmd/reset
 
