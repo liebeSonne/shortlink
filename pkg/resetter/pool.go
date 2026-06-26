@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-var InvalidPoolConstructorFuncErr = errors.New("invalid pool constructor function")
+var ErrInvalidPoolConstructorFunc = errors.New("invalid pool constructor function")
 
 type Resetter interface {
 	Reset()
@@ -25,7 +25,7 @@ func (p *Pool[T]) Get() T {
 
 func NewPool[T Resetter](newFunc func() T) (*Pool[T], error) {
 	if newFunc == nil {
-		return nil, InvalidPoolConstructorFuncErr
+		return nil, ErrInvalidPoolConstructorFunc
 	}
 	return &Pool[T]{
 		pool: sync.Pool{

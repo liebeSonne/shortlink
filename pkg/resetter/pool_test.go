@@ -66,7 +66,7 @@ func TestPool_NewPool(t *testing.T) {
 		{
 			name:    "create pool with nil constructor should return error",
 			newFunc: nil,
-			err:     InvalidPoolConstructorFuncErr,
+			err:     ErrInvalidPoolConstructorFunc,
 		},
 	}
 
