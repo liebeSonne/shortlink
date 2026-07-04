@@ -39,6 +39,7 @@ import (
 
 const appID = "shortlink"
 const envPrefix = ""
+const gracefulShutdownTimeout = 10 * time.Second
 
 var buildVersion string = "N/A"
 var buildDate string = "N/A"
@@ -50,7 +51,7 @@ func main() {
 	fmt.Printf("Build commit: %s\n", buildCommit)
 
 	ctx := context.Background()
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	closer := internalio.MultiCloser{}
@@ -124,18 +125,37 @@ func runApp(
 	case err := <-serverErrors:
 		return err
 	case <-ctx.Done():
-		logger.Infow("starting server shutdown")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := srv.Shutdown(shutdownCtx); err != nil {
-			srv.Close()
-			return err
-		}
-		logger.Infow("server shutdown complete")
+		gracefulShutdown(srv, logger)
 	}
 
 	return nil
+}
+
+func gracefulShutdown(
+	srv *http.Server,
+	logger applogger.Logger,
+) {
+	logger.Infow("starting server shutdown")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	defer cancel()
+
+	err := srv.Shutdown(shutdownCtx)
+	if err != nil {
+		logger.Errorw("shutdown server error", "error", err)
+
+		// дополнительное время при ошибке
+		forceCtx, forceCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer forceCancel()
+		select {
+		case <-forceCtx.Done():
+			err = srv.Close()
+			if err != nil {
+				logger.Errorw("close server error", "error", err)
+			}
+		}
+	}
+
+	logger.Infow("server shutdown complete")
 }
 
 func initRouter(
