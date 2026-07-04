@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -78,22 +80,22 @@ var allEnvNames = []string{
 
 // Config - настройки.
 type Config struct {
-	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080"`           // Адрес сервера.
-	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080"` // Базовая ссылка создаваемых сокращенных ссылок.
-	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false"`              // Включение логирования.
-	LogLevel        string  `env:"LOG_LEVEL" default:"info"`                 // Уровень логирования.
-	LogFile         *string `env:"LOG_FILE" default:""`                      // Файл для сохранения логов.
-	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:""`             // Файловое хранилище для сокращенных ссылок.
-	DatabaseDSN     *string `env:"DATABASE_DSN" default:""`                  // Параметры соединения с базой данных.
+	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080" json:"server_address"`     // Адрес сервера.
+	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080" json:"base_url"` // Базовая ссылка создаваемых сокращенных ссылок.
+	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false" json:"enable_logs"`           // Включение логирования.
+	LogLevel        string  `env:"LOG_LEVEL" default:"info" json:"log_level"`                // Уровень логирования.
+	LogFile         *string `env:"LOG_FILE" default:"" json:"log_file"`                      // Файл для сохранения логов.
+	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:"" json:"file_storage_path"`    // Файловое хранилище для сокращенных ссылок.
+	DatabaseDSN     *string `env:"DATABASE_DSN" default:"" json:"database_dsn"`              // Параметры соединения с базой данных.
 
-	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token"` // Название токена авторизации с cookie.
-	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123"`      // Секретный код для подписи токена.
-	AuthTokenExpires   time.Duration `env:"AUTH_TOKEN_EXPIRE" default:"24h"`               // Время жизни токена.
+	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token" json:"auth_cookie_token_key"` // Название токена авторизации с cookie.
+	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123" json:"auth_secret_key"`            // Секретный код для подписи токена.
+	AuthTokenExpires   time.Duration `env:"AUTH_TOKEN_EXPIRE" default:"24h" json:"auth_token_expires"`                  // Время жизни токена.
 
-	AuditFile *string `env:"AUDIT_FILE" default:""` // Файл для сохранения данных аудита.
-	AuditURL  *string `env:"AUDIT_URL" default:""`  // Ссылка для сохранения данных аудита.
+	AuditFile *string `env:"AUDIT_FILE" default:"" json:"audit_file"` // Файл для сохранения данных аудита.
+	AuditURL  *string `env:"AUDIT_URL" default:"" json:"audit_url"`   // Ссылка для сохранения данных аудита.
 
-	EnableHTTPS bool `env:"ENABLE_HTTPS" default:"false"` // Включение HTTPS в веб-сервере
+	EnableHTTPS bool `env:"ENABLE_HTTPS" default:"false" json:"enable_https"` // Включение HTTPS в веб-сервере
 
 	ConfigFile *string `env:"CONFIG" default:""` // json-файл конфигурации
 }
@@ -116,6 +118,20 @@ func ParseEnv(prefix string, cfg *Config) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func ParseFromJSON(path string, cfg *Config) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read config file %s: %w", path, err)
+	}
+
+	err = json.Unmarshal(data, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+
 	return nil
 }
 

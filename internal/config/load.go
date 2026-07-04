@@ -2,13 +2,14 @@ package config
 
 import (
 	"fmt"
-	"maps"
+	"os"
 
 	"github.com/caarlos0/env/v11"
 )
 
-// LoadConfig - загружает настройки из переменных окружения (первый приоритет) и из флагов (второй приоритет).
+// LoadConfig - загружает настройки из переменных окружения (первый приоритет) и из флагов (второй приоритет) и из файла (третий приоритет).
 func LoadConfig(appID, envPrefix string) (Config, error) {
+	// загружаем настройки из флагов
 	fCfg := flagsConfig{}
 	err := parseFlagsConfig(appID, &fCfg, true)
 	if err != nil {
@@ -17,34 +18,46 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 
 	prefix := getEnvNameWithPrefix(envPrefix, "")
 
-	tagNameToEnvName := make(map[string]string, len(allEnvNames))
-	for _, v := range allEnvNames {
-		tagNameToEnvName[prefix+v] = v
+	// определяем путь к файлу конфига
+	var configFile string
+	if fCfg.ConfigFile != nil && *fCfg.ConfigFile != "" {
+		configFile = *fCfg.ConfigFile
+	}
+	if name, ok := os.LookupEnv(ConfigFileEnvName); ok {
+		configFile = name
 	}
 
-	onSetHook := func(tag string, value interface{}, isDefault bool) {
-		if !isDefault {
-			delete(tagNameToEnvName, tag)
+	// загружаем настройки из default
+	cfg := Config{}
+	err = env.ParseWithOptions(&cfg, env.Options{
+		Prefix:              prefix,
+		TagName:             "not-use-env",
+		DefaultValueTagName: "default",
+	})
+	if err != nil {
+		return Config{}, fmt.Errorf("error parsing config: %w", err)
+	}
+
+	// загружаем настройки из JSON файла (не переопределенные настройки default останутся)
+	if configFile != "" {
+		err = ParseFromJSON(configFile, &cfg)
+		if err != nil {
+			return Config{}, fmt.Errorf("error parsing json-file config: %w", err)
 		}
 	}
 
-	cfg := Config{}
+	// загружаем настройки из flags
+	mergeFlagsConfig(fCfg, &cfg, allEnvNames)
+
+	// загружаем настройки из env (не переопределенные настройки из файла и flags останутся)
 	err = env.ParseWithOptions(&cfg, env.Options{
-		OnSet:               onSetHook,
 		Prefix:              prefix,
 		TagName:             "env",
-		DefaultValueTagName: "default",
+		DefaultValueTagName: "not-use",
 	})
 	if err != nil {
 		return Config{}, fmt.Errorf("error parsing env: %w", err)
 	}
-
-	envNames := make([]string, 0)
-	for v := range maps.Values(tagNameToEnvName) {
-		envNames = append(envNames, v)
-	}
-
-	mergeFlagsConfig(fCfg, &cfg, envNames)
 
 	return cfg, nil
 }

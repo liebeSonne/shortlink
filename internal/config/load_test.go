@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -19,7 +20,33 @@ func TestLoadConfig(t *testing.T) {
 	authSecretKey1 := "secret123"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
-	configFile1 := "config1.json"
+
+	// make empty config file
+	tempFile2, err := os.CreateTemp("", "config_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tempFile2.Name())
+	configFileData2 := `{}`
+	err = os.WriteFile(tempFile2.Name(), []byte(configFileData2), 0644)
+	require.NoError(t, err)
+	configFile1 := tempFile2.Name()
+
+	// make not empty config file
+	tempFile, err := os.CreateTemp("", "config_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+	configFileServerAddress1 := "1.1.1.1:1111"
+	configFileBaseURL1 := "http://1.1.1.1:2222"
+	configFileDatabaseDSN1 := "file database dns"
+	configFileStoragePath1 := "./config/file/storage/path"
+	configFileData1 := fmt.Sprintf(`{
+		"server_address": "%s",
+		"base_url": "%s",
+		"file_storage_path": "%s",
+		"database_dsn": "%s" 
+	}`, configFileServerAddress1, configFileBaseURL1, configFileStoragePath1, configFileDatabaseDSN1)
+	err = os.WriteFile(tempFile.Name(), []byte(configFileData1), 0644)
+	require.NoError(t, err)
+	configFile2 := tempFile.Name()
 
 	type when struct {
 		appID     string
@@ -235,6 +262,65 @@ func TestLoadConfig(t *testing.T) {
 					EnableHTTPS:        true,
 					ConfigFile:         &configFile1,
 				},
+				nil,
+			},
+		},
+		{
+			"from config file in env",
+			when{
+				"", "",
+				[]string{},
+				map[string]string{
+					getEnvNameWithPrefix("", ConfigFileEnvName): configFile2,
+				},
+			},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.ServerAddress = configFileServerAddress1
+					c.BaseURL = configFileBaseURL1
+					c.FileStoragePath = &configFileStoragePath1
+					c.DatabaseDSN = &configFileDatabaseDSN1
+					c.ConfigFile = &configFile2
+				}),
+				nil,
+			},
+		},
+		{
+			"from config file in flag",
+			when{
+				"", "",
+				[]string{"-c", configFile2},
+				map[string]string{},
+			},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.ServerAddress = configFileServerAddress1
+					c.BaseURL = configFileBaseURL1
+					c.FileStoragePath = &configFileStoragePath1
+					c.DatabaseDSN = &configFileDatabaseDSN1
+					c.ConfigFile = &configFile2
+				}),
+				nil,
+			},
+		},
+		{
+			"from config file with priority from flag and env",
+			when{
+				"", "",
+				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
+				map[string]string{
+					getEnvNameWithPrefix("", BaseURLEnvName):    "http://127.0.0.2:8888",
+					getEnvNameWithPrefix("", ConfigFileEnvName): configFile2,
+				},
+			},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.ServerAddress = "127.0.0.1:8787"
+					c.BaseURL = "http://127.0.0.2:8888"
+					c.FileStoragePath = &configFileStoragePath1
+					c.DatabaseDSN = &configFileDatabaseDSN1
+					c.ConfigFile = &configFile2
+				}),
 				nil,
 			},
 		},
