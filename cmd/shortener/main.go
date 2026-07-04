@@ -109,7 +109,12 @@ func runApp(
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		err := srv.ListenAndServe()
+		var err error
+		if cfg.EnableHTTPS {
+			err = srv.ListenAndServeTLS("cert.pem", "key.pem")
+		} else {
+			err = srv.ListenAndServe()
+		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrors <- err
 		}

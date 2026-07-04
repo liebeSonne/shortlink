@@ -2,6 +2,8 @@ VERSION := v1.0.1
 COMMIT := $(shell git rev-parse HEAD)
 BUILD_TIME := $(shell date +'%Y/%m/%d %H:%M:%S')
 LDFLAGS := -X main.buildVersion=$(VERSION) -X 'main.buildDate=$(BUILD_TIME)' -X main.buildCommit=$(COMMIT)
+CERT_FILE=cert.pem
+KEY_FILE=key.pem
 
 .PHONY: all
 all: build generate tests
@@ -134,3 +136,12 @@ swag-fmt:
 .PHONY: run
 run:
 	go run -ldflags="$(LDFLAGS)" ./cmd/shortener/
+
+.PHONY: cert
+cert:
+	@if [ ! -f $(CERT_FILE) ] || [ ! -f $(KEY_FILE) ]; then \
+		echo "Generate local cert"; \
+		go run $$(go env GOROOT)/src/crypto/tls/generate_cert.go --host "localhost,127.0.0.1"; \
+	else \
+		echo "Cert exist"; \
+	fi
