@@ -21,6 +21,8 @@ const (
 	AuditFileFlagName       = "audit-file"
 	AuditURLFlagName        = "audit-url"
 	EnableHTTPSFlagName     = "s"
+	ConfigShortFlagName     = "c"
+	ConfigLongFlagName      = "config"
 )
 
 // Ошибки разора флагов.
@@ -41,6 +43,7 @@ type flagsConfig struct {
 	AuditFile       *string
 	AuditURL        *string
 	EnableHTTPS     *bool
+	ConfigFile      *string
 }
 
 func makeModFlagConfig(c flagsConfig, f func(c *flagsConfig)) flagsConfig {
@@ -87,6 +90,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.EnableHTTPS != nil {
 			config.EnableHTTPS = *flagsConf.EnableHTTPS
 		}
+		if flagsConf.ConfigFile != nil {
+			config.ConfigFile = flagsConf.ConfigFile
+		}
 	}
 
 	return nil
@@ -112,6 +118,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	auditFile := fs.String(AuditFileFlagName, "", "audit file")
 	auditURL := fs.String(AuditURLFlagName, "", "audit URL")
 	enableHTTPS := fs.Bool(EnableHTTPSFlagName, DefaultEnableHTTPS, "enable HTTPS on web-server")
+	var configFile string
+	fs.StringVar(&configFile, ConfigShortFlagName, "", "config json file")
+	fs.StringVar(&configFile, ConfigLongFlagName, "", "config json file")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -133,6 +142,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			DatabaseDSNFlagName:     false,
 			AuditFileFlagName:       false,
 			AuditURLFlagName:        false,
+			EnableHTTPSFlagName:     false,
+			ConfigShortFlagName:     false,
+			ConfigLongFlagName:      false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -180,6 +192,16 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[EnableHTTPSFlagName]; ok && isSet {
 			config.EnableHTTPS = enableHTTPS
 		}
+		if isSet, ok := isSetFlagMap[ConfigShortFlagName]; ok && isSet {
+			if configFile != "" {
+				config.ConfigFile = &configFile
+			}
+		}
+		if isSet, ok := isSetFlagMap[ConfigLongFlagName]; ok && isSet {
+			if configFile != "" {
+				config.ConfigFile = &configFile
+			}
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
@@ -202,6 +224,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			config.AuditURL = auditURL
 		}
 		config.EnableHTTPS = enableHTTPS
+		if configFile != "" {
+			config.ConfigFile = &configFile
+		}
 	}
 
 	return nil

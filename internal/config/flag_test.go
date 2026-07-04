@@ -14,6 +14,8 @@ func TestParseFlags(t *testing.T) {
 	databaseDSN1 := "host=localhost user=username password=123 dbname=db sslmode=disable"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
+	configFile1 := "config1.json"
+	configFile2 := "config2.json"
 
 	var defaultCfg = Config{
 		BaseURL:       DefaultBaseURL,
@@ -70,6 +72,20 @@ func TestParseFlags(t *testing.T) {
 		{"set --s flag=true", []string{"--s=true"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = true }), nil}},
 		{"set -s flag=false", []string{"-s=false"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = false }), nil}},
 		{"set --s flag=false", []string{"--s=false"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = false }), nil}},
+		{"set -c flag empty", []string{"-c", ""}, want{defaultCfg, nil}},
+		{"set --c flag empty", []string{"--c", ""}, want{defaultCfg, nil}},
+		{"set -config flag empty", []string{"-config", ""}, want{defaultCfg, nil}},
+		{"set --config flag empty", []string{"--config", ""}, want{defaultCfg, nil}},
+		{"set -c flag", []string{"-c", configFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile1 }), nil}},
+		{"set --c flag", []string{"--c", configFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile1 }), nil}},
+		{"set -config flag", []string{"-config", configFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile1 }), nil}},
+		{"set --config flag", []string{"--config", configFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile1 }), nil}},
+		{"set -c flag and -config flag", []string{"-c", configFile1, "-config", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
+		{"set -config flag and -c flag", []string{"-config", configFile1, "-c", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
+		{"set -c flag and empty -config flag", []string{"-c", configFile1, "-config", ""}, want{defaultCfg, nil}},
+		{"set -config flag and empty -c flag", []string{"-config", configFile1, "-c", ""}, want{defaultCfg, nil}},
+		{"set empty -c flag and -config flag", []string{"-c", "", "-config", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
+		{"set empty -config flag and -c flag", []string{"-config", "", "-c", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -106,6 +122,7 @@ func TestParseFlagsConfig(t *testing.T) {
 	appLog1 := "app.log"
 	fileStoragePath1 := "./file/path"
 	databaseDSN1 := "host=localhost user=username password=123 dbname=db sslmode=disable"
+	configFile1 := "config1.json"
 
 	defaultServerAddress := DefaultServerAddress
 	defaultBaseURL := DefaultBaseURL
@@ -251,6 +268,18 @@ func TestParseFlagsConfig(t *testing.T) {
 			on{true},
 			want{flagsConfig{EnableHTTPS: &enableHTTPSTrue}, nil},
 		},
+		{
+			"set -c flag and just if set",
+			when{[]string{"-c", configFile1}},
+			on{true},
+			want{flagsConfig{ConfigFile: &configFile1}, nil},
+		},
+		{
+			"set -config flag and just if set",
+			when{[]string{"-config", configFile1}},
+			on{true},
+			want{flagsConfig{ConfigFile: &configFile1}, nil},
+		},
 		// and not just if set
 		{
 			"empty args and not just if set",
@@ -351,6 +380,30 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-a", "10.0.0.1:abc"}},
 			on{false},
 			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -c flag and not just if set",
+			when{[]string{"-c", configFile1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ConfigFile = &configFile1 }), nil},
+		},
+		{
+			"set -c flag empty and not just if set",
+			when{[]string{"-c", ""}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ConfigFile = nil }), nil},
+		},
+		{
+			"set -config flag and not just if set",
+			when{[]string{"-config", configFile1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ConfigFile = &configFile1 }), nil},
+		},
+		{
+			"set -config flag empty and not just if set",
+			when{[]string{"-config", ""}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ConfigFile = nil }), nil},
 		},
 	}
 

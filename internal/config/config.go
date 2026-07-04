@@ -56,6 +56,7 @@ const (
 	AuditFileEnvName          = "AUDIT_FILE"
 	AuditURLEnvName           = "AUDIT_URL"
 	EnableHTTPSEnvName        = "ENABLE_HTTPS"
+	ConfigFileEnvName         = "CONFIG"
 )
 
 var allEnvNames = []string{
@@ -72,6 +73,7 @@ var allEnvNames = []string{
 	AuditFileEnvName,
 	AuditURLEnvName,
 	EnableHTTPSEnvName,
+	ConfigFileEnvName,
 }
 
 // Config - настройки.
@@ -92,6 +94,8 @@ type Config struct {
 	AuditURL  *string `env:"AUDIT_URL" default:""`  // Ссылка для сохранения данных аудита.
 
 	EnableHTTPS bool `env:"ENABLE_HTTPS" default:"false"` // Включение HTTPS в веб-сервере
+
+	ConfigFile *string `env:"CONFIG" default:""` // json-файл конфигурации
 }
 
 func MakeModConfig(c Config, f func(c *Config)) Config {

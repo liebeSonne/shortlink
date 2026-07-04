@@ -19,6 +19,7 @@ func TestParseEnv(t *testing.T) {
 	authSecretKey1 := "secret123"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
+	configFile1 := "config1.json"
 
 	type on struct {
 		prefix string
@@ -174,6 +175,17 @@ func TestParseEnv(t *testing.T) {
 				}), nil},
 		},
 		{
+			"config file",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", ConfigFileEnvName): configFile1,
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.ConfigFile = &configFile1
+				}), nil},
+		},
+		{
 			"all env",
 			on{""},
 			when{map[string]string{
@@ -190,6 +202,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 				getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+				getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -205,6 +218,7 @@ func TestParseEnv(t *testing.T) {
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
 				EnableHTTPS:        true,
+				ConfigFile:         &configFile1,
 			}, nil},
 		},
 		{
@@ -224,6 +238,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("APP_ID", AuditURLEnvName):           auditURL1,
 				getEnvNameWithPrefix("APP_ID", EnableHTTPSEnvName):        "true",
+				getEnvNameWithPrefix("APP_ID", ConfigFileEnvName):         configFile1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -239,6 +254,7 @@ func TestParseEnv(t *testing.T) {
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
 				EnableHTTPS:        true,
+				ConfigFile:         &configFile1,
 			}, nil},
 		},
 	}

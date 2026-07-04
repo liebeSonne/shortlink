@@ -97,6 +97,10 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 			if fCfg.EnableHTTPS != nil {
 				cfg.EnableHTTPS = *fCfg.EnableHTTPS
 			}
+		case ConfigFileEnvName:
+			if fCfg.ConfigFile != nil && *fCfg.ConfigFile != "" {
+				cfg.ConfigFile = fCfg.ConfigFile
+			}
 		}
 	}
 }

@@ -19,6 +19,7 @@ func TestLoadConfig(t *testing.T) {
 	authSecretKey1 := "secret123"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
+	configFile1 := "config1.json"
 
 	type when struct {
 		appID     string
@@ -59,6 +60,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("prefix", AuditURLEnvName):           auditURL1,
 					getEnvNameWithPrefix("prefix", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("prefix", ConfigFileEnvName):         configFile1,
 				},
 			},
 			want{
@@ -76,6 +78,7 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					ConfigFile:         &configFile1,
 				},
 				nil,
 			},
@@ -99,6 +102,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
 			want{
@@ -116,6 +120,7 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					ConfigFile:         &configFile1,
 				},
 				nil,
 			},
@@ -135,6 +140,7 @@ func TestLoadConfig(t *testing.T) {
 					"--audit-file", auditFile1,
 					"--audit-url", auditURL1,
 					"-s=true",
+					"-c", configFile1,
 				},
 				map[string]string{},
 			},
@@ -153,6 +159,7 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					ConfigFile:         &configFile1,
 				},
 				nil,
 			},
@@ -173,6 +180,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
 			want{
@@ -188,6 +196,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
 					EnableHTTPS:        true,
+					ConfigFile:         &configFile1,
 				},
 				nil,
 			},
@@ -208,6 +217,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
 			want{
@@ -223,6 +233,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
 					EnableHTTPS:        true,
+					ConfigFile:         &configFile1,
 				},
 				nil,
 			},
@@ -276,6 +287,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 	databaseDSN1 := "host=localhost user=username password=password dbname=db sslmode=disable"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
+	configFile1 := "config1.json"
 
 	flagConfig1 := flagsConfig{
 		&serverAddress1,
@@ -288,6 +300,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 		&auditFile1,
 		&auditURL1,
 		&enableHTTPSTrue,
+		&configFile1,
 	}
 
 	type on struct {
@@ -366,6 +379,11 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"enable HTTPS env name",
 			on{flagConfig1, []string{EnableHTTPSEnvName}},
 			want{Config{EnableHTTPS: enableHTTPSTrue}},
+		},
+		{
+			"config file env name",
+			on{flagConfig1, []string{ConfigFileEnvName}},
+			want{Config{ConfigFile: &configFile1}},
 		},
 	}
 
