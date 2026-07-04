@@ -17,19 +17,9 @@ func LoadConfig(appID, envPrefix string) (Config, error) {
 
 	prefix := getEnvNameWithPrefix(envPrefix, "")
 
-	tagNameToEnvName := map[string]string{
-		prefix + ServerAddressEnvName:      ServerAddressEnvName,
-		prefix + BaseURLEnvName:            BaseURLEnvName,
-		prefix + EnableLogsEnvName:         EnableLogsEnvName,
-		prefix + LogLevelEnvName:           LogLevelEnvName,
-		prefix + LogFileEnvName:            LogFileEnvName,
-		prefix + FileStoragePathEnvName:    FileStoragePathEnvName,
-		prefix + DatabaseDSNEnvName:        DatabaseDSNEnvName,
-		prefix + AuthCookieTokenKeyEnvName: AuthCookieTokenKeyEnvName,
-		prefix + AuthTokenExpiresEnvName:   AuthTokenExpiresEnvName,
-		prefix + AuthSecretKeyEnvName:      AuthSecretKeyEnvName,
-		prefix + AuditFileEnvName:          AuditFileEnvName,
-		prefix + AuditURLEnvName:           AuditURLEnvName,
+	tagNameToEnvName := make(map[string]string, len(allEnvNames))
+	for _, v := range allEnvNames {
+		tagNameToEnvName[prefix+v] = v
 	}
 
 	onSetHook := func(tag string, value interface{}, isDefault bool) {
@@ -102,6 +92,10 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 		case AuditURLEnvName:
 			if fCfg.AuditURL != nil && *fCfg.AuditURL != "" {
 				cfg.AuditURL = fCfg.AuditURL
+			}
+		case EnableHTTPSEnvName:
+			if fCfg.EnableHTTPS != nil {
+				cfg.EnableHTTPS = *fCfg.EnableHTTPS
 			}
 		}
 	}

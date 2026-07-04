@@ -20,6 +20,7 @@ const (
 	DatabaseDSNFlagName     = "d"
 	AuditFileFlagName       = "audit-file"
 	AuditURLFlagName        = "audit-url"
+	EnableHTTPSFlagName     = "s"
 )
 
 // Ошибки разора флагов.
@@ -39,6 +40,12 @@ type flagsConfig struct {
 	DatabaseDSN     *string
 	AuditFile       *string
 	AuditURL        *string
+	EnableHTTPS     *bool
+}
+
+func makeModFlagConfig(c flagsConfig, f func(c *flagsConfig)) flagsConfig {
+	f(&c)
+	return c
 }
 
 // parseFlags - получение настроек из флагов.
@@ -77,6 +84,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.AuditURL != nil {
 			config.AuditURL = flagsConf.AuditURL
 		}
+		if flagsConf.EnableHTTPS != nil {
+			config.EnableHTTPS = *flagsConf.EnableHTTPS
+		}
 	}
 
 	return nil
@@ -101,6 +111,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	databaseDSN := fs.String(DatabaseDSNFlagName, "", "database DSN")
 	auditFile := fs.String(AuditFileFlagName, "", "audit file")
 	auditURL := fs.String(AuditURLFlagName, "", "audit URL")
+	enableHTTPS := fs.Bool(EnableHTTPSFlagName, DefaultEnableHTTPS, "enable HTTPS on web-server")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -166,6 +177,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 				config.AuditURL = auditURL
 			}
 		}
+		if isSet, ok := isSetFlagMap[EnableHTTPSFlagName]; ok && isSet {
+			config.EnableHTTPS = enableHTTPS
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
@@ -187,6 +201,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if auditURL != nil && *auditURL != "" {
 			config.AuditURL = auditURL
 		}
+		config.EnableHTTPS = enableHTTPS
 	}
 
 	return nil

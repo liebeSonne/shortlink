@@ -40,15 +40,7 @@ func TestParseEnv(t *testing.T) {
 			"default",
 			on{""},
 			when{map[string]string{}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{defaultConfig, nil},
 		},
 		{
 			"server address",
@@ -56,15 +48,9 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8888",
 			}},
-			want{Config{
-				ServerAddress:      "127.0.0.1:8888",
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{MakeModConfig(defaultConfig, func(c *Config) {
+				c.ServerAddress = "127.0.0.1:8888"
+			}), nil},
 		},
 		{
 			"base url",
@@ -72,15 +58,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", BaseURLEnvName): "http://127.0.0.1:8888",
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            "http://127.0.0.1:8888",
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.BaseURL = "http://127.0.0.1:8888"
+				}), nil},
 		},
 		{
 			"enable logs",
@@ -88,15 +69,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", EnableLogsEnvName): "true",
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         true,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.EnableLogs = true
+				}), nil},
 		},
 		{
 			"not enable logs",
@@ -104,15 +80,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", EnableLogsEnvName): "false",
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         false,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.EnableLogs = false
+				}), nil},
 		},
 		{
 			"log level",
@@ -120,15 +91,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", LogLevelEnvName): LogLevelError,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           LogLevelError,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.LogLevel = LogLevelError
+				}), nil},
 		},
 		{
 			"log file",
@@ -136,16 +102,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", LogFileEnvName): appLog,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				LogFile:            &appLog,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.LogFile = &appLog
+				}), nil},
 		},
 		{
 			"file storage path",
@@ -153,16 +113,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				FileStoragePath:    &fileStoragePath,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.FileStoragePath = &fileStoragePath
+				}), nil},
 		},
 		{
 			"database dsn",
@@ -170,16 +124,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", DatabaseDSNEnvName): databaseDSN,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				DatabaseDSN:        &databaseDSN,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.DatabaseDSN = &databaseDSN
+				}), nil},
 		},
 		{
 			"audit file",
@@ -187,16 +135,10 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", AuditFileEnvName): auditFile1,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-				AuditFile:          &auditFile1,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.AuditFile = &auditFile1
+				}), nil},
 		},
 		{
 			"audit url",
@@ -204,16 +146,32 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", AuditURLEnvName): auditURL1,
 			}},
-			want{Config{
-				ServerAddress:      DefaultServerAddress,
-				BaseURL:            DefaultBaseURL,
-				EnableLogs:         DefaultEnableLogs,
-				LogLevel:           DefaultLogLevel,
-				AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-				AuthTokenExpires:   DefaultAuthTokenExpires,
-				AuthSecretKey:      DefaultAuthSecretKey,
-				AuditURL:           &auditURL1,
-			}, nil},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.AuditURL = &auditURL1
+				}), nil},
+		},
+		{
+			"enable HTTPS",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", EnableHTTPSEnvName): "true",
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.EnableHTTPS = true
+				}), nil},
+		},
+		{
+			"not enable HTTPS",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", EnableHTTPSEnvName): "false",
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.EnableHTTPS = false
+				}), nil},
 		},
 		{
 			"all env",
@@ -231,6 +189,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 				getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
+				getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -245,6 +204,7 @@ func TestParseEnv(t *testing.T) {
 				AuthSecretKey:      authSecretKey1,
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
+				EnableHTTPS:        true,
 			}, nil},
 		},
 		{
@@ -263,6 +223,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", AuthSecretKeyEnvName):      authSecretKey1,
 				getEnvNameWithPrefix("APP_ID", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("APP_ID", AuditURLEnvName):           auditURL1,
+				getEnvNameWithPrefix("APP_ID", EnableHTTPSEnvName):        "true",
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -277,6 +238,7 @@ func TestParseEnv(t *testing.T) {
 				AuthSecretKey:      authSecretKey1,
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
+				EnableHTTPS:        true,
 			}, nil},
 		},
 	}

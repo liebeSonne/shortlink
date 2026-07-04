@@ -27,7 +27,19 @@ const (
 	DefaultAuthCookieTokenKey = "session_token"
 	DefaultAuthSecretKey      = "secret-key-123"
 	DefaultAuthTokenExpires   = time.Hour * 24
+	DefaultEnableHTTPS        = false
 )
+
+var defaultConfig = Config{
+	BaseURL:            DefaultBaseURL,
+	ServerAddress:      DefaultServerAddress,
+	EnableLogs:         DefaultEnableLogs,
+	LogLevel:           DefaultLogLevel,
+	AuthCookieTokenKey: DefaultAuthCookieTokenKey,
+	AuthSecretKey:      DefaultAuthSecretKey,
+	AuthTokenExpires:   DefaultAuthTokenExpires,
+	EnableHTTPS:        DefaultEnableHTTPS,
+}
 
 // Названия настроек в переменных окружения.
 const (
@@ -43,7 +55,24 @@ const (
 	AuthTokenExpiresEnvName   = "AUTH_TOKEN_EXPIRE"
 	AuditFileEnvName          = "AUDIT_FILE"
 	AuditURLEnvName           = "AUDIT_URL"
+	EnableHTTPSEnvName        = "ENABLE_HTTPS"
 )
+
+var allEnvNames = []string{
+	ServerAddressEnvName,
+	BaseURLEnvName,
+	EnableLogsEnvName,
+	LogLevelEnvName,
+	LogFileEnvName,
+	FileStoragePathEnvName,
+	DatabaseDSNEnvName,
+	AuthCookieTokenKeyEnvName,
+	AuthSecretKeyEnvName,
+	AuthTokenExpiresEnvName,
+	AuditFileEnvName,
+	AuditURLEnvName,
+	EnableHTTPSEnvName,
+}
 
 // Config - настройки.
 type Config struct {
@@ -61,6 +90,13 @@ type Config struct {
 
 	AuditFile *string `env:"AUDIT_FILE" default:""` // Файл для сохранения данных аудита.
 	AuditURL  *string `env:"AUDIT_URL" default:""`  // Ссылка для сохранения данных аудита.
+
+	EnableHTTPS bool `env:"ENABLE_HTTPS" default:"false"` // Включение HTTPS в веб-сервере
+}
+
+func MakeModConfig(c Config, f func(c *Config)) Config {
+	f(&c)
+	return c
 }
 
 // ParseEnv - парсинг настроек из переменных окружения.

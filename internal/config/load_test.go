@@ -38,18 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			"default",
 			when{},
-			want{
-				Config{
-					ServerAddress:      DefaultServerAddress,
-					BaseURL:            DefaultBaseURL,
-					EnableLogs:         DefaultEnableLogs,
-					LogLevel:           DefaultLogLevel,
-					AuthCookieTokenKey: DefaultAuthCookieTokenKey,
-					AuthTokenExpires:   DefaultAuthTokenExpires,
-					AuthSecretKey:      DefaultAuthSecretKey,
-				},
-				nil,
-			},
+			want{defaultConfig, nil},
 		},
 		{
 			"from env with prefix",
@@ -69,6 +58,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("prefix", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("prefix", AuditURLEnvName):           auditURL1,
+					getEnvNameWithPrefix("prefix", EnableHTTPSEnvName):        "true",
 				},
 			},
 			want{
@@ -85,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthSecretKey:      authSecretKey1,
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
+					EnableHTTPS:        true,
 				},
 				nil,
 			},
@@ -107,6 +98,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
+					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
 				},
 			},
 			want{
@@ -123,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthSecretKey:      authSecretKey1,
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
+					EnableHTTPS:        true,
 				},
 				nil,
 			},
@@ -141,6 +134,7 @@ func TestLoadConfig(t *testing.T) {
 					"-d", databaseDSN1,
 					"--audit-file", auditFile1,
 					"--audit-url", auditURL1,
+					"-s=true",
 				},
 				map[string]string{},
 			},
@@ -158,6 +152,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthSecretKey:      DefaultAuthSecretKey,
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
+					EnableHTTPS:        true,
 				},
 				nil,
 			},
@@ -177,6 +172,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
+					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
 				},
 			},
 			want{
@@ -191,6 +187,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthCookieTokenKey: authCookieTokenKey1,
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
+					EnableHTTPS:        true,
 				},
 				nil,
 			},
@@ -210,6 +207,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthCookieTokenKeyEnvName): authCookieTokenKey1,
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
+					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
 				},
 			},
 			want{
@@ -224,6 +222,7 @@ func TestLoadConfig(t *testing.T) {
 					AuthCookieTokenKey: authCookieTokenKey1,
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
+					EnableHTTPS:        true,
 				},
 				nil,
 			},
@@ -270,6 +269,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 	serverAddress1 := "10.10.10.10:1111"
 	baseURL1 := "http://127.0.0.1:2222"
 	enableLogsTrue := true
+	enableHTTPSTrue := true
 	logLevel1 := LogLevelError
 	logFile1 := "app.log"
 	fileStoragePath1 := "./file/path"
@@ -287,6 +287,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 		&databaseDSN1,
 		&auditFile1,
 		&auditURL1,
+		&enableHTTPSTrue,
 	}
 
 	type on struct {
@@ -360,6 +361,11 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"audit url env name",
 			on{flagConfig1, []string{AuditURLEnvName}},
 			want{Config{AuditURL: &auditURL1}},
+		},
+		{
+			"enable HTTPS env name",
+			on{flagConfig1, []string{EnableHTTPSEnvName}},
+			want{Config{EnableHTTPS: enableHTTPSTrue}},
 		},
 	}
 
