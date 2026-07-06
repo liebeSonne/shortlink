@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/liebeSonne/shortlink/internal/logger"
 )
