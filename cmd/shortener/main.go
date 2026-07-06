@@ -144,14 +144,19 @@ func gracefulShutdown(
 		logger.Errorw("shutdown server error", "error", err)
 
 		// дополнительное время при ошибке
-		forceCtx, forceCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer forceCancel()
+		timer := time.NewTimer(5 * time.Second)
+		defer timer.Stop()
 
-		<-forceCtx.Done()
+		done := make(chan error, 1)
+		go func() {
+			done <- srv.Close()
+		}()
 
-		err = srv.Close()
-		if err != nil {
+		select {
+		case err := <-done:
 			logger.Errorw("close server error", "error", err)
+		case <-timer.C:
+			logger.Errorw("force shutdown timeout")
 		}
 	}
 
