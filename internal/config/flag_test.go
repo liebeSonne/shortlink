@@ -16,6 +16,8 @@ func TestParseFlags(t *testing.T) {
 	auditURL1 := "https://audit.url1.com"
 	configFile1 := "config1.json"
 	configFile2 := "config2.json"
+	tlsCertFile1 := "./some/path/to/cert.pem"
+	tlsKeyFile1 := "./some/path/to/key.pem"
 
 	var defaultCfg = Config{
 		BaseURL:       DefaultBaseURL,
@@ -23,6 +25,8 @@ func TestParseFlags(t *testing.T) {
 		EnableLogs:    DefaultEnableLogs,
 		LogLevel:      DefaultLogLevel,
 		EnableHTTPS:   DefaultEnableHTTPS,
+		TLSKeyFile:    DefaultTLSKeyFile,
+		TLSCertFile:   DefaultTLSCertFile,
 	}
 
 	type want struct {
@@ -72,6 +76,8 @@ func TestParseFlags(t *testing.T) {
 		{"set --s flag=true", []string{"--s=true"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = true }), nil}},
 		{"set -s flag=false", []string{"-s=false"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = false }), nil}},
 		{"set --s flag=false", []string{"--s=false"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableHTTPS = false }), nil}},
+		{"set -tls-cert-file", []string{"-tls-cert-file", tlsCertFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TLSCertFile = tlsCertFile1 }), nil}},
+		{"set -tls-key-file", []string{"-tls-key-file", tlsKeyFile1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TLSKeyFile = tlsKeyFile1 }), nil}},
 		{"set -c flag empty", []string{"-c", ""}, want{defaultCfg, nil}},
 		{"set --c flag empty", []string{"--c", ""}, want{defaultCfg, nil}},
 		{"set -config flag empty", []string{"-config", ""}, want{defaultCfg, nil}},
@@ -123,11 +129,15 @@ func TestParseFlagsConfig(t *testing.T) {
 	fileStoragePath1 := "./file/path"
 	databaseDSN1 := "host=localhost user=username password=123 dbname=db sslmode=disable"
 	configFile1 := "config1.json"
+	tlsCertFile1 := "./some/path/to/cert.pem"
+	tlsKeyFile1 := "./some/path/to/key.pem"
 
 	defaultServerAddress := DefaultServerAddress
 	defaultBaseURL := DefaultBaseURL
 	defaultEnableLogs := DefaultEnableLogs
 	defaultLogLevel := DefaultLogLevel
+	defaultTLSCertFile1 := DefaultTLSCertFile
+	defaultTLSKeyFile1 := DefaultTLSKeyFile
 
 	defaultFlagConfig := flagsConfig{
 		ServerAddress: &defaultServerAddress,
@@ -135,6 +145,8 @@ func TestParseFlagsConfig(t *testing.T) {
 		EnableLogs:    &defaultEnableLogs,
 		LogLevel:      &defaultLogLevel,
 		EnableHTTPS:   &defaultEnableLogs,
+		TLSCertFile:   &defaultTLSCertFile1,
+		TLSKeyFile:    &defaultTLSKeyFile1,
 	}
 
 	type when struct {
@@ -269,6 +281,18 @@ func TestParseFlagsConfig(t *testing.T) {
 			want{flagsConfig{EnableHTTPS: &enableHTTPSTrue}, nil},
 		},
 		{
+			"set -tls-cert-file flag and just if set",
+			when{[]string{"-tls-cert-file", tlsCertFile1}},
+			on{true},
+			want{flagsConfig{TLSCertFile: &tlsCertFile1}, nil},
+		},
+		{
+			"set -tls-key-file flag and just if set",
+			when{[]string{"-tls-key-file", tlsKeyFile1}},
+			on{true},
+			want{flagsConfig{TLSKeyFile: &tlsKeyFile1}, nil},
+		},
+		{
 			"set -c flag and just if set",
 			when{[]string{"-c", configFile1}},
 			on{true},
@@ -356,6 +380,18 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-s=true"}},
 			on{false},
 			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.EnableHTTPS = &enableHTTPSTrue }), nil},
+		},
+		{
+			"set -tls-cert-file flag and not just if set",
+			when{[]string{"-tls-cert-file", tlsCertFile1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.TLSCertFile = &tlsCertFile1 }), nil},
+		},
+		{
+			"set -tls-key-file flag and not just if set",
+			when{[]string{"-tls-key-file", tlsKeyFile1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.TLSKeyFile = &tlsKeyFile1 }), nil},
 		},
 		{
 			"set -a flag with invalid value and not just if set",

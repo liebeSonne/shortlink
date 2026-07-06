@@ -21,6 +21,8 @@ const (
 	AuditFileFlagName       = "audit-file"
 	AuditURLFlagName        = "audit-url"
 	EnableHTTPSFlagName     = "s"
+	TLSCertFileFlagName     = "tls-cert-file"
+	TLSKeyFileFlagName      = "tls-key-file"
 	ConfigShortFlagName     = "c"
 	ConfigLongFlagName      = "config"
 )
@@ -43,6 +45,8 @@ type flagsConfig struct {
 	AuditFile       *string
 	AuditURL        *string
 	EnableHTTPS     *bool
+	TLSCertFile     *string
+	TLSKeyFile      *string
 	ConfigFile      *string
 }
 
@@ -90,6 +94,12 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.EnableHTTPS != nil {
 			config.EnableHTTPS = *flagsConf.EnableHTTPS
 		}
+		if flagsConf.TLSCertFile != nil {
+			config.TLSCertFile = *flagsConf.TLSCertFile
+		}
+		if flagsConf.TLSKeyFile != nil {
+			config.TLSKeyFile = *flagsConf.TLSKeyFile
+		}
 		if flagsConf.ConfigFile != nil {
 			config.ConfigFile = flagsConf.ConfigFile
 		}
@@ -118,6 +128,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	auditFile := fs.String(AuditFileFlagName, "", "audit file")
 	auditURL := fs.String(AuditURLFlagName, "", "audit URL")
 	enableHTTPS := fs.Bool(EnableHTTPSFlagName, DefaultEnableHTTPS, "enable HTTPS on web-server")
+	tlsCertFile := fs.String(TLSCertFileFlagName, DefaultTLSCertFile, "TLS certificate file")
+	tlsKeyFile := fs.String(TLSKeyFileFlagName, DefaultTLSKeyFile, "TLS certificate key file")
 	var configFile string
 	fs.StringVar(&configFile, ConfigShortFlagName, "", "config json file")
 	fs.StringVar(&configFile, ConfigLongFlagName, "", "config json file")
@@ -143,6 +155,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			AuditFileFlagName:       false,
 			AuditURLFlagName:        false,
 			EnableHTTPSFlagName:     false,
+			TLSCertFileFlagName:     false,
+			TLSKeyFileFlagName:      false,
 			ConfigShortFlagName:     false,
 			ConfigLongFlagName:      false,
 		}
@@ -192,6 +206,16 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[EnableHTTPSFlagName]; ok && isSet {
 			config.EnableHTTPS = enableHTTPS
 		}
+		if isSet, ok := isSetFlagMap[TLSCertFileFlagName]; ok && isSet {
+			if tlsCertFile != nil && *tlsCertFile != "" {
+				config.TLSCertFile = tlsCertFile
+			}
+		}
+		if isSet, ok := isSetFlagMap[TLSKeyFileFlagName]; ok && isSet {
+			if tlsKeyFile != nil && *tlsKeyFile != "" {
+				config.TLSKeyFile = tlsKeyFile
+			}
+		}
 		if isSet, ok := isSetFlagMap[ConfigShortFlagName]; ok && isSet {
 			if configFile != "" {
 				config.ConfigFile = &configFile
@@ -224,6 +248,12 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			config.AuditURL = auditURL
 		}
 		config.EnableHTTPS = enableHTTPS
+		if tlsCertFile != nil && *tlsCertFile != "" {
+			config.TLSCertFile = tlsCertFile
+		}
+		if tlsKeyFile != nil && *tlsKeyFile != "" {
+			config.TLSKeyFile = tlsKeyFile
+		}
 		if configFile != "" {
 			config.ConfigFile = &configFile
 		}

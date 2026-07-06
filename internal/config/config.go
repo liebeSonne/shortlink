@@ -30,6 +30,8 @@ const (
 	DefaultAuthSecretKey      = "secret-key-123"
 	DefaultAuthTokenExpires   = time.Hour * 24
 	DefaultEnableHTTPS        = false
+	DefaultTLSCertFile        = "cert.pem"
+	DefaultTLSKeyFile         = "key.pem"
 )
 
 var defaultConfig = Config{
@@ -41,6 +43,8 @@ var defaultConfig = Config{
 	AuthSecretKey:      DefaultAuthSecretKey,
 	AuthTokenExpires:   DefaultAuthTokenExpires,
 	EnableHTTPS:        DefaultEnableHTTPS,
+	TLSCertFile:        DefaultTLSCertFile,
+	TLSKeyFile:         DefaultTLSKeyFile,
 }
 
 // Названия настроек в переменных окружения.
@@ -58,6 +62,8 @@ const (
 	AuditFileEnvName          = "AUDIT_FILE"
 	AuditURLEnvName           = "AUDIT_URL"
 	EnableHTTPSEnvName        = "ENABLE_HTTPS"
+	TLSCertFileEnvName        = "TLS_CERT_FILE"
+	TLSKeyFileEnvName         = "TLS_KEY_FILE"
 	ConfigFileEnvName         = "CONFIG"
 )
 
@@ -75,6 +81,8 @@ var allEnvNames = []string{
 	AuditFileEnvName,
 	AuditURLEnvName,
 	EnableHTTPSEnvName,
+	TLSCertFileEnvName,
+	TLSKeyFileEnvName,
 	ConfigFileEnvName,
 }
 
@@ -95,7 +103,9 @@ type Config struct {
 	AuditFile *string `env:"AUDIT_FILE" default:"" json:"audit_file"` // Файл для сохранения данных аудита.
 	AuditURL  *string `env:"AUDIT_URL" default:"" json:"audit_url"`   // Ссылка для сохранения данных аудита.
 
-	EnableHTTPS bool `env:"ENABLE_HTTPS" default:"false" json:"enable_https"` // Включение HTTPS в веб-сервере
+	EnableHTTPS bool   `env:"ENABLE_HTTPS" default:"false" json:"enable_https"`      // Включение HTTPS в веб-сервере
+	TLSCertFile string `env:"TLS_CERT_FILE" default:"cert.pem" json:"tls_cert_file"` // Путь к файлу сертификата TLS
+	TLSKeyFile  string `env:"TLS_KEY_FILE" default:"key.pem" json:"tls_key_file"`    // Путь к файлу приватного ключа сертификата TLS
 
 	ConfigFile *string `env:"CONFIG" default:""` // json-файл конфигурации
 }

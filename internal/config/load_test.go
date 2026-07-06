@@ -20,6 +20,8 @@ func TestLoadConfig(t *testing.T) {
 	authSecretKey1 := "secret123"
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
+	tlsCertFile1 := "./some/path/to/cert.pem"
+	tlsKeyFile1 := "./some/path/to/key.pem"
 
 	// make empty config file
 	tempFile2, err := os.CreateTemp("", "config_*.json")
@@ -87,6 +89,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("prefix", AuditURLEnvName):           auditURL1,
 					getEnvNameWithPrefix("prefix", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("prefix", TLSCertFileEnvName):        tlsCertFile1,
+					getEnvNameWithPrefix("prefix", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("prefix", ConfigFileEnvName):         configFile1,
 				},
 			},
@@ -105,6 +109,8 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					TLSCertFile:        tlsCertFile1,
+					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
 				},
 				nil,
@@ -129,6 +135,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 					getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
+					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
@@ -147,6 +155,8 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					TLSCertFile:        tlsCertFile1,
+					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
 				},
 				nil,
@@ -167,6 +177,8 @@ func TestLoadConfig(t *testing.T) {
 					"--audit-file", auditFile1,
 					"--audit-url", auditURL1,
 					"-s=true",
+					"-tls-cert-file", tlsCertFile1,
+					"-tls-key-file", tlsKeyFile1,
 					"-c", configFile1,
 				},
 				map[string]string{},
@@ -186,6 +198,8 @@ func TestLoadConfig(t *testing.T) {
 					AuditFile:          &auditFile1,
 					AuditURL:           &auditURL1,
 					EnableHTTPS:        true,
+					TLSCertFile:        tlsCertFile1,
+					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
 				},
 				nil,
@@ -207,6 +221,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
+					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
@@ -223,6 +239,8 @@ func TestLoadConfig(t *testing.T) {
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
 					EnableHTTPS:        true,
+					TLSCertFile:        tlsCertFile1,
+					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
 				},
 				nil,
@@ -244,6 +262,8 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", AuthTokenExpiresEnvName):   authTokenExpiresStr1,
 					getEnvNameWithPrefix("", AuthSecretKeyEnvName):      authSecretKey1,
 					getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
+					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 				},
 			},
@@ -260,6 +280,8 @@ func TestLoadConfig(t *testing.T) {
 					AuthTokenExpires:   authTokenExpiresDuration1,
 					AuthSecretKey:      authSecretKey1,
 					EnableHTTPS:        true,
+					TLSCertFile:        tlsCertFile1,
+					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
 				},
 				nil,
@@ -374,6 +396,8 @@ func TestMergeFlagsConfig(t *testing.T) {
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
 	configFile1 := "config1.json"
+	tlsCertFile1 := "./some/path/to/cert.pem"
+	tlsKeyFile1 := "./some/path/to/key.pem"
 
 	flagConfig1 := flagsConfig{
 		&serverAddress1,
@@ -386,6 +410,8 @@ func TestMergeFlagsConfig(t *testing.T) {
 		&auditFile1,
 		&auditURL1,
 		&enableHTTPSTrue,
+		&tlsCertFile1,
+		&tlsKeyFile1,
 		&configFile1,
 	}
 
@@ -465,6 +491,16 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"enable HTTPS env name",
 			on{flagConfig1, []string{EnableHTTPSEnvName}},
 			want{Config{EnableHTTPS: enableHTTPSTrue}},
+		},
+		{
+			"TLS cert file env name",
+			on{flagConfig1, []string{TLSCertFileEnvName}},
+			want{Config{TLSCertFile: tlsCertFile1}},
+		},
+		{
+			"TLS key file env name",
+			on{flagConfig1, []string{TLSKeyFileEnvName}},
+			want{Config{TLSKeyFile: tlsKeyFile1}},
 		},
 		{
 			"config file env name",

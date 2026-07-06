@@ -112,7 +112,7 @@ func runApp(
 	go func() {
 		var err error
 		if cfg.EnableHTTPS {
-			err = srv.ListenAndServeTLS("cert.pem", "key.pem")
+			err = srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
 		} else {
 			err = srv.ListenAndServe()
 		}

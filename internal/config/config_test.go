@@ -20,6 +20,8 @@ func TestParseEnv(t *testing.T) {
 	auditFile1 := "audit1.log"
 	auditURL1 := "https://audit.url1.com"
 	configFile1 := "config1.json"
+	tlsCertFile1 := "./some/path/to/cert.pem"
+	tlsKeyFile1 := "./some/path/to/key.pem"
 
 	type on struct {
 		prefix string
@@ -175,6 +177,28 @@ func TestParseEnv(t *testing.T) {
 				}), nil},
 		},
 		{
+			"TLS cert file",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", TLSCertFileEnvName): tlsCertFile1,
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.TLSCertFile = tlsCertFile1
+				}), nil},
+		},
+		{
+			"TLS key file",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", TLSKeyFileEnvName): tlsKeyFile1,
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.TLSKeyFile = tlsKeyFile1
+				}), nil},
+		},
+		{
 			"config file",
 			on{""},
 			when{map[string]string{
@@ -202,6 +226,8 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("", AuditURLEnvName):           auditURL1,
 				getEnvNameWithPrefix("", EnableHTTPSEnvName):        "true",
+				getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
+				getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 				getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
 			}},
 			want{Config{
@@ -218,6 +244,8 @@ func TestParseEnv(t *testing.T) {
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
 				EnableHTTPS:        true,
+				TLSCertFile:        tlsCertFile1,
+				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
 			}, nil},
 		},
@@ -238,6 +266,8 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", AuditFileEnvName):          auditFile1,
 				getEnvNameWithPrefix("APP_ID", AuditURLEnvName):           auditURL1,
 				getEnvNameWithPrefix("APP_ID", EnableHTTPSEnvName):        "true",
+				getEnvNameWithPrefix("APP_ID", TLSCertFileEnvName):        tlsCertFile1,
+				getEnvNameWithPrefix("APP_ID", TLSKeyFileEnvName):         tlsKeyFile1,
 				getEnvNameWithPrefix("APP_ID", ConfigFileEnvName):         configFile1,
 			}},
 			want{Config{
@@ -254,6 +284,8 @@ func TestParseEnv(t *testing.T) {
 				AuditFile:          &auditFile1,
 				AuditURL:           &auditURL1,
 				EnableHTTPS:        true,
+				TLSCertFile:        tlsCertFile1,
+				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
 			}, nil},
 		},
