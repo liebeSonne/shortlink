@@ -85,3 +85,47 @@ func (_c *MockShortLinkDeleter_Add_Call) RunAndReturn(run func(input InputDelete
 	_c.Call.Return(run)
 	return _c
 }
+
+// Stop provides a mock function for the type MockShortLinkDeleter
+func (_mock *MockShortLinkDeleter) Stop() error {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Stop")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func() error); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockShortLinkDeleter_Stop_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Stop'
+type MockShortLinkDeleter_Stop_Call struct {
+	*mock.Call
+}
+
+// Stop is a helper method to define mock.On call
+func (_e *MockShortLinkDeleter_Expecter) Stop() *MockShortLinkDeleter_Stop_Call {
+	return &MockShortLinkDeleter_Stop_Call{Call: _e.mock.On("Stop")}
+}
+
+func (_c *MockShortLinkDeleter_Stop_Call) Run(run func()) *MockShortLinkDeleter_Stop_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockShortLinkDeleter_Stop_Call) Return(err error) *MockShortLinkDeleter_Stop_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockShortLinkDeleter_Stop_Call) RunAndReturn(run func() error) *MockShortLinkDeleter_Stop_Call {
+	_c.Call.Return(run)
+	return _c
+}

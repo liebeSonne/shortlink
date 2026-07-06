@@ -187,6 +187,11 @@ func initRouter(
 	shortLinkDeleter := service.NewShortLinkDeleter(ctx, logger, func(input service.InputDelete) error {
 		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
 	})
+	closer.AddCloser(internalio.CloserFunc(
+		func() error {
+			return shortLinkDeleter.Stop()
+		},
+	))
 
 	auditPublisher, err := initAuditPublisher(ctx, cfg, logger, closer)
 	if err != nil {
