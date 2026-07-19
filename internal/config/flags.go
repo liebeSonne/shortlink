@@ -25,6 +25,7 @@ const (
 	TLSKeyFileFlagName      = "tls-key-file"
 	ConfigShortFlagName     = "c"
 	ConfigLongFlagName      = "config"
+	TrustedSubnetFlagName   = "t"
 )
 
 // Ошибки разора флагов.
@@ -48,6 +49,7 @@ type flagsConfig struct {
 	TLSCertFile     *string
 	TLSKeyFile      *string
 	ConfigFile      *string
+	TrustedSubnet   *string
 }
 
 func makeModFlagConfig(c flagsConfig, f func(c *flagsConfig)) flagsConfig {
@@ -103,6 +105,9 @@ func parseFlags(appID string, config *Config) error {
 		if flagsConf.ConfigFile != nil {
 			config.ConfigFile = flagsConf.ConfigFile
 		}
+		if flagsConf.TrustedSubnet != nil {
+			config.TrustedSubnet = flagsConf.TrustedSubnet
+		}
 	}
 
 	return nil
@@ -133,6 +138,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	var configFile string
 	fs.StringVar(&configFile, ConfigShortFlagName, "", "config json file")
 	fs.StringVar(&configFile, ConfigLongFlagName, "", "config json file")
+	trustedSubnet := fs.String(TrustedSubnetFlagName, "", "CIDR of trusted subnet")
 
 	err = fs.Parse(os.Args[1:])
 	if err != nil {
@@ -159,6 +165,7 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 			TLSKeyFileFlagName:      false,
 			ConfigShortFlagName:     false,
 			ConfigLongFlagName:      false,
+			TrustedSubnetFlagName:   false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -226,6 +233,11 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 				config.ConfigFile = &configFile
 			}
 		}
+		if isSet, ok := isSetFlagMap[TrustedSubnetFlagName]; ok && isSet {
+			if trustedSubnet != nil && *trustedSubnet != "" {
+				config.TrustedSubnet = trustedSubnet
+			}
+		}
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
@@ -256,6 +268,9 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		}
 		if configFile != "" {
 			config.ConfigFile = &configFile
+		}
+		if trustedSubnet != nil && *trustedSubnet != "" {
+			config.TrustedSubnet = trustedSubnet
 		}
 	}
 

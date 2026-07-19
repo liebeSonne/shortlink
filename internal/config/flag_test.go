@@ -18,6 +18,7 @@ func TestParseFlags(t *testing.T) {
 	configFile2 := "config2.json"
 	tlsCertFile1 := "./some/path/to/cert.pem"
 	tlsKeyFile1 := "./some/path/to/key.pem"
+	trustedSubnet1 := "192.168.1.0/24"
 
 	var defaultCfg = Config{
 		BaseURL:       DefaultBaseURL,
@@ -92,6 +93,9 @@ func TestParseFlags(t *testing.T) {
 		{"set -config flag and empty -c flag", []string{"-config", configFile1, "-c", ""}, want{defaultCfg, nil}},
 		{"set empty -c flag and -config flag", []string{"-c", "", "-config", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
 		{"set empty -config flag and -c flag", []string{"-config", "", "-c", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
+		{"set -t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = &trustedSubnet1 }), nil}},
+		{"set --t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = &trustedSubnet1 }), nil}},
+		{"set --t flag empty", []string{"-t", ""}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = nil }), nil}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -131,6 +135,7 @@ func TestParseFlagsConfig(t *testing.T) {
 	configFile1 := "config1.json"
 	tlsCertFile1 := "./some/path/to/cert.pem"
 	tlsKeyFile1 := "./some/path/to/key.pem"
+	trustedSubnet1 := "192.168.1.0/24"
 
 	defaultServerAddress := DefaultServerAddress
 	defaultBaseURL := DefaultBaseURL
@@ -304,6 +309,12 @@ func TestParseFlagsConfig(t *testing.T) {
 			on{true},
 			want{flagsConfig{ConfigFile: &configFile1}, nil},
 		},
+		{
+			"set -t without value flag and just if set",
+			when{[]string{"-t", trustedSubnet1}},
+			on{true},
+			want{flagsConfig{TrustedSubnet: &trustedSubnet1}, nil},
+		},
 		// and not just if set
 		{
 			"empty args and not just if set",
@@ -440,6 +451,12 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-config", ""}},
 			on{false},
 			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ConfigFile = nil }), nil},
+		},
+		{
+			"set -t flag and not just if set",
+			when{[]string{"-t", trustedSubnet1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.TrustedSubnet = &trustedSubnet1 }), nil},
 		},
 	}
 

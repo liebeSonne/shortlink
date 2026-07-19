@@ -22,6 +22,7 @@ func TestParseEnv(t *testing.T) {
 	configFile1 := "config1.json"
 	tlsCertFile1 := "./some/path/to/cert.pem"
 	tlsKeyFile1 := "./some/path/to/key.pem"
+	trustedSubnet1 := "192.168.1.0/24"
 
 	type on struct {
 		prefix string
@@ -210,6 +211,17 @@ func TestParseEnv(t *testing.T) {
 				}), nil},
 		},
 		{
+			"trusted subnet",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", TrustedSubnetEnvName): trustedSubnet1,
+			}},
+			want{
+				MakeModConfig(defaultConfig, func(c *Config) {
+					c.TrustedSubnet = &trustedSubnet1
+				}), nil},
+		},
+		{
 			"all env",
 			on{""},
 			when{map[string]string{
@@ -229,6 +241,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
 				getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 				getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
+				getEnvNameWithPrefix("", TrustedSubnetEnvName):      trustedSubnet1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -247,6 +260,7 @@ func TestParseEnv(t *testing.T) {
 				TLSCertFile:        tlsCertFile1,
 				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
+				TrustedSubnet:      &trustedSubnet1,
 			}, nil},
 		},
 		{
@@ -269,6 +283,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("APP_ID", TLSCertFileEnvName):        tlsCertFile1,
 				getEnvNameWithPrefix("APP_ID", TLSKeyFileEnvName):         tlsKeyFile1,
 				getEnvNameWithPrefix("APP_ID", ConfigFileEnvName):         configFile1,
+				getEnvNameWithPrefix("APP_ID", TrustedSubnetEnvName):      trustedSubnet1,
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
@@ -287,6 +302,7 @@ func TestParseEnv(t *testing.T) {
 				TLSCertFile:        tlsCertFile1,
 				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
+				TrustedSubnet:      &trustedSubnet1,
 			}, nil},
 		},
 	}

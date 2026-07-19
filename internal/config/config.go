@@ -65,6 +65,7 @@ const (
 	TLSCertFileEnvName        = "TLS_CERT_FILE"
 	TLSKeyFileEnvName         = "TLS_KEY_FILE"
 	ConfigFileEnvName         = "CONFIG"
+	TrustedSubnetEnvName      = "TRUSTED_SUBNET"
 )
 
 var allEnvNames = []string{
@@ -84,6 +85,7 @@ var allEnvNames = []string{
 	TLSCertFileEnvName,
 	TLSKeyFileEnvName,
 	ConfigFileEnvName,
+	TrustedSubnetEnvName,
 }
 
 // Config - настройки.
@@ -108,6 +110,8 @@ type Config struct {
 	TLSKeyFile  string `env:"TLS_KEY_FILE" default:"key.pem" json:"tls_key_file"`    // Путь к файлу приватного ключа сертификата TLS
 
 	ConfigFile *string `env:"CONFIG" default:""` // json-файл конфигурации
+
+	TrustedSubnet *string `env:"TRUSTED_SUBNET" default:"" json:"trusted_subnet"` // CIDR доверенной подсети
 }
 
 func MakeModConfig(c Config, f func(c *Config)) Config {

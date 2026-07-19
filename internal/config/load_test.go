@@ -22,6 +22,7 @@ func TestLoadConfig(t *testing.T) {
 	auditURL1 := "https://audit.url1.com"
 	tlsCertFile1 := "./some/path/to/cert.pem"
 	tlsKeyFile1 := "./some/path/to/key.pem"
+	trustedSubnet1 := "192.168.1.0/24"
 
 	// make empty config file
 	tempFile2, err := os.CreateTemp("", "config_*.json")
@@ -40,12 +41,14 @@ func TestLoadConfig(t *testing.T) {
 	configFileBaseURL1 := "http://1.1.1.1:2222"
 	configFileDatabaseDSN1 := "file database dns"
 	configFileStoragePath1 := "./config/file/storage/path"
+	configFileTrustedSubnet1 := "1111.111.1.0/24"
 	configFileData1 := fmt.Sprintf(`{
 		"server_address": "%s",
 		"base_url": "%s",
 		"file_storage_path": "%s",
-		"database_dsn": "%s" 
-	}`, configFileServerAddress1, configFileBaseURL1, configFileStoragePath1, configFileDatabaseDSN1)
+		"database_dsn": "%s" ,
+		"trusted_subnet": "%s"
+	}`, configFileServerAddress1, configFileBaseURL1, configFileStoragePath1, configFileDatabaseDSN1, configFileTrustedSubnet1)
 	err = os.WriteFile(tempFile.Name(), []byte(configFileData1), 0644)
 	require.NoError(t, err)
 	configFile2 := tempFile.Name()
@@ -92,6 +95,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("prefix", TLSCertFileEnvName):        tlsCertFile1,
 					getEnvNameWithPrefix("prefix", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("prefix", ConfigFileEnvName):         configFile1,
+					getEnvNameWithPrefix("prefix", TrustedSubnetEnvName):      trustedSubnet1,
 				},
 			},
 			want{
@@ -112,6 +116,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
+					TrustedSubnet:      &trustedSubnet1,
 				},
 				nil,
 			},
@@ -138,6 +143,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
 					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
+					getEnvNameWithPrefix("", TrustedSubnetEnvName):      trustedSubnet1,
 				},
 			},
 			want{
@@ -158,6 +164,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
+					TrustedSubnet:      &trustedSubnet1,
 				},
 				nil,
 			},
@@ -180,6 +187,7 @@ func TestLoadConfig(t *testing.T) {
 					"-tls-cert-file", tlsCertFile1,
 					"-tls-key-file", tlsKeyFile1,
 					"-c", configFile1,
+					"-t", trustedSubnet1,
 				},
 				map[string]string{},
 			},
@@ -201,6 +209,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
+					TrustedSubnet:      &trustedSubnet1,
 				},
 				nil,
 			},
@@ -224,6 +233,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
 					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
+					getEnvNameWithPrefix("", TrustedSubnetEnvName):      trustedSubnet1,
 				},
 			},
 			want{
@@ -242,6 +252,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
+					TrustedSubnet:      &trustedSubnet1,
 				},
 				nil,
 			},
@@ -265,6 +276,7 @@ func TestLoadConfig(t *testing.T) {
 					getEnvNameWithPrefix("", TLSCertFileEnvName):        tlsCertFile1,
 					getEnvNameWithPrefix("", TLSKeyFileEnvName):         tlsKeyFile1,
 					getEnvNameWithPrefix("", ConfigFileEnvName):         configFile1,
+					getEnvNameWithPrefix("", TrustedSubnetEnvName):      trustedSubnet1,
 				},
 			},
 			want{
@@ -283,6 +295,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
+					TrustedSubnet:      &trustedSubnet1,
 				},
 				nil,
 			},
@@ -303,6 +316,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
+					c.TrustedSubnet = &configFileTrustedSubnet1
 				}),
 				nil,
 			},
@@ -321,6 +335,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
+					c.TrustedSubnet = &configFileTrustedSubnet1
 				}),
 				nil,
 			},
@@ -329,10 +344,11 @@ func TestLoadConfig(t *testing.T) {
 			"from config file with priority from flag and env",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
+				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888", "-t", trustedSubnet1},
 				map[string]string{
-					getEnvNameWithPrefix("", BaseURLEnvName):    "http://127.0.0.2:8888",
-					getEnvNameWithPrefix("", ConfigFileEnvName): configFile2,
+					getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8888",
+					getEnvNameWithPrefix("", ConfigFileEnvName):    configFile2,
+					getEnvNameWithPrefix("", TrustedSubnetEnvName): trustedSubnet1,
 				},
 			},
 			want{
@@ -342,6 +358,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
+					c.TrustedSubnet = &trustedSubnet1
 				}),
 				nil,
 			},
@@ -398,6 +415,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 	configFile1 := "config1.json"
 	tlsCertFile1 := "./some/path/to/cert.pem"
 	tlsKeyFile1 := "./some/path/to/key.pem"
+	trustedSubnet1 := "192.168.1.0/24"
 
 	flagConfig1 := flagsConfig{
 		&serverAddress1,
@@ -413,6 +431,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 		&tlsCertFile1,
 		&tlsKeyFile1,
 		&configFile1,
+		&trustedSubnet1,
 	}
 
 	type on struct {
@@ -506,6 +525,11 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"config file env name",
 			on{flagConfig1, []string{ConfigFileEnvName}},
 			want{Config{ConfigFile: &configFile1}},
+		},
+		{
+			"trusted subnet env name",
+			on{flagConfig1, []string{TrustedSubnetEnvName}},
+			want{Config{TrustedSubnet: &trustedSubnet1}},
 		},
 	}
 
