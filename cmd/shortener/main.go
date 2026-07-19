@@ -100,6 +100,7 @@ func runApp(
 		"logLevel", cfg.LogLevel,
 		"logFile", cfg.LogFile,
 		"storage", cfg.FileStoragePath,
+		"trustedSubnet", cfg.TrustedSubnet,
 	)
 
 	srv := &http.Server{
