@@ -116,7 +116,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
-					TrustedSubnet:      &trustedSubnet1,
+					TrustedSubnet:      trustedSubnet1,
 				},
 				nil,
 			},
@@ -164,7 +164,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
-					TrustedSubnet:      &trustedSubnet1,
+					TrustedSubnet:      trustedSubnet1,
 				},
 				nil,
 			},
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
-					TrustedSubnet:      &trustedSubnet1,
+					TrustedSubnet:      trustedSubnet1,
 				},
 				nil,
 			},
@@ -252,7 +252,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
-					TrustedSubnet:      &trustedSubnet1,
+					TrustedSubnet:      trustedSubnet1,
 				},
 				nil,
 			},
@@ -295,7 +295,7 @@ func TestLoadConfig(t *testing.T) {
 					TLSCertFile:        tlsCertFile1,
 					TLSKeyFile:         tlsKeyFile1,
 					ConfigFile:         &configFile1,
-					TrustedSubnet:      &trustedSubnet1,
+					TrustedSubnet:      trustedSubnet1,
 				},
 				nil,
 			},
@@ -316,7 +316,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
-					c.TrustedSubnet = &configFileTrustedSubnet1
+					c.TrustedSubnet = configFileTrustedSubnet1
 				}),
 				nil,
 			},
@@ -335,7 +335,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
-					c.TrustedSubnet = &configFileTrustedSubnet1
+					c.TrustedSubnet = configFileTrustedSubnet1
 				}),
 				nil,
 			},
@@ -358,7 +358,7 @@ func TestLoadConfig(t *testing.T) {
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
 					c.ConfigFile = &configFile2
-					c.TrustedSubnet = &trustedSubnet1
+					c.TrustedSubnet = trustedSubnet1
 				}),
 				nil,
 			},
@@ -529,7 +529,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 		{
 			"trusted subnet env name",
 			on{flagConfig1, []string{TrustedSubnetEnvName}},
-			want{Config{TrustedSubnet: &trustedSubnet1}},
+			want{Config{TrustedSubnet: trustedSubnet1}},
 		},
 	}
 

@@ -7,3 +7,9 @@ type ShortLink struct {
 	// URL - сохраняемая полная ссылка.
 	URL string
 }
+
+// StatsData - данные статистики сокращенных ссылок
+type StatsData struct {
+	CountShortLinks int
+	CountUsers      int
+}

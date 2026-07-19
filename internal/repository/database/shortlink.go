@@ -111,6 +111,28 @@ func (r *shortLinkRepository) FindByUserID(ctx context.Context, userID uuid.UUID
 	return shortLinks, nil
 }
 
+func (r *shortLinkRepository) Stats(ctx context.Context) (model.StatsData, error) {
+	const sqlQuery = `
+		SELECT 
+		    COUNT(DISTINCT short_id) as count_urls,
+		    COUNT(DISTINCT user_id) as count_users
+		FROM short_link 
+		WHERE deleted_at IS NULL
+	`
+
+	var stats model.StatsData
+	row := r.pool.QueryRow(ctx, sqlQuery)
+	err := row.Scan(&stats.CountShortLinks, &stats.CountUsers)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return model.StatsData{}, nil
+		}
+		return model.StatsData{}, fmt.Errorf("error on scan row: %w", err)
+	}
+
+	return stats, nil
+}
+
 func (r *shortLinkRepository) Store(ctx context.Context, shortLink model.ShortLink, userID *uuid.UUID) error {
 	return r.StoreAll(ctx, []model.ShortLink{shortLink}, userID)
 }

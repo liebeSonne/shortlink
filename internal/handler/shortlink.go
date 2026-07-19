@@ -32,6 +32,7 @@ type ShortLinkHandler interface {
 	HandleCreateShortenBatch(w http.ResponseWriter, r *http.Request)
 	HandleGetUserUrls(w http.ResponseWriter, r *http.Request)
 	HandleDeleteUrls(w http.ResponseWriter, r *http.Request)
+	HandleInternalStats(w http.ResponseWriter, r *http.Request)
 }
 
 // NewShortLinkHandler - создание экземпляра обработчиков запросов сокращенных ссылок.
@@ -361,6 +362,42 @@ func (h *shortLinkHandler) HandleDeleteUrls(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// HandleInternalStats  godoc
+//
+//	@Summary	Получение количества сокращенных ссылок и количества пользователей
+//	@Tags		shortener
+//	@Accept		json
+//	@Produce	json
+//	@Success	200		{object}	StatsResponse
+//	@Failure	403
+//	@Failure	500
+//	@Router		/api/internal/stats [get]
+func (h *shortLinkHandler) HandleInternalStats(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	stats, err := h.provider.Stats(ctx)
+	if err != nil {
+		h.responseError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := StatsResponse{
+		CountUrls:  stats.CountShortLinks,
+		CountUsers: stats.CountUsers,
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	enc := json.NewEncoder(w)
+	err = enc.Encode(resp)
+	if err != nil {
+		h.logger.Errorf("response write error: %v", err)
+		return
+	}
 }
 
 func (h *shortLinkHandler) createShortLink(ctx context.Context, link string, userID *uuid.UUID) (*model.ShortLink, int, error) {

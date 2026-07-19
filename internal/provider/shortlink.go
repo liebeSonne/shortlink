@@ -16,4 +16,6 @@ type ShortLinkProvider interface {
 	FindByURL(ctx context.Context, url string) (*model.ShortLink, error)
 	// FindByUserID - поиск данных сокращенных ссылок по идентификатору пользователя.
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error)
+	// Stats - статистика
+	Stats(ctx context.Context) (model.StatsData, error)
 }

@@ -82,7 +82,10 @@ func TestRootHandler_Handle(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			router := NewRootRouter(mockHandler, mockDBHandler, false)
+			statsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			router := NewRootRouter(mockHandler, mockDBHandler, false, statsHandler)
 
 			srv := httptest.NewServer(router.Router())
 			defer srv.Close()

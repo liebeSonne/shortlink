@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/liebeSonne/shortlink/internal/handler/subnet"
 	"io"
 	"log"
 	"net/http"
@@ -202,8 +203,10 @@ func initRouter(
 	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger, auditPublisher)
 	db := createDatabase(cfg)
 
+	statsHandler := subnet.NewTrustedSubnetMiddleware(shortLinkHandler.HandleInternalStats, cfg.TrustedSubnet, logger)
+
 	databaseHandler := handler.NewDatabaseHandler(db, logger)
-	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs)
+	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs, statsHandler)
 
 	router := rootRouter.Router().(http.Handler)
 

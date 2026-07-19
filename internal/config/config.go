@@ -111,7 +111,7 @@ type Config struct {
 
 	ConfigFile *string `env:"CONFIG" default:""` // json-файл конфигурации
 
-	TrustedSubnet *string `env:"TRUSTED_SUBNET" default:"" json:"trusted_subnet"` // CIDR доверенной подсети
+	TrustedSubnet string `env:"TRUSTED_SUBNET" default:"" json:"trusted_subnet"` // CIDR доверенной подсети
 }
 
 func MakeModConfig(c Config, f func(c *Config)) Config {

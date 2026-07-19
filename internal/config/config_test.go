@@ -218,7 +218,7 @@ func TestParseEnv(t *testing.T) {
 			}},
 			want{
 				MakeModConfig(defaultConfig, func(c *Config) {
-					c.TrustedSubnet = &trustedSubnet1
+					c.TrustedSubnet = trustedSubnet1
 				}), nil},
 		},
 		{
@@ -260,7 +260,7 @@ func TestParseEnv(t *testing.T) {
 				TLSCertFile:        tlsCertFile1,
 				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
-				TrustedSubnet:      &trustedSubnet1,
+				TrustedSubnet:      trustedSubnet1,
 			}, nil},
 		},
 		{
@@ -302,7 +302,7 @@ func TestParseEnv(t *testing.T) {
 				TLSCertFile:        tlsCertFile1,
 				TLSKeyFile:         tlsKeyFile1,
 				ConfigFile:         &configFile1,
-				TrustedSubnet:      &trustedSubnet1,
+				TrustedSubnet:      trustedSubnet1,
 			}, nil},
 		},
 	}

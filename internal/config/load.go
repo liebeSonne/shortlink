@@ -124,7 +124,7 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 			}
 		case TrustedSubnetEnvName:
 			if fCfg.TrustedSubnet != nil && *fCfg.TrustedSubnet != "" {
-				cfg.TrustedSubnet = fCfg.TrustedSubnet
+				cfg.TrustedSubnet = *fCfg.TrustedSubnet
 			}
 		}
 	}

@@ -106,7 +106,7 @@ func parseFlags(appID string, config *Config) error {
 			config.ConfigFile = flagsConf.ConfigFile
 		}
 		if flagsConf.TrustedSubnet != nil {
-			config.TrustedSubnet = flagsConf.TrustedSubnet
+			config.TrustedSubnet = *flagsConf.TrustedSubnet
 		}
 	}
 

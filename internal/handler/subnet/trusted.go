@@ -9,7 +9,7 @@ import (
 )
 
 func NewTrustedSubnetMiddleware(
-	next http.Handler,
+	next http.HandlerFunc,
 	trustedSubnet string,
 	logger logger.Logger,
 ) http.HandlerFunc {
@@ -52,6 +52,6 @@ func NewTrustedSubnetMiddleware(
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		next(w, r)
 	}
 }

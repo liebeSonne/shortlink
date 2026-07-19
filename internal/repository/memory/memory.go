@@ -71,6 +71,18 @@ func (s *memoryShortLinkRepository) FindByUserID(_ context.Context, userID uuid.
 	return result, nil
 }
 
+func (s *memoryShortLinkRepository) Stats(_ context.Context) (model.StatsData, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	stats := model.StatsData{
+		CountShortLinks: len(s.linksMap),
+		CountUsers:      len(s.userIDToIDs),
+	}
+
+	return stats, nil
+}
+
 func (s *memoryShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink, userID *uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

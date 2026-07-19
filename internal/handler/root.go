@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"net/http"
 )
 
 // RootRouter - интерфейс корневого роутера.
@@ -16,11 +17,13 @@ func NewRootRouter(
 	shortLinkHandler ShortLinkHandler,
 	databaseHandler DatabaseHandler,
 	enableLogs bool,
+	statsHandler http.HandlerFunc,
 ) RootRouter {
 	return &rootHandler{
 		shortLinkHandler: shortLinkHandler,
 		databaseHandler:  databaseHandler,
 		enableLogs:       enableLogs,
+		statsHandler:     statsHandler,
 	}
 }
 
@@ -28,6 +31,7 @@ type rootHandler struct {
 	shortLinkHandler ShortLinkHandler
 	databaseHandler  DatabaseHandler
 	enableLogs       bool
+	statsHandler     http.HandlerFunc
 }
 
 func (h *rootHandler) Router() chi.Router {
@@ -46,6 +50,7 @@ func (h *rootHandler) Router() chi.Router {
 	r.Post("/api/shorten/batch", h.shortLinkHandler.HandleCreateShortenBatch)
 	r.Get("/api/user/urls", h.shortLinkHandler.HandleGetUserUrls)
 	r.Delete("/api/user/urls", h.shortLinkHandler.HandleDeleteUrls)
+	r.Get("/api/internal/stats", h.statsHandler)
 
 	return r
 }

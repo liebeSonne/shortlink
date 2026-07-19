@@ -312,3 +312,49 @@ func (_c *MockShortLinkHandler_HandleGetUserUrls_Call) RunAndReturn(run func(w h
 	_c.Run(run)
 	return _c
 }
+
+// HandleInternalStats provides a mock function for the type MockShortLinkHandler
+func (_mock *MockShortLinkHandler) HandleInternalStats(w http.ResponseWriter, r *http.Request) {
+	_mock.Called(w, r)
+	return
+}
+
+// MockShortLinkHandler_HandleInternalStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleInternalStats'
+type MockShortLinkHandler_HandleInternalStats_Call struct {
+	*mock.Call
+}
+
+// HandleInternalStats is a helper method to define mock.On call
+//   - w http.ResponseWriter
+//   - r *http.Request
+func (_e *MockShortLinkHandler_Expecter) HandleInternalStats(w interface{}, r interface{}) *MockShortLinkHandler_HandleInternalStats_Call {
+	return &MockShortLinkHandler_HandleInternalStats_Call{Call: _e.mock.On("HandleInternalStats", w, r)}
+}
+
+func (_c *MockShortLinkHandler_HandleInternalStats_Call) Run(run func(w http.ResponseWriter, r *http.Request)) *MockShortLinkHandler_HandleInternalStats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 http.ResponseWriter
+		if args[0] != nil {
+			arg0 = args[0].(http.ResponseWriter)
+		}
+		var arg1 *http.Request
+		if args[1] != nil {
+			arg1 = args[1].(*http.Request)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockShortLinkHandler_HandleInternalStats_Call) Return() *MockShortLinkHandler_HandleInternalStats_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockShortLinkHandler_HandleInternalStats_Call) RunAndReturn(run func(w http.ResponseWriter, r *http.Request)) *MockShortLinkHandler_HandleInternalStats_Call {
+	_c.Run(run)
+	return _c
+}

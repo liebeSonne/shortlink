@@ -93,9 +93,9 @@ func TestParseFlags(t *testing.T) {
 		{"set -config flag and empty -c flag", []string{"-config", configFile1, "-c", ""}, want{defaultCfg, nil}},
 		{"set empty -c flag and -config flag", []string{"-c", "", "-config", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
 		{"set empty -config flag and -c flag", []string{"-config", "", "-c", configFile2}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ConfigFile = &configFile2 }), nil}},
-		{"set -t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = &trustedSubnet1 }), nil}},
-		{"set --t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = &trustedSubnet1 }), nil}},
-		{"set --t flag empty", []string{"-t", ""}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = nil }), nil}},
+		{"set -t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = trustedSubnet1 }), nil}},
+		{"set --t flag", []string{"-t", trustedSubnet1}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = trustedSubnet1 }), nil}},
+		{"set --t flag empty", []string{"-t", ""}, want{MakeModConfig(defaultCfg, func(c *Config) { c.TrustedSubnet = "" }), nil}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

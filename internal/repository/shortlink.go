@@ -23,6 +23,8 @@ type ShortLinkRepository interface {
 	StoreAll(ctx context.Context, shortLinks []model.ShortLink, userID *uuid.UUID) error
 	// DeleteByShortIDs - удаление сокращенных ссылок.
 	DeleteByShortIDs(ctx context.Context, shortIDs []string, userID *uuid.UUID) error
+	// Stats - статистика
+	Stats(ctx context.Context) (model.StatsData, error)
 }
 
 // ShortLinkRepositoryWithCloser - интерфейс репозитория сокращенных ссылок с методом закрытия.

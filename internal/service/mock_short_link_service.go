@@ -8,9 +8,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	mock "github.com/stretchr/testify/mock"
-
 	"github.com/liebeSonne/shortlink/internal/model"
+	mock "github.com/stretchr/testify/mock"
 )
 
 // NewMockShortLinkService creates a new instance of MockShortLinkService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -8,9 +8,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	mock "github.com/stretchr/testify/mock"
-
 	"github.com/liebeSonne/shortlink/internal/model"
+	mock "github.com/stretchr/testify/mock"
 )
 
 // NewMockShortLinkProvider creates a new instance of MockShortLinkProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -240,6 +239,66 @@ func (_c *MockShortLinkProvider_FindByUserID_Call) Return(shortLinks []model.Sho
 }
 
 func (_c *MockShortLinkProvider_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]model.ShortLink, error)) *MockShortLinkProvider_FindByUserID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Stats provides a mock function for the type MockShortLinkProvider
+func (_mock *MockShortLinkProvider) Stats(ctx context.Context) (model.StatsData, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Stats")
+	}
+
+	var r0 model.StatsData
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (model.StatsData, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) model.StatsData); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		r0 = ret.Get(0).(model.StatsData)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockShortLinkProvider_Stats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Stats'
+type MockShortLinkProvider_Stats_Call struct {
+	*mock.Call
+}
+
+// Stats is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockShortLinkProvider_Expecter) Stats(ctx interface{}) *MockShortLinkProvider_Stats_Call {
+	return &MockShortLinkProvider_Stats_Call{Call: _e.mock.On("Stats", ctx)}
+}
+
+func (_c *MockShortLinkProvider_Stats_Call) Run(run func(ctx context.Context)) *MockShortLinkProvider_Stats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockShortLinkProvider_Stats_Call) Return(statsData model.StatsData, err error) *MockShortLinkProvider_Stats_Call {
+	_c.Call.Return(statsData, err)
+	return _c
+}
+
+func (_c *MockShortLinkProvider_Stats_Call) RunAndReturn(run func(ctx context.Context) (model.StatsData, error)) *MockShortLinkProvider_Stats_Call {
 	_c.Call.Return(run)
 	return _c
 }

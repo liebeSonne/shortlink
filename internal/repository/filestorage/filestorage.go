@@ -104,6 +104,47 @@ func (s *fileShortLinkRepository) FindByUserID(_ context.Context, userID uuid.UU
 	return result, nil
 }
 
+func (s *fileShortLinkRepository) Stats(_ context.Context) (model.StatsData, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	_, err := s.file.Seek(0, 0)
+	if err != nil {
+		return model.StatsData{}, fmt.Errorf("failed seek file: %w", err)
+	}
+
+	shortLinksMap := make(map[string]struct{})
+	usersMap := make(map[uuid.UUID]struct{})
+
+	scanner := bufio.NewScanner(s.file)
+	for scanner.Scan() {
+		b := scanner.Bytes()
+
+		itemPtr, err := s.parseItem(b)
+		if err != nil {
+			return model.StatsData{}, fmt.Errorf("failed parse item: %w", err)
+		}
+
+		if itemPtr != nil && !itemPtr.Deleted {
+			shortLinksMap[itemPtr.ShortURL] = struct{}{}
+			if itemPtr.UserID != nil {
+				usersMap[*itemPtr.UserID] = struct{}{}
+			}
+		}
+	}
+	err = scanner.Err()
+	if err != nil {
+		return model.StatsData{}, fmt.Errorf("failed scan file: %w", err)
+	}
+
+	stats := model.StatsData{
+		CountShortLinks: len(shortLinksMap),
+		CountUsers:      len(usersMap),
+	}
+
+	return stats, nil
+}
+
 func (s *fileShortLinkRepository) Store(_ context.Context, shortLink model.ShortLink, userID *uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

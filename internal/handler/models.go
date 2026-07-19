@@ -28,3 +28,8 @@ type UserUrlsResponseItem struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
+
+type StatsResponse struct {
+	CountUrls  int `json:"urls"`
+	CountUsers int `json:"users"`
+}
