@@ -558,6 +558,78 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 	}
 }
 
+func TestShortLinkHandler_HandleInternalStats(t *testing.T) {
+	urlAddress := "http://localhost:8080"
+
+	type when struct {
+		stats model.StatsData
+		err   error
+	}
+	type want struct {
+		code int
+		body string
+	}
+	testCases := []struct {
+		name string
+		want want
+		when when
+	}{
+		{
+			"success with data",
+			want{http.StatusOK, `{"urls":5,"users":2}`},
+			when{model.StatsData{CountShortLinks: 5, CountUsers: 2}, nil},
+		},
+		{
+			"success zero stats",
+			want{http.StatusOK, `{"urls":0,"users":0}`},
+			when{model.StatsData{CountShortLinks: 0, CountUsers: 0}, nil},
+		},
+		{
+			"provider error",
+			want{http.StatusInternalServerError, ""},
+			when{model.StatsData{}, errors.New("some provider error")},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := provider.NewMockShortLinkProvider(t)
+			p.EXPECT().Stats(mock.Anything).Return(tc.when.stats, tc.when.err)
+
+			d := service.NewMockShortLinkDeleter(t)
+
+			l := logger.NewMockLogger(t)
+			l.EXPECT().Errorf(mock.Anything, mock.Anything).Maybe()
+
+			s := service.NewMockShortLinkService(t)
+
+			mockAuditPublisher := audit.NewMockPublisher(t)
+
+			handler := NewShortLinkHandler(s, p, urlAddress, d, l, mockAuditPublisher)
+
+			r := chi.NewRouter()
+			r.Get("/api/internal/stats", handler.HandleInternalStats)
+
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			client := resty.New()
+			client.SetRedirectPolicy(resty.NoRedirectPolicy())
+
+			resp, err := client.R().
+				Get(srv.URL + "/api/internal/stats")
+
+			require.NoError(t, err)
+
+			require.Equal(t, tc.want.code, resp.StatusCode(), fmt.Sprintf("expected status code %d but got %d with body: %s", tc.want.code, resp.StatusCode(), string(resp.Body())))
+
+			if tc.want.body != "" {
+				assert.JSONEq(t, tc.want.body, string(resp.Body()))
+				assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
+			}
+		})
+	}
+}
+
 func TestShortLinkHandler_HandleDeleteUrls(t *testing.T) {
 	urlAddress := "http://localhost:8080"
 	userID1 := uuid.New()

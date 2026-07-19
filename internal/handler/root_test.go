@@ -79,6 +79,7 @@ func TestRootHandler_Handle(t *testing.T) {
 		{"not acceptable options", http.MethodOptions, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"not acceptable trace", http.MethodTrace, "/", want{http.StatusMethodNotAllowed, ""}},
 		{"ping handler", http.MethodGet, "/ping", want{codeGetResult, getResponse}},
+		{"stats handler", http.MethodGet, "/api/internal/stats", want{http.StatusOK, ""}},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

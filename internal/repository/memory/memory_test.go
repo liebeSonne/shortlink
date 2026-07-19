@@ -311,6 +311,102 @@ func TestShortLinkRepository_StoreAll(t *testing.T) {
 	}
 }
 
+func TestShortLinkRepository_Stats(t *testing.T) {
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+
+	type want struct {
+		stats model.StatsData
+		err   error
+	}
+	type userItems struct {
+		items  []model.ShortLink
+		userID *uuid.UUID
+	}
+	type when struct {
+		userItems []userItems
+	}
+	testCases := []struct {
+		name string
+		when when
+		want want
+	}{
+		{
+			"empty storage",
+			when{[]userItems{}},
+			want{model.StatsData{CountShortLinks: 0, CountUsers: 0}, nil},
+		},
+		{
+			"links without users",
+			when{[]userItems{
+				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+			}},
+			want{model.StatsData{CountShortLinks: 2, CountUsers: 0}, nil},
+		},
+		{
+			"links with one user",
+			when{[]userItems{
+				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, &userID1},
+			}},
+			want{model.StatsData{CountShortLinks: 2, CountUsers: 1}, nil},
+		},
+		{
+			"links with different users",
+			when{[]userItems{
+				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+				{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+				{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
+			}},
+			want{model.StatsData{CountShortLinks: 6, CountUsers: 2}, nil},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := NewMemoryShortLinkRepository()
+			for _, userItem := range tc.when.userItems {
+				for _, item := range userItem.items {
+					err := repo.Store(t.Context(), item, userItem.userID)
+					require.NoError(t, err)
+				}
+			}
+
+			stats, err := repo.Stats(t.Context())
+			if tc.want.err != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.want.err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.want.stats, stats)
+		})
+	}
+}
+
+func TestMemoryShortLinkRepository_Stats_ExcludesDeleted(t *testing.T) {
+	userID1 := uuid.New()
+
+	repo := NewMemoryShortLinkRepository()
+
+	err := repo.Store(t.Context(), model.ShortLink{ID: "id1", URL: "url1"}, nil)
+	require.NoError(t, err)
+	err = repo.Store(t.Context(), model.ShortLink{ID: "id2", URL: "url2"}, &userID1)
+	require.NoError(t, err)
+	err = repo.Store(t.Context(), model.ShortLink{ID: "id3", URL: "url3"}, &userID1)
+	require.NoError(t, err)
+
+	stats, err := repo.Stats(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, model.StatsData{CountShortLinks: 3, CountUsers: 1}, stats)
+
+	err = repo.DeleteByShortIDs(t.Context(), []string{"id1", "id2"}, nil)
+	require.NoError(t, err)
+
+	stats, err = repo.Stats(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, model.StatsData{CountShortLinks: 2, CountUsers: 1}, stats)
+}
+
 func TestMemoryShortLinkRepository_DeleteByShortIDs(t *testing.T) {
 	userID1 := uuid.New()
 	userID2 := uuid.New()
