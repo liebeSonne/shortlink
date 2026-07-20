@@ -25,9 +25,11 @@ import (
 
 func TestShortLinkHandler_HandleGet(t *testing.T) {
 	link1 := "https://localhost/123"
+	userID1 := uuid.New()
 
 	type on struct {
-		id string
+		id     string
+		userID *uuid.UUID
 	}
 	type want struct {
 		code     int
@@ -45,25 +47,31 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 	}{
 		{
 			"empty id",
-			on{""},
+			on{"", nil},
 			want{http.StatusBadRequest, nil},
 			when{nil, nil},
 		},
 		{
 			"redirect",
-			on{"id1"},
+			on{"id1", nil},
+			want{http.StatusTemporaryRedirect, &link1},
+			when{nil, &link1},
+		},
+		{
+			"redirect with authenticated user",
+			on{"id1", &userID1},
 			want{http.StatusTemporaryRedirect, &link1},
 			when{nil, &link1},
 		},
 		{
 			"provider error",
-			on{"id1"},
+			on{"id1", nil},
 			want{http.StatusInternalServerError, &link1},
 			when{errors.New("some provider error"), &link1},
 		},
 		{
 			"not found",
-			on{"id1"},
+			on{"id1", nil},
 			want{http.StatusGone, nil},
 			when{nil, nil},
 		},
@@ -74,7 +82,7 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			if tc.when.err == nil && tc.when.link != nil {
 				item := &model.ShortLink{ID: tc.on.id, URL: *tc.when.link}
 				p.EXPECT().Find(mock.Anything, tc.on.id).Return(item, tc.when.err)
-			} else {
+			} else if tc.on.id != "" {
 				p.EXPECT().Find(mock.Anything, tc.on.id).Return(nil, tc.when.err).Maybe()
 			}
 
@@ -90,6 +98,10 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 				if tc.want.code == http.StatusTemporaryRedirect && tc.want.location != nil {
 					assert.Equal(t, *tc.want.location, event.URL)
 					assert.Equal(t, audit.ActionFollow, event.Action)
+					if tc.on.userID != nil {
+						require.NotNil(t, event.UserID)
+						assert.Equal(t, tc.on.userID.String(), *event.UserID)
+					}
 				}
 			}).Maybe()
 
@@ -100,7 +112,19 @@ func TestShortLinkHandler_HandleGet(t *testing.T) {
 			r.Get("/", handler.HandleGet)
 			r.Get("/{id}", handler.HandleGet)
 
-			srv := httptest.NewServer(r)
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
 			defer srv.Close()
 
 			client := resty.New()
@@ -128,9 +152,11 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	id1 := "id1"
 	link1 := "https://localhost/123"
 	urlAddress := "http://localhost:8080"
+	userID1 := uuid.New()
 
 	type on struct {
-		link string
+		link   string
+		userID *uuid.UUID
 	}
 	type when struct {
 		createItem *model.ShortLink
@@ -150,39 +176,51 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 	}{
 		{
 			"success create",
-			on{link1},
+			on{link1, nil},
+			want{http.StatusCreated, "/" + id1},
+			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
+		},
+		{
+			"success create with user",
+			on{link1, &userID1},
 			want{http.StatusCreated, "/" + id1},
 			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
 		},
 		{
 			"error in service",
-			on{link1},
+			on{link1, nil},
 			want{http.StatusInternalServerError, ""},
 			when{nil, errors.New("some service error"), nil, nil},
 		},
 		{
 			"error empty url",
-			on{link1},
+			on{link1, nil},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrEmptyURL, nil, nil},
 		},
 		{
 			"error invalid url",
-			on{link1},
+			on{link1, nil},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrInvalidURL, nil, nil},
 		},
 		{
 			"conflict unique url",
-			on{link1},
+			on{link1, nil},
 			want{http.StatusConflict, "/" + id1},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), &model.ShortLink{ID: id1, URL: link1}, nil},
 		},
 		{
 			"conflict unique url and not found",
-			on{link1},
+			on{link1, nil},
 			want{http.StatusInternalServerError, ""},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, nil},
+		},
+		{
+			"conflict unique url with find error",
+			on{link1, nil},
+			want{http.StatusInternalServerError, ""},
+			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, errors.New("find error")},
 		},
 	}
 	for _, tc := range testCases {
@@ -191,7 +229,14 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			s.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
 
 			p := provider.NewMockShortLinkProvider(t)
-			p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr).Maybe()
+			var isConflict bool
+			if tc.when.createErr != nil {
+				var conflictErr *repository.ErrConflictURL
+				isConflict = errors.As(tc.when.createErr, &conflictErr) && conflictErr.URL == tc.on.link
+			}
+			if isConflict {
+				p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
+			}
 
 			d := service.NewMockShortLinkDeleter(t)
 
@@ -203,6 +248,10 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 				if tc.want.code == http.StatusCreated {
 					assert.Equal(t, tc.on.link, event.URL)
 					assert.Equal(t, audit.ActionShorted, event.Action)
+					if tc.on.userID != nil {
+						require.NotNil(t, event.UserID)
+						assert.Equal(t, tc.on.userID.String(), *event.UserID)
+					}
 				}
 			}).Maybe()
 
@@ -211,7 +260,19 @@ func TestShortLinkHandler_HandleCreate(t *testing.T) {
 			r := chi.NewRouter()
 			r.Post("/", handler.HandleCreate)
 
-			srv := httptest.NewServer(r)
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
 			defer srv.Close()
 
 			client := resty.New()
@@ -236,10 +297,13 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	id1 := "id1"
 	link1 := "https://localhost/123"
 	urlAddress := "http://localhost:8080"
+	userID1 := uuid.New()
 
 	type on struct {
-		body string
-		link string
+		body      string
+		link      string
+		userID    *uuid.UUID
+		callMocks bool
 	}
 	type when struct {
 		createItem *model.ShortLink
@@ -259,48 +323,81 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 	}{
 		{
 			"success create",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
+			want{http.StatusCreated, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
+			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
+		},
+		{
+			"success create with user",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, &userID1, true},
 			want{http.StatusCreated, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
 			when{&model.ShortLink{ID: id1, URL: link1}, nil, nil, nil},
 		},
 		{
 			"error in service",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
 			want{http.StatusInternalServerError, ""},
 			when{nil, errors.New("some service error"), nil, nil},
 		},
 		{
 			"error empty url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrEmptyURL, nil, nil},
 		},
 		{
 			"error invalid url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrInvalidURL, nil, nil},
 		},
 		{
 			"conflict unique url",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
 			want{http.StatusConflict, fmt.Sprintf(`{"result": "%s/%s"}`, urlAddress, id1)},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), &model.ShortLink{ID: id1, URL: link1}, nil},
 		},
 		{
 			"conflict unique url and not found",
-			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1},
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
 			want{http.StatusInternalServerError, ""},
 			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, nil},
+		},
+		{
+			"conflict unique url with find error",
+			on{fmt.Sprintf(`{"url": "%s"}`, link1), link1, nil, true},
+			want{http.StatusInternalServerError, ""},
+			when{nil, repository.NewErrConflictURL(link1, errors.New("conflict error")), nil, errors.New("find error")},
+		},
+		{
+			"invalid json body",
+			on{"{invalid json}", "", nil, false},
+			want{http.StatusInternalServerError, ""},
+			when{nil, nil, nil, nil},
+		},
+		{
+			"empty json body",
+			on{"", "", nil, false},
+			want{http.StatusInternalServerError, ""},
+			when{nil, nil, nil, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := service.NewMockShortLinkService(t)
-			s.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			if tc.on.callMocks {
+				s.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.createItem, tc.when.createErr)
+			}
 
 			p := provider.NewMockShortLinkProvider(t)
-			p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr).Maybe()
+			var isConflict bool
+			if tc.when.createErr != nil {
+				var conflictErr *repository.ErrConflictURL
+				isConflict = errors.As(tc.when.createErr, &conflictErr) && conflictErr.URL == tc.on.link
+			}
+			if isConflict {
+				p.EXPECT().FindByURL(mock.Anything, mock.Anything).Return(tc.when.findItem, tc.when.findErr)
+			}
 
 			d := service.NewMockShortLinkDeleter(t)
 
@@ -312,6 +409,10 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 				if tc.want.code == http.StatusCreated {
 					assert.Equal(t, tc.on.link, event.URL)
 					assert.Equal(t, audit.ActionShorted, event.Action)
+					if tc.on.userID != nil {
+						require.NotNil(t, event.UserID)
+						assert.Equal(t, tc.on.userID.String(), *event.UserID)
+					}
 				}
 			}).Maybe()
 
@@ -320,7 +421,19 @@ func TestShortLinkHandler_HandleCreateShorten(t *testing.T) {
 			r := chi.NewRouter()
 			r.Post("/api/shorten", handler.HandleCreateShorten)
 
-			srv := httptest.NewServer(r)
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
 			defer srv.Close()
 
 			client := resty.New()
@@ -356,9 +469,12 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 	link1 := "https://localhost/111"
 	link2 := "https://localhost/222"
 	urlAddress := "http://localhost:8080"
+	userID1 := uuid.New()
 
 	type on struct {
-		body string
+		body      string
+		userID    *uuid.UUID
+		callMocks bool
 	}
 	type when struct {
 		outputs []service.OutputShortLinkData
@@ -376,13 +492,19 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 	}{
 		{
 			"success create one link",
-			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1), nil, true},
+			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1)},
+			when{[]service.OutputShortLinkData{{CorrelationID: correlationID1, ShortLink: model.ShortLink{ID: id1, URL: link1}}}, nil},
+		},
+		{
+			"success create one link with user",
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1), &userID1, true},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1)},
 			when{[]service.OutputShortLinkData{{CorrelationID: correlationID1, ShortLink: model.ShortLink{ID: id1, URL: link1}}}, nil},
 		},
 		{
 			"success create many link",
-			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"},{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1, correlationID2, link2)},
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"},{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1, correlationID2, link2), nil, true},
 			want{http.StatusCreated, fmt.Sprintf(`[{"correlation_id": "%s", "short_url": "%s/%s"}, {"correlation_id": "%s", "short_url": "%s/%s"}]`, correlationID1, urlAddress, id1, correlationID2, urlAddress, id2)},
 			when{[]service.OutputShortLinkData{
 				{CorrelationID: correlationID1, ShortLink: model.ShortLink{ID: id1, URL: link1}},
@@ -391,27 +513,41 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 		},
 		{
 			"error in service",
-			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1), nil, true},
 			want{http.StatusInternalServerError, ""},
 			when{nil, errors.New("some service error")},
 		},
 		{
 			"error empty url",
-			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1), nil, true},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrEmptyURL},
 		},
 		{
 			"error invalid url",
-			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1)},
+			on{fmt.Sprintf(`[{"correlation_id": "%s", "original_url": "%s"}]`, correlationID1, link1), nil, true},
 			want{http.StatusBadRequest, ""},
 			when{nil, service.ErrInvalidURL},
+		},
+		{
+			"invalid json body",
+			on{"{invalid json}", nil, false},
+			want{http.StatusInternalServerError, ""},
+			when{nil, nil},
+		},
+		{
+			"empty array",
+			on{"[]", nil, true},
+			want{http.StatusCreated, `[]`},
+			when{nil, nil},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := service.NewMockShortLinkService(t)
-			s.EXPECT().CreateBatch(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
+			if tc.on.callMocks {
+				s.EXPECT().CreateBatch(mock.Anything, mock.Anything, mock.Anything).Return(tc.when.outputs, tc.when.err)
+			}
 
 			d := service.NewMockShortLinkDeleter(t)
 
@@ -427,7 +563,19 @@ func TestShortLinkHandler_HandleCreateShortenBatch(t *testing.T) {
 			r := chi.NewRouter()
 			r.Post("/api/shorten/batch", handler.HandleCreateShortenBatch)
 
-			srv := httptest.NewServer(r)
+			middleware := func(next http.Handler) http.HandlerFunc {
+				return func(w http.ResponseWriter, re *http.Request) {
+					ctx := re.Context()
+					if tc.on.userID != nil {
+						ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
+					}
+					next.ServeHTTP(w, re.WithContext(ctx))
+				}
+			}
+			var router http.Handler = r
+			router = middleware(router)
+
+			srv := httptest.NewServer(router)
 			defer srv.Close()
 
 			client := resty.New()
@@ -499,6 +647,12 @@ func TestShortLinkHandler_HandleGetUserUrls(t *testing.T) {
 			on{&userID1},
 			want{http.StatusOK, fmt.Sprintf(`[{"short_url": "%s/id1", "original_url": "https://example1.com"},{"short_url": "%s/id2", "original_url": "https://example2.com"}]`, urlAddress, urlAddress)},
 			when{[]model.ShortLink{{ID: "id1", URL: "https://example1.com"}, {ID: "id2", URL: "https://example2.com"}}, nil},
+		},
+		{
+			"found one item",
+			on{&userID1},
+			want{http.StatusOK, fmt.Sprintf(`[{"short_url": "%s/id1", "original_url": "https://example1.com"}]`, urlAddress)},
+			when{[]model.ShortLink{{ID: "id1", URL: "https://example1.com"}}, nil},
 		},
 	}
 	for _, tc := range testCases {
