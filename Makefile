@@ -42,7 +42,7 @@ tests-v:
 .PHONY: tests-make-coverage
 tests-make-coverage:
 	go test -coverprofile=coverage.out ./...
-	grep -vE "mock|\.gen\.go" coverage.out > coverage.filtered.out
+	grep -vE "mock|\.gen\.go|\.pb\.go" coverage.out > coverage.filtered.out
 
 .PHONY: tests-cover
 tests-cover: tests-make-coverage
