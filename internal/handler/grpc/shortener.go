@@ -62,10 +62,12 @@ func (s *ShortenerGRPCServer) ShortenURL(ctx context.Context, r *pb.URLShortenRe
 		if errors.As(err, &conflictErr) && conflictErr.URL == link {
 			shortLink, err = s.provider.FindByURL(ctx, link)
 			if err != nil {
-				s.logger.Errorf("response write error: %v", err)
+				s.logger.Errorf("find by url error: %v", err)
 				return nil, status.Errorf(codes.Internal, "conflict")
 			}
 		}
+	}
+	if err != nil {
 		return nil, s.translateError(err)
 	}
 	if shortLink == nil {
