@@ -6,7 +6,7 @@ CERT_FILE=cert.pem
 KEY_FILE=key.pem
 
 .PHONY: all
-all: build generate tests
+all: build generate proto tests
 
 .PHONY: build
 build:
@@ -145,3 +145,11 @@ cert:
 	else \
 		echo "Cert exist"; \
 	fi
+
+.PHONY: proto
+proto:
+	protoc \
+		--go_out=. --go_opt=paths=source_relative \
+  		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  		--go_opt=default_api_level=API_OPAQUE \
+	  	./api/proto/shortener.proto

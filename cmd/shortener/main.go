@@ -4,30 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/liebeSonne/shortlink/internal/handler/subnet"
-	"io"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/liebeSonne/shortlink/internal/auth"
+	"google.golang.org/grpc"
+
+	pb "github.com/liebeSonne/shortlink/api/proto"
 	"github.com/liebeSonne/shortlink/internal/config"
-	"github.com/liebeSonne/shortlink/internal/handler"
-	"github.com/liebeSonne/shortlink/internal/handler/audit"
-	handlerauth "github.com/liebeSonne/shortlink/internal/handler/auth"
-	"github.com/liebeSonne/shortlink/internal/handler/compress"
-	"github.com/liebeSonne/shortlink/internal/handler/cookie"
 	internalio "github.com/liebeSonne/shortlink/internal/io"
 	applogger "github.com/liebeSonne/shortlink/internal/logger"
-	"github.com/liebeSonne/shortlink/internal/repository"
-	"github.com/liebeSonne/shortlink/internal/repository/database"
-	"github.com/liebeSonne/shortlink/internal/repository/filestorage"
-	"github.com/liebeSonne/shortlink/internal/repository/memory"
-	"github.com/liebeSonne/shortlink/internal/service"
 )
 
 //	@title						Shortener API
@@ -90,13 +80,16 @@ func runApp(
 	logger applogger.Logger,
 	closer *internalio.MultiCloser,
 ) error {
-	router, err := initRouter(ctx, cfg, logger, closer)
+	dependency, err := newDependencyContainer(ctx, cfg, logger, closer)
 	if err != nil {
-		return err
+		return fmt.Errorf("error initializing dependency conteiter: %v", err)
 	}
+
+	grpcAddress := ":3200" // TODO - вынести в config
 
 	logger.Infow("starting server",
 		"addr", cfg.ServerAddress,
+		"grpcAddr", grpcAddress,
 		"baseURL", cfg.BaseURL,
 		"logLevel", cfg.LogLevel,
 		"logFile", cfg.LogFile,
@@ -104,9 +97,19 @@ func runApp(
 		"trustedSubnet", cfg.TrustedSubnet,
 	)
 
-	srv := &http.Server{
+	grpcListen, err := net.Listen("tcp", grpcAddress)
+	if err != nil {
+		return fmt.Errorf("could not listen grpc on address '%s': %w", grpcAddress, err)
+	}
+
+	grpcServer := grpc.NewServer([]grpc.ServerOption{
+		grpc.UnaryInterceptor(dependency.ShortenerGRPCAuthInterceptor),
+	}...)
+	pb.RegisterShortenerServiceServer(grpcServer, dependency.ShortenerGRPCServer)
+
+	httpServer := &http.Server{
 		Addr:    cfg.ServerAddress,
-		Handler: router,
+		Handler: dependency.HTTPHandler,
 	}
 
 	serverErrors := make(chan error, 1)
@@ -114,11 +117,18 @@ func runApp(
 	go func() {
 		var err error
 		if cfg.EnableHTTPS {
-			err = srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
+			err = httpServer.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
 		} else {
-			err = srv.ListenAndServe()
+			err = httpServer.ListenAndServe()
 		}
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErrors <- err
+		}
+	}()
+
+	go func() {
+		err := grpcServer.Serve(grpcListen)
+		if err != nil {
 			serverErrors <- err
 		}
 	}()
@@ -127,7 +137,7 @@ func runApp(
 	case err := <-serverErrors:
 		return err
 	case <-ctx.Done():
-		gracefulShutdown(srv, logger)
+		gracefulShutdown(httpServer, grpcServer, logger)
 	}
 
 	return nil
@@ -135,11 +145,14 @@ func runApp(
 
 func gracefulShutdown(
 	srv *http.Server,
+	grpcSrv *grpc.Server,
 	logger applogger.Logger,
 ) {
 	logger.Infow("starting server shutdown")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
+
+	grpcSrv.GracefulStop()
 
 	err := srv.Shutdown(shutdownCtx)
 	if err != nil {
@@ -163,195 +176,4 @@ func gracefulShutdown(
 	}
 
 	logger.Infow("server shutdown complete")
-}
-
-func initRouter(
-	ctx context.Context,
-	cfg config.Config,
-	logger applogger.Logger,
-	closer *internalio.MultiCloser,
-) (http.Handler, error) {
-	dbClient, err := initDatabaseClient(ctx, cfg, closer)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing database client: %w", err)
-	}
-
-	tokenService := auth.NewTokenService(cfg.AuthSecretKey, cfg.AuthTokenExpires)
-	cookieService := cookie.NewService(cfg.AuthCookieTokenKey)
-	userService := service.NewUserService()
-
-	shortLinkRepository, err := initShortLinkRepository(cfg, closer, dbClient, logger)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing short link repository: %w", err)
-	}
-	shortIDGenerator := service.NewShortIDGenerator()
-	shortLinkService := service.NewShortLinkService(shortLinkRepository, shortIDGenerator, service.DefaultMaxAttemptsToGenerateUniqueID)
-	shortLinkDeleter := service.NewShortLinkDeleter(ctx, logger, func(input service.InputDelete) error {
-		return shortLinkService.DeleteIDs(ctx, input.IDs, input.UserID)
-	})
-	closer.AddCloser(internalio.CloserFunc(
-		func() error {
-			return shortLinkDeleter.Stop()
-		},
-	))
-
-	auditPublisher, err := initAuditPublisher(ctx, cfg, logger, closer)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing audit publisher: %w", err)
-	}
-
-	shortLinkHandler := handler.NewShortLinkHandler(shortLinkService, shortLinkRepository, cfg.BaseURL, shortLinkDeleter, logger, auditPublisher)
-	db := createDatabase(cfg)
-
-	statsHandler := subnet.NewTrustedSubnetMiddleware(shortLinkHandler.HandleInternalStats, cfg.TrustedSubnet, logger)
-
-	databaseHandler := handler.NewDatabaseHandler(db, logger)
-	rootRouter := handler.NewRootRouter(shortLinkHandler, databaseHandler, cfg.EnableLogs, statsHandler)
-
-	router := rootRouter.Router().(http.Handler)
-
-	router = handlerauth.NewAuthMiddleware(router, tokenService, cookieService, logger)
-	router = cookie.NewAuthCookieMiddleware(router, tokenService, cookieService, userService, logger)
-
-	router, err = compress.NewCompressorMiddleware(router, compress.CompressorConfig{
-		Encodings:    []compress.Encoding{compress.GzipEncoding},
-		ContentTypes: &[]string{"application/json", "text/html"},
-	}, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	router = handler.LoggingMiddleware(router, logger)
-
-	return router, nil
-}
-
-var configToLoggerLogLevelMap = map[string]applogger.LogLevel{
-	config.LogLevelDebug: applogger.DebugLevel,
-	config.LogLevelInfo:  applogger.InfoLevel,
-	config.LogLevelWarn:  applogger.WarnLevel,
-	config.LogLevelError: applogger.ErrorLevel,
-	config.LogLevelFatal: applogger.FatalLevel,
-	config.LogLevelPanic: applogger.PanicLevel,
-}
-
-func initConfig() (config.Config, error) {
-	cfg, err := config.LoadConfig(appID, envPrefix)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("error get config: %s", err.Error())
-	}
-	return cfg, nil
-}
-
-func initLogger(cfg config.Config, closer *internalio.MultiCloser) (applogger.Logger, error) {
-	loggerLevel, ok := configToLoggerLogLevelMap[cfg.LogLevel]
-	if !ok {
-		return nil, fmt.Errorf("unknown log level: %s", cfg.LogLevel)
-	}
-
-	logWriter, err := initLogWriter(cfg, closer)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing log writer: %w", err)
-	}
-
-	logger, err := applogger.NewZapLogger(loggerLevel, logWriter)
-	if err != nil {
-		return nil, fmt.Errorf("error init logger: %w", err)
-	}
-	return logger, nil
-}
-
-func initLogWriter(cfg config.Config, closer *internalio.MultiCloser) (io.Writer, error) {
-	if cfg.LogFile != nil && *cfg.LogFile != "" {
-		file, err := os.OpenFile(*cfg.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		if err != nil {
-			return nil, fmt.Errorf("error opening log file: %w", err)
-		}
-
-		if closer != nil {
-			closer.AddCloser(internalio.CloserFunc(
-				func() error {
-					return file.Close()
-				},
-			))
-		}
-
-		return file, nil
-	}
-
-	return os.Stderr, nil
-}
-
-func initShortLinkRepository(
-	cfg config.Config,
-	closer *internalio.MultiCloser,
-	dbClient *database.Client,
-	logger applogger.Logger,
-) (repository.ShortLinkRepository, error) {
-	if dbClient != nil {
-		repo := database.NewShortLinkRepository((*dbClient).Pool(), logger)
-		return repo, nil
-	}
-
-	if cfg.FileStoragePath != nil && *cfg.FileStoragePath != "" {
-		repo, err := crateFileShortLinkRepository(*cfg.FileStoragePath, closer, logger)
-		if err != nil {
-			return nil, err
-		}
-		return repo, nil
-	}
-
-	return memory.NewMemoryShortLinkRepository(), nil
-}
-
-func crateFileShortLinkRepository(
-	fileStoragePath string,
-	closer *internalio.MultiCloser,
-	logger applogger.Logger,
-) (repository.ShortLinkRepository, error) {
-	repo, err := filestorage.NewFileShortLinkRepository(fileStoragePath, logger)
-	if err != nil {
-		return nil, fmt.Errorf("error on init file short link repository: %w", err)
-	}
-
-	if closer != nil {
-		closer.AddCloser(internalio.CloserFunc(
-			func() error {
-				return repo.Close()
-			},
-		))
-	}
-
-	return repo, nil
-}
-
-func initAuditPublisher(
-	ctx context.Context,
-	cfg config.Config,
-	logger applogger.Logger,
-	closer *internalio.MultiCloser,
-) (audit.Publisher, error) {
-	auditPublisher := audit.NewPublisher(ctx, 5, 5, logger)
-
-	if cfg.AuditFile != nil && *cfg.AuditFile != "" {
-		auditFileObserver, err := audit.NewFileObserver(*cfg.AuditFile, logger)
-		if err != nil {
-			return nil, fmt.Errorf("error initializing audit file observer: %w", err)
-		}
-		if closer != nil {
-			closer.AddCloser(internalio.CloserFunc(
-				func() error {
-					return auditFileObserver.Close()
-				},
-			))
-		}
-		auditPublisher.Subscribe(auditFileObserver)
-	}
-
-	if cfg.AuditURL != nil && *cfg.AuditURL != "" {
-		auditURLObserver := audit.NewURLObserver(*cfg.AuditURL, 3, time.Second*3, logger)
-		auditPublisher.Subscribe(auditURLObserver)
-	}
-
-	return auditPublisher, nil
 }
