@@ -57,6 +57,16 @@ func TestParseEnv(t *testing.T) {
 			}), nil},
 		},
 		{
+			"GRPC server address",
+			on{""},
+			when{map[string]string{
+				getEnvNameWithPrefix("", GRPCServerAddressEnvName): "127.0.0.1:3333",
+			}},
+			want{MakeModConfig(defaultConfig, func(c *Config) {
+				c.GRPCServerAddress = "127.0.0.1:3333"
+			}), nil},
+		},
+		{
 			"base url",
 			on{""},
 			when{map[string]string{
@@ -226,6 +236,7 @@ func TestParseEnv(t *testing.T) {
 			on{""},
 			when{map[string]string{
 				getEnvNameWithPrefix("", ServerAddressEnvName):      "127.0.0.1:8888",
+				getEnvNameWithPrefix("", GRPCServerAddressEnvName):  "127.0.0.1:3333",
 				getEnvNameWithPrefix("", BaseURLEnvName):            "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("", EnableLogsEnvName):         "true",
 				getEnvNameWithPrefix("", LogLevelEnvName):           LogLevelError,
@@ -245,6 +256,7 @@ func TestParseEnv(t *testing.T) {
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
+				GRPCServerAddress:  "127.0.0.1:3333",
 				BaseURL:            "http://127.0.0.2:8000",
 				EnableLogs:         true,
 				LogLevel:           LogLevelError,
@@ -268,6 +280,7 @@ func TestParseEnv(t *testing.T) {
 			on{"app_id"},
 			when{map[string]string{
 				getEnvNameWithPrefix("APP_ID", ServerAddressEnvName):      "127.0.0.1:8888",
+				getEnvNameWithPrefix("APP_ID", GRPCServerAddressEnvName):  "127.0.0.1:3333",
 				getEnvNameWithPrefix("APP_ID", BaseURLEnvName):            "http://127.0.0.2:8000",
 				getEnvNameWithPrefix("APP_ID", EnableLogsEnvName):         "true",
 				getEnvNameWithPrefix("APP_ID", LogLevelEnvName):           LogLevelError,
@@ -287,6 +300,7 @@ func TestParseEnv(t *testing.T) {
 			}},
 			want{Config{
 				ServerAddress:      "127.0.0.1:8888",
+				GRPCServerAddress:  "127.0.0.1:3333",
 				BaseURL:            "http://127.0.0.2:8000",
 				EnableLogs:         true,
 				LogLevel:           LogLevelError,

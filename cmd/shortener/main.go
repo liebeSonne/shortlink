@@ -85,11 +85,9 @@ func runApp(
 		return fmt.Errorf("error initializing dependency conteiter: %v", err)
 	}
 
-	grpcAddress := ":3200" // TODO - вынести в config
-
 	logger.Infow("starting server",
 		"addr", cfg.ServerAddress,
-		"grpcAddr", grpcAddress,
+		"grpcAddr", cfg.GRPCServerAddress,
 		"baseURL", cfg.BaseURL,
 		"logLevel", cfg.LogLevel,
 		"logFile", cfg.LogFile,
@@ -97,9 +95,9 @@ func runApp(
 		"trustedSubnet", cfg.TrustedSubnet,
 	)
 
-	grpcListen, err := net.Listen("tcp", grpcAddress)
+	grpcListen, err := net.Listen("tcp", cfg.GRPCServerAddress)
 	if err != nil {
-		return fmt.Errorf("could not listen grpc on address '%s': %w", grpcAddress, err)
+		return fmt.Errorf("could not listen grpc on address '%s': %w", grpcListen.Addr().String(), err)
 	}
 
 	grpcServer := grpc.NewServer([]grpc.ServerOption{

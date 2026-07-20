@@ -74,6 +74,10 @@ func mergeFlagsConfig(fCfg flagsConfig, cfg *Config, envNames []string) {
 			if fCfg.ServerAddress != nil {
 				cfg.ServerAddress = *fCfg.ServerAddress
 			}
+		case GRPCServerAddressEnvName:
+			if fCfg.GRPCServerAddress != nil {
+				cfg.GRPCServerAddress = *fCfg.GRPCServerAddress
+			}
 		case BaseURLEnvName:
 			if fCfg.BaseURL != nil {
 				cfg.BaseURL = *fCfg.BaseURL

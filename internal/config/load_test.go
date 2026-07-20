@@ -38,17 +38,19 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(tempFile.Name())
 	configFileServerAddress1 := "1.1.1.1:1111"
+	configFileGRPCServerAddress1 := "1.1.1.1:3333"
 	configFileBaseURL1 := "http://1.1.1.1:2222"
 	configFileDatabaseDSN1 := "file database dns"
 	configFileStoragePath1 := "./config/file/storage/path"
 	configFileTrustedSubnet1 := "1111.111.1.0/24"
 	configFileData1 := fmt.Sprintf(`{
 		"server_address": "%s",
+		"grpc_server_address": "%s",
 		"base_url": "%s",
 		"file_storage_path": "%s",
 		"database_dsn": "%s" ,
 		"trusted_subnet": "%s"
-	}`, configFileServerAddress1, configFileBaseURL1, configFileStoragePath1, configFileDatabaseDSN1, configFileTrustedSubnet1)
+	}`, configFileServerAddress1, configFileGRPCServerAddress1, configFileBaseURL1, configFileStoragePath1, configFileDatabaseDSN1, configFileTrustedSubnet1)
 	err = os.WriteFile(tempFile.Name(), []byte(configFileData1), 0644)
 	require.NoError(t, err)
 	configFile2 := tempFile.Name()
@@ -80,6 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				[]string{},
 				map[string]string{
 					getEnvNameWithPrefix("prefix", ServerAddressEnvName):      "127.0.0.1:8787",
+					getEnvNameWithPrefix("prefix", GRPCServerAddressEnvName):  "127.0.0.1:3333",
 					getEnvNameWithPrefix("prefix", BaseURLEnvName):            "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("prefix", EnableLogsEnvName):         "true",
 					getEnvNameWithPrefix("prefix", LogLevelEnvName):           "error",
@@ -101,6 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				Config{
 					ServerAddress:      "127.0.0.1:8787",
+					GRPCServerAddress:  "127.0.0.1:3333",
 					BaseURL:            "http://127.0.0.2:8888",
 					EnableLogs:         true,
 					LogLevel:           "error",
@@ -128,6 +132,7 @@ func TestLoadConfig(t *testing.T) {
 				[]string{},
 				map[string]string{
 					getEnvNameWithPrefix("", ServerAddressEnvName):      "127.0.0.1:8787",
+					getEnvNameWithPrefix("", GRPCServerAddressEnvName):  "127.0.0.1:3333",
 					getEnvNameWithPrefix("", BaseURLEnvName):            "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("", EnableLogsEnvName):         "true",
 					getEnvNameWithPrefix("", LogLevelEnvName):           "error",
@@ -149,6 +154,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				Config{
 					ServerAddress:      "127.0.0.1:8787",
+					GRPCServerAddress:  "127.0.0.1:3333",
 					BaseURL:            "http://127.0.0.2:8888",
 					EnableLogs:         true,
 					LogLevel:           "error",
@@ -175,6 +181,7 @@ func TestLoadConfig(t *testing.T) {
 				"", "",
 				[]string{
 					"-a", "127.0.0.1:8787",
+					"-g", "127.0.0.1:3333",
 					"-b", "http://127.0.0.2:8888",
 					"-l=true",
 					"-ll", "error",
@@ -194,6 +201,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				Config{
 					ServerAddress:      "127.0.0.1:8787",
+					GRPCServerAddress:  "127.0.0.1:3333",
 					BaseURL:            "http://127.0.0.2:8888",
 					EnableLogs:         true,
 					LogLevel:           "error",
@@ -218,9 +226,14 @@ func TestLoadConfig(t *testing.T) {
 			"server address from env and base url from flags",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
+				[]string{
+					"-a", "127.0.0.1:8787",
+					"-g", "127.0.0.1:2222",
+					"-b", "http://127.0.0.2:8888",
+				},
 				map[string]string{
 					getEnvNameWithPrefix("", ServerAddressEnvName):      "127.0.0.10:7777",
+					getEnvNameWithPrefix("", GRPCServerAddressEnvName):  "127.0.0.10:3333",
 					getEnvNameWithPrefix("", EnableLogsEnvName):         "true",
 					getEnvNameWithPrefix("", LogLevelEnvName):           "error",
 					getEnvNameWithPrefix("", LogFileEnvName):            appLog1,
@@ -239,6 +252,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				Config{
 					ServerAddress:      "127.0.0.10:7777",
+					GRPCServerAddress:  "127.0.0.10:3333",
 					BaseURL:            "http://127.0.0.2:8888",
 					EnableLogs:         true,
 					LogLevel:           "error",
@@ -261,7 +275,11 @@ func TestLoadConfig(t *testing.T) {
 			"server address from flags and base url from env",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888"},
+				[]string{
+					"-a", "127.0.0.1:8787",
+					"-g", "127.0.0.1:3333",
+					"-b", "http://127.0.0.2:8888",
+				},
 				map[string]string{
 					getEnvNameWithPrefix("", BaseURLEnvName):            "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("", EnableLogsEnvName):         "true",
@@ -282,6 +300,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				Config{
 					ServerAddress:      "127.0.0.1:8787",
+					GRPCServerAddress:  "127.0.0.1:3333",
 					BaseURL:            "http://127.0.0.2:8888",
 					EnableLogs:         true,
 					LogLevel:           "error",
@@ -312,6 +331,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				MakeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = configFileServerAddress1
+					c.GRPCServerAddress = configFileGRPCServerAddress1
 					c.BaseURL = configFileBaseURL1
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
@@ -331,6 +351,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				MakeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = configFileServerAddress1
+					c.GRPCServerAddress = configFileGRPCServerAddress1
 					c.BaseURL = configFileBaseURL1
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
@@ -344,7 +365,12 @@ func TestLoadConfig(t *testing.T) {
 			"from config file with priority from flag and env",
 			when{
 				"", "",
-				[]string{"-a", "127.0.0.1:8787", "-b", "http://127.0.0.2:8888", "-t", trustedSubnet1},
+				[]string{
+					"-a", "127.0.0.1:8787",
+					"-g", "127.0.0.1:3333",
+					"-b", "http://127.0.0.2:8888",
+					"-t", trustedSubnet1,
+				},
 				map[string]string{
 					getEnvNameWithPrefix("", BaseURLEnvName):       "http://127.0.0.2:8888",
 					getEnvNameWithPrefix("", ConfigFileEnvName):    configFile2,
@@ -354,6 +380,7 @@ func TestLoadConfig(t *testing.T) {
 			want{
 				MakeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = "127.0.0.1:8787"
+					c.GRPCServerAddress = "127.0.0.1:3333"
 					c.BaseURL = "http://127.0.0.2:8888"
 					c.FileStoragePath = &configFileStoragePath1
 					c.DatabaseDSN = &configFileDatabaseDSN1
@@ -403,6 +430,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestMergeFlagsConfig(t *testing.T) {
 	serverAddress1 := "10.10.10.10:1111"
+	grpcServerAddress1 := "10.10.10.10:3333"
 	baseURL1 := "http://127.0.0.1:2222"
 	enableLogsTrue := true
 	enableHTTPSTrue := true
@@ -419,6 +447,7 @@ func TestMergeFlagsConfig(t *testing.T) {
 
 	flagConfig1 := flagsConfig{
 		&serverAddress1,
+		&grpcServerAddress1,
 		&baseURL1,
 		&enableLogsTrue,
 		&logLevel1,
@@ -455,6 +484,10 @@ func TestMergeFlagsConfig(t *testing.T) {
 			"server address env name",
 			on{flagConfig1, []string{ServerAddressEnvName}},
 			want{Config{ServerAddress: serverAddress1}},
+		}, {
+			"GRPC server address env name",
+			on{flagConfig1, []string{GRPCServerAddressEnvName}},
+			want{Config{GRPCServerAddress: grpcServerAddress1}},
 		},
 		{
 			"base url env name",

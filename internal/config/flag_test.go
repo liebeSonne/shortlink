@@ -21,13 +21,14 @@ func TestParseFlags(t *testing.T) {
 	trustedSubnet1 := "192.168.1.0/24"
 
 	var defaultCfg = Config{
-		BaseURL:       DefaultBaseURL,
-		ServerAddress: DefaultServerAddress,
-		EnableLogs:    DefaultEnableLogs,
-		LogLevel:      DefaultLogLevel,
-		EnableHTTPS:   DefaultEnableHTTPS,
-		TLSKeyFile:    DefaultTLSKeyFile,
-		TLSCertFile:   DefaultTLSCertFile,
+		BaseURL:           DefaultBaseURL,
+		ServerAddress:     DefaultServerAddress,
+		GRPCServerAddress: DefaultGRPCServerAddress,
+		EnableLogs:        DefaultEnableLogs,
+		LogLevel:          DefaultLogLevel,
+		EnableHTTPS:       DefaultEnableHTTPS,
+		TLSKeyFile:        DefaultTLSKeyFile,
+		TLSCertFile:       DefaultTLSCertFile,
 	}
 
 	type want struct {
@@ -42,8 +43,11 @@ func TestParseFlags(t *testing.T) {
 		{"default args", []string{}, want{defaultCfg, nil}},
 		{"set -a flag", []string{"-a", "10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ServerAddress = "10.0.0.1:8000" }), nil}},
 		{"set --a flag", []string{"--a", "10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ServerAddress = "10.0.0.1:8000" }), nil}},
-		{"set -b flag", []string{"-b", "10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.BaseURL = "10.0.0.1:8000" }), nil}},
 		{"set --a flag with empty address", []string{"--a", ":8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.ServerAddress = ":8000" }), nil}},
+		{"set -g flag", []string{"-g", "10.0.0.1:3333"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.GRPCServerAddress = "10.0.0.1:3333" }), nil}},
+		{"set --g flag", []string{"--g", "10.0.0.1:3333"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.GRPCServerAddress = "10.0.0.1:3333" }), nil}},
+		{"set --g flag with empty address", []string{"--g", ":3333"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.GRPCServerAddress = ":3333" }), nil}},
+		{"set -b flag", []string{"-b", "10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.BaseURL = "10.0.0.1:8000" }), nil}},
 		{"set --b flag", []string{"--b", "10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.BaseURL = "10.0.0.1:8000" }), nil}},
 		{"set -b flag with schema", []string{"-b", "http://10.0.0.1:8000"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.BaseURL = "http://10.0.0.1:8000" }), nil}},
 		{"set -b flag with string", []string{"-b", "some-string"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.BaseURL = "some-string" }), nil}},
@@ -53,6 +57,10 @@ func TestParseFlags(t *testing.T) {
 		{"set -a flag with invalid format", []string{"-a", "10.0.0.1:8080:abc"}, want{err: ErrInvalidFlagValue}},
 		{"set -a flag with empty port", []string{"-a", "10.0.0.1:"}, want{err: ErrInvalidFlagValue}},
 		{"set -a flag with invalid port", []string{"-a", "10.0.0.1:abc"}, want{err: ErrInvalidFlagValue}},
+		{"set -g flag with invalid value", []string{"-g", "invalid value"}, want{err: ErrInvalidFlagValue}},
+		{"set -g flag with invalid format", []string{"-g", "10.0.0.1:3333:abc"}, want{err: ErrInvalidFlagValue}},
+		{"set -g flag with empty port", []string{"-g", "10.0.0.1:"}, want{err: ErrInvalidFlagValue}},
+		{"set -g flag with invalid port", []string{"-g", "10.0.0.1:abc"}, want{err: ErrInvalidFlagValue}},
 		{"set -l flag", []string{"-l=true"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.EnableLogs = true }), nil}},
 		{"set -ll flag", []string{"-ll", "error"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.LogLevel = "error" }), nil}},
 		{"set --ll flag", []string{"--ll", "error"}, want{MakeModConfig(defaultCfg, func(c *Config) { c.LogLevel = "error" }), nil}},
@@ -125,6 +133,7 @@ func TestParseFlags(t *testing.T) {
 
 func TestParseFlagsConfig(t *testing.T) {
 	serverAddress1 := "10.10.10.10:1111"
+	grpcServerAddress1 := "10.10.10.10:3333"
 	baseURL1 := "http://127.0.0.1:2222"
 	enableLogsTrue := true
 	enableHTTPSTrue := true
@@ -138,6 +147,7 @@ func TestParseFlagsConfig(t *testing.T) {
 	trustedSubnet1 := "192.168.1.0/24"
 
 	defaultServerAddress := DefaultServerAddress
+	defaultGRPCServerAddress := DefaultGRPCServerAddress
 	defaultBaseURL := DefaultBaseURL
 	defaultEnableLogs := DefaultEnableLogs
 	defaultLogLevel := DefaultLogLevel
@@ -145,13 +155,14 @@ func TestParseFlagsConfig(t *testing.T) {
 	defaultTLSKeyFile1 := DefaultTLSKeyFile
 
 	defaultFlagConfig := flagsConfig{
-		ServerAddress: &defaultServerAddress,
-		BaseURL:       &defaultBaseURL,
-		EnableLogs:    &defaultEnableLogs,
-		LogLevel:      &defaultLogLevel,
-		EnableHTTPS:   &defaultEnableLogs,
-		TLSCertFile:   &defaultTLSCertFile1,
-		TLSKeyFile:    &defaultTLSKeyFile1,
+		ServerAddress:     &defaultServerAddress,
+		GRPCServerAddress: &defaultGRPCServerAddress,
+		BaseURL:           &defaultBaseURL,
+		EnableLogs:        &defaultEnableLogs,
+		LogLevel:          &defaultLogLevel,
+		EnableHTTPS:       &defaultEnableLogs,
+		TLSCertFile:       &defaultTLSCertFile1,
+		TLSKeyFile:        &defaultTLSKeyFile1,
 	}
 
 	type when struct {
@@ -182,6 +193,12 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-a", serverAddress1}},
 			on{true},
 			want{flagsConfig{ServerAddress: &serverAddress1}, nil},
+		},
+		{
+			"set -g flag and just if set",
+			when{[]string{"-g", grpcServerAddress1}},
+			on{true},
+			want{flagsConfig{GRPCServerAddress: &grpcServerAddress1}, nil},
 		},
 		{
 			"set -b flag and just if set",
@@ -274,6 +291,30 @@ func TestParseFlagsConfig(t *testing.T) {
 			want{err: ErrInvalidFlagValue},
 		},
 		{
+			"set -g flag with invalid value and just if set",
+			when{[]string{"-g", "invalid value"}},
+			on{true},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with invalid format and just if set",
+			when{[]string{"-g", "10.0.0.1:3333:abc"}},
+			on{true},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with empty port and just if set",
+			when{[]string{"-g", "10.0.0.1:"}},
+			on{true},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with invalid port and just if set",
+			when{[]string{"-g", "10.0.0.1:abc"}},
+			on{true},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
 			"set -s flag and just if set",
 			when{[]string{"-s=true"}},
 			on{true},
@@ -327,6 +368,12 @@ func TestParseFlagsConfig(t *testing.T) {
 			when{[]string{"-a", serverAddress1}},
 			on{false},
 			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.ServerAddress = &serverAddress1 }), nil},
+		},
+		{
+			"set -g flag and not just if set",
+			when{[]string{"-g", grpcServerAddress1}},
+			on{false},
+			want{makeModFlagConfig(defaultFlagConfig, func(c *flagsConfig) { c.GRPCServerAddress = &grpcServerAddress1 }), nil},
 		},
 		{
 			"set -b flag and not just if set",
@@ -425,6 +472,30 @@ func TestParseFlagsConfig(t *testing.T) {
 		{
 			"set -a flag with invalid port and not just if set",
 			when{[]string{"-a", "10.0.0.1:abc"}},
+			on{false},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with invalid value and not just if set",
+			when{[]string{"-g", "invalid value"}},
+			on{false},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with invalid format and not just if set",
+			when{[]string{"-g", "10.0.0.1:8080:abc"}},
+			on{false},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with empty port and not just if set",
+			when{[]string{"-g", "10.0.0.1:"}},
+			on{false},
+			want{err: ErrInvalidFlagValue},
+		},
+		{
+			"set -g flag with invalid port and not just if set",
+			when{[]string{"-g", "10.0.0.1:abc"}},
 			on{false},
 			want{err: ErrInvalidFlagValue},
 		},

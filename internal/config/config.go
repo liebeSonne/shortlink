@@ -24,6 +24,7 @@ const (
 const (
 	DefaultBaseURL            = "http://localhost:8080"
 	DefaultServerAddress      = ":8080"
+	DefaultGRPCServerAddress  = ":3200"
 	DefaultEnableLogs         = false
 	DefaultLogLevel           = LogLevelInfo
 	DefaultAuthCookieTokenKey = "session_token"
@@ -37,6 +38,7 @@ const (
 var defaultConfig = Config{
 	BaseURL:            DefaultBaseURL,
 	ServerAddress:      DefaultServerAddress,
+	GRPCServerAddress:  DefaultGRPCServerAddress,
 	EnableLogs:         DefaultEnableLogs,
 	LogLevel:           DefaultLogLevel,
 	AuthCookieTokenKey: DefaultAuthCookieTokenKey,
@@ -50,6 +52,7 @@ var defaultConfig = Config{
 // Названия настроек в переменных окружения.
 const (
 	ServerAddressEnvName      = "SERVER_ADDRESS"
+	GRPCServerAddressEnvName  = "GRPC_SERVER_ADDRESS"
 	BaseURLEnvName            = "BASE_URL"
 	EnableLogsEnvName         = "ENABLE_LOGS"
 	LogLevelEnvName           = "LOG_LEVEL"
@@ -70,6 +73,7 @@ const (
 
 var allEnvNames = []string{
 	ServerAddressEnvName,
+	GRPCServerAddressEnvName,
 	BaseURLEnvName,
 	EnableLogsEnvName,
 	LogLevelEnvName,
@@ -90,13 +94,14 @@ var allEnvNames = []string{
 
 // Config - настройки.
 type Config struct {
-	ServerAddress   string  `env:"SERVER_ADDRESS" default:":8080" json:"server_address"`     // Адрес сервера.
-	BaseURL         string  `env:"BASE_URL" default:"http://localhost:8080" json:"base_url"` // Базовая ссылка создаваемых сокращенных ссылок.
-	EnableLogs      bool    `env:"ENABLE_LOGS" default:"false" json:"enable_logs"`           // Включение логирования.
-	LogLevel        string  `env:"LOG_LEVEL" default:"info" json:"log_level"`                // Уровень логирования.
-	LogFile         *string `env:"LOG_FILE" default:"" json:"log_file"`                      // Файл для сохранения логов.
-	FileStoragePath *string `env:"FILE_STORAGE_PATH" default:"" json:"file_storage_path"`    // Файловое хранилище для сокращенных ссылок.
-	DatabaseDSN     *string `env:"DATABASE_DSN" default:"" json:"database_dsn"`              // Параметры соединения с базой данных.
+	ServerAddress     string  `env:"SERVER_ADDRESS" default:":8080" json:"server_address"`           // Адрес сервера.
+	GRPCServerAddress string  `env:"GRPC_SERVER_ADDRESS" default:":3200" json:"grpc_server_address"` // GRPC Адрес сервера.
+	BaseURL           string  `env:"BASE_URL" default:"http://localhost:8080" json:"base_url"`       // Базовая ссылка создаваемых сокращенных ссылок.
+	EnableLogs        bool    `env:"ENABLE_LOGS" default:"false" json:"enable_logs"`                 // Включение логирования.
+	LogLevel          string  `env:"LOG_LEVEL" default:"info" json:"log_level"`                      // Уровень логирования.
+	LogFile           *string `env:"LOG_FILE" default:"" json:"log_file"`                            // Файл для сохранения логов.
+	FileStoragePath   *string `env:"FILE_STORAGE_PATH" default:"" json:"file_storage_path"`          // Файловое хранилище для сокращенных ссылок.
+	DatabaseDSN       *string `env:"DATABASE_DSN" default:"" json:"database_dsn"`                    // Параметры соединения с базой данных.
 
 	AuthCookieTokenKey string        `env:"AUTH_COOKIE_TOKEN_KEY" default:"session_token" json:"auth_cookie_token_key"` // Название токена авторизации с cookie.
 	AuthSecretKey      string        `env:"AUTH_SECRET_KEY" default:"secret-key-123" json:"auth_secret_key"`            // Секретный код для подписи токена.

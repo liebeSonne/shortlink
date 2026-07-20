@@ -11,45 +11,48 @@ import (
 
 // Названия флагов.
 const (
-	ServerAddressFlagName   = "a"
-	BaseURLFlagName         = "b"
-	EnableLogsFlagName      = "l"
-	LogLevelFlagName        = "ll"
-	LogFileFlagName         = "lf"
-	FileStoragePathFlagName = "f"
-	DatabaseDSNFlagName     = "d"
-	AuditFileFlagName       = "audit-file"
-	AuditURLFlagName        = "audit-url"
-	EnableHTTPSFlagName     = "s"
-	TLSCertFileFlagName     = "tls-cert-file"
-	TLSKeyFileFlagName      = "tls-key-file"
-	ConfigShortFlagName     = "c"
-	ConfigLongFlagName      = "config"
-	TrustedSubnetFlagName   = "t"
+	ServerAddressFlagName     = "a"
+	GRPCServerAddressFlagName = "g"
+	BaseURLFlagName           = "b"
+	EnableLogsFlagName        = "l"
+	LogLevelFlagName          = "ll"
+	LogFileFlagName           = "lf"
+	FileStoragePathFlagName   = "f"
+	DatabaseDSNFlagName       = "d"
+	AuditFileFlagName         = "audit-file"
+	AuditURLFlagName          = "audit-url"
+	EnableHTTPSFlagName       = "s"
+	TLSCertFileFlagName       = "tls-cert-file"
+	TLSKeyFileFlagName        = "tls-key-file"
+	ConfigShortFlagName       = "c"
+	ConfigLongFlagName        = "config"
+	TrustedSubnetFlagName     = "t"
 )
 
 // Ошибки разора флагов.
 var (
-	ErrInvalidFlagValue            = errors.New("invalid flag value")
-	ErrInvalidDefaultServerAddress = errors.New("invalid default server address")
+	ErrInvalidFlagValue                = errors.New("invalid flag value")
+	ErrInvalidDefaultServerAddress     = errors.New("invalid default server address")
+	ErrInvalidDefaultGRPCServerAddress = errors.New("invalid default GRPC server address")
 )
 
 // flagsConfig - настройки получаемые из флагов.
 type flagsConfig struct {
-	ServerAddress   *string
-	BaseURL         *string
-	EnableLogs      *bool
-	LogLevel        *string
-	LogFile         *string
-	FileStoragePath *string
-	DatabaseDSN     *string
-	AuditFile       *string
-	AuditURL        *string
-	EnableHTTPS     *bool
-	TLSCertFile     *string
-	TLSKeyFile      *string
-	ConfigFile      *string
-	TrustedSubnet   *string
+	ServerAddress     *string
+	GRPCServerAddress *string
+	BaseURL           *string
+	EnableLogs        *bool
+	LogLevel          *string
+	LogFile           *string
+	FileStoragePath   *string
+	DatabaseDSN       *string
+	AuditFile         *string
+	AuditURL          *string
+	EnableHTTPS       *bool
+	TLSCertFile       *string
+	TLSKeyFile        *string
+	ConfigFile        *string
+	TrustedSubnet     *string
 }
 
 func makeModFlagConfig(c flagsConfig, f func(c *flagsConfig)) flagsConfig {
@@ -68,6 +71,9 @@ func parseFlags(appID string, config *Config) error {
 	if config != nil {
 		if flagsConf.ServerAddress != nil {
 			config.ServerAddress = *flagsConf.ServerAddress
+		}
+		if flagsConf.GRPCServerAddress != nil {
+			config.GRPCServerAddress = *flagsConf.GRPCServerAddress
 		}
 		if flagsConf.BaseURL != nil {
 			config.BaseURL = *flagsConf.BaseURL
@@ -123,7 +129,14 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		return errors.Join(err, ErrInvalidDefaultServerAddress)
 	}
 
+	grpcServerAddress := address{}
+	err = grpcServerAddress.Set(DefaultGRPCServerAddress)
+	if err != nil {
+		return errors.Join(err, ErrInvalidDefaultGRPCServerAddress)
+	}
+
 	fs.Var(&serverAddress, ServerAddressFlagName, "address and port to run server")
+	fs.Var(&grpcServerAddress, GRPCServerAddressFlagName, "address and port to run GRPC server")
 	baseURL := fs.String(BaseURLFlagName, DefaultBaseURL, "address and port for output short url")
 	enableLogs := fs.Bool(EnableLogsFlagName, DefaultEnableLogs, "enable output logs")
 	logLevel := fs.String(LogLevelFlagName, DefaultLogLevel, "log level")
@@ -151,21 +164,22 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 
 	if justIfSet {
 		isSetFlagMap := map[string]bool{
-			ServerAddressFlagName:   false,
-			BaseURLFlagName:         false,
-			EnableLogsFlagName:      false,
-			LogLevelFlagName:        false,
-			LogFileFlagName:         false,
-			FileStoragePathFlagName: false,
-			DatabaseDSNFlagName:     false,
-			AuditFileFlagName:       false,
-			AuditURLFlagName:        false,
-			EnableHTTPSFlagName:     false,
-			TLSCertFileFlagName:     false,
-			TLSKeyFileFlagName:      false,
-			ConfigShortFlagName:     false,
-			ConfigLongFlagName:      false,
-			TrustedSubnetFlagName:   false,
+			ServerAddressFlagName:     false,
+			GRPCServerAddressFlagName: false,
+			BaseURLFlagName:           false,
+			EnableLogsFlagName:        false,
+			LogLevelFlagName:          false,
+			LogFileFlagName:           false,
+			FileStoragePathFlagName:   false,
+			DatabaseDSNFlagName:       false,
+			AuditFileFlagName:         false,
+			AuditURLFlagName:          false,
+			EnableHTTPSFlagName:       false,
+			TLSCertFileFlagName:       false,
+			TLSKeyFileFlagName:        false,
+			ConfigShortFlagName:       false,
+			ConfigLongFlagName:        false,
+			TrustedSubnetFlagName:     false,
 		}
 
 		fs.Visit(func(f *flag.Flag) {
@@ -175,6 +189,10 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 		if isSet, ok := isSetFlagMap[ServerAddressFlagName]; ok && isSet {
 			addr := serverAddress.String()
 			config.ServerAddress = &addr
+		}
+		if isSet, ok := isSetFlagMap[GRPCServerAddressFlagName]; ok && isSet {
+			addr := grpcServerAddress.String()
+			config.GRPCServerAddress = &addr
 		}
 		if isSet, ok := isSetFlagMap[BaseURLFlagName]; ok && isSet {
 			config.BaseURL = baseURL
@@ -241,6 +259,8 @@ func parseFlagsConfig(appID string, config *flagsConfig, justIfSet bool) error {
 	} else {
 		addr := serverAddress.String()
 		config.ServerAddress = &addr
+		grpcAddr := grpcServerAddress.String()
+		config.GRPCServerAddress = &grpcAddr
 		config.BaseURL = baseURL
 		config.EnableLogs = enableLogs
 		config.LogLevel = logLevel
