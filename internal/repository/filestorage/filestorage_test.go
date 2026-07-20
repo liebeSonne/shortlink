@@ -36,7 +36,9 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 		userID *uuid.UUID
 	}
 	type when struct {
-		userItems []userItems
+		userItems    []userItems
+		deleteIDs    []string
+		deleteUserID *uuid.UUID
 	}
 	testCases := []struct {
 		name string
@@ -47,32 +49,38 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 		{
 			"not found when no items",
 			on{id1},
-			when{[]userItems{}},
+			when{[]userItems{}, nil, nil},
 			want{nil, nil},
 		},
 		{
 			"not found when empty id",
 			on{""},
-			when{[]userItems{{[]itemData{{id1, url1}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}, nil, nil},
 			want{nil, nil},
 		},
 		{
 			"found by id",
 			on{id2},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}, nil, nil},
 			want{&itemData{id2, url2}, nil},
 		},
 		{
 			"found first by id",
 			on{id1},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id1, url2}}, nil}}, nil, nil},
 			want{&itemData{id1, url1}, nil},
 		},
 		{
 			"found by id when created by user",
 			on{id2},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}, nil, nil},
 			want{&itemData{id2, url2}, nil},
+		},
+		{
+			"not found when item deleted",
+			on{id1},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}, []string{id1}, nil},
+			want{nil, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -95,6 +103,12 @@ func TestFileShortLinkRepository_Find(t *testing.T) {
 					require.NoError(t, err)
 				}
 			}
+
+			if len(tc.when.deleteIDs) > 0 {
+				err := repo.DeleteByShortIDs(t.Context(), tc.when.deleteIDs, tc.when.deleteUserID)
+				require.NoError(t, err)
+			}
+
 			item, err := repo.Find(t.Context(), tc.on.id)
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -135,7 +149,9 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 		userID *uuid.UUID
 	}
 	type when struct {
-		userItems []userItems
+		userItems    []userItems
+		deleteIDs    []string
+		deleteUserID *uuid.UUID
 	}
 	testCases := []struct {
 		name string
@@ -146,32 +162,38 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 		{
 			"not found when no items",
 			on{url1},
-			when{[]userItems{}},
+			when{[]userItems{}, nil, nil},
 			want{nil, nil},
 		},
 		{
 			"not found when empty url",
 			on{""},
-			when{[]userItems{{[]itemData{{id1, url1}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}, nil, nil},
 			want{nil, nil},
 		},
 		{
 			"found by url",
 			on{url2},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, nil}}, nil, nil},
 			want{&itemData{id2, url2}, nil},
 		},
 		{
 			"found first by url",
 			on{url1},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}, nil}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}, {id2, url1}}, nil}}, nil, nil},
 			want{&itemData{id1, url1}, nil},
 		},
 		{
 			"found by url when created by user",
 			on{url2},
-			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}},
+			when{[]userItems{{[]itemData{{id1, url1}, {id2, url2}}, &userID1}}, nil, nil},
 			want{&itemData{id2, url2}, nil},
+		},
+		{
+			"not found when item deleted",
+			on{url1},
+			when{[]userItems{{[]itemData{{id1, url1}}, nil}}, []string{id1}, nil},
+			want{nil, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -194,6 +216,12 @@ func TestFileShortLinkRepository_FindByURL(t *testing.T) {
 					require.NoError(t, err)
 				}
 			}
+
+			if len(tc.when.deleteIDs) > 0 {
+				err := repo.DeleteByShortIDs(t.Context(), tc.when.deleteIDs, tc.when.deleteUserID)
+				require.NoError(t, err)
+			}
+
 			item, err := repo.FindByURL(t.Context(), tc.on.url)
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -241,7 +269,9 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 		userID *uuid.UUID
 	}
 	type when struct {
-		userItems []userItems
+		userItems    []userItems
+		deleteIDs    []string
+		deleteUserID *uuid.UUID
 	}
 	testCases := []struct {
 		name string
@@ -252,7 +282,7 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 		{
 			"not found when no items",
 			on{userID1},
-			when{[]userItems{}},
+			when{[]userItems{}, nil, nil},
 			want{nil, nil},
 		},
 		{
@@ -261,7 +291,7 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 			when{[]userItems{
 				{[]itemData{{id1, url1}}, nil},
 				{[]itemData{{id2, url2}}, &userID2},
-			}},
+			}, nil, nil},
 			want{nil, nil},
 		},
 		{
@@ -271,7 +301,7 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 				{[]itemData{{id1, url1}, {id2, url4}}, nil},
 				{[]itemData{{id1, url2}, {id3, url5}}, &userID1},
 				{[]itemData{{id1, url3}, {id4, url6}}, &userID2},
-			}},
+			}, nil, nil},
 			want{[]itemData{{id1, url2}, {id3, url5}}, nil},
 		},
 		{
@@ -281,8 +311,16 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 				{[]itemData{{id1, url1}, {id2, url4}, {id2, url1}}, nil},
 				{[]itemData{{id1, url2}, {id3, url5}, {id3, url2}}, &userID1},
 				{[]itemData{{id1, url3}, {id4, url6}, {id4, url3}}, &userID2},
-			}},
+			}, nil, nil},
 			want{[]itemData{{id1, url2}, {id3, url5}, {id3, url2}}, nil},
+		},
+		{
+			"excludes deleted items",
+			on{userID1},
+			when{[]userItems{
+				{[]itemData{{id1, url1}, {id2, url2}}, &userID1},
+			}, []string{id1}, &userID1},
+			want{[]itemData{{id2, url2}}, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -305,6 +343,12 @@ func TestFileShortLinkRepository_FindByUserID(t *testing.T) {
 					require.NoError(t, err)
 				}
 			}
+
+			if len(tc.when.deleteIDs) > 0 {
+				err := repo.DeleteByShortIDs(t.Context(), tc.when.deleteIDs, tc.when.deleteUserID)
+				require.NoError(t, err)
+			}
+
 			items, err := repo.FindByUserID(t.Context(), tc.on.userID)
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -348,6 +392,7 @@ func TestFileShortLinkRepository_Store(t *testing.T) {
 		{"correct store with eq id", []itemData{{id1, url1}, {id1, url2}}, nil, nil},
 		{"correct store with eq url", []itemData{{id2, url2}, {id1, url2}}, nil, nil},
 		{"correct store items by user", []itemData{{id1, url1}, {id2, url2}}, &userID1, nil},
+		{"correct store single item", []itemData{{id1, url1}}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -388,6 +433,7 @@ func TestFileShortLinkRepository_StoreAll(t *testing.T) {
 		{"correct store all with eq id", []model.ShortLink{{ID: id1, URL: url1}, {ID: id1, URL: url2}}, nil, nil},
 		{"correct store all with eq url", []model.ShortLink{{ID: id2, URL: url2}, {ID: id1, URL: url2}}, nil, nil},
 		{"correct store all items by user", []model.ShortLink{{ID: id1, URL: url1}, {ID: id2, URL: url2}}, &userID1, nil},
+		{"correct store all empty items", []model.ShortLink{}, nil, nil},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -421,7 +467,9 @@ func TestFileShortLinkRepository_Stats(t *testing.T) {
 		userID *uuid.UUID
 	}
 	type when struct {
-		userItems []userItems
+		userItems    []userItems
+		deleteIDs    []string
+		deleteUserID *uuid.UUID
 	}
 	testCases := []struct {
 		name string
@@ -430,21 +478,21 @@ func TestFileShortLinkRepository_Stats(t *testing.T) {
 	}{
 		{
 			"empty storage",
-			when{[]userItems{}},
+			when{[]userItems{}, nil, nil},
 			want{model.StatsData{CountShortLinks: 0, CountUsers: 0}, nil},
 		},
 		{
 			"links without users",
 			when{[]userItems{
 				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
-			}},
+			}, nil, nil},
 			want{model.StatsData{CountShortLinks: 2, CountUsers: 0}, nil},
 		},
 		{
 			"links with one user",
 			when{[]userItems{
 				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, &userID1},
-			}},
+			}, nil, nil},
 			want{model.StatsData{CountShortLinks: 2, CountUsers: 1}, nil},
 		},
 		{
@@ -453,8 +501,24 @@ func TestFileShortLinkRepository_Stats(t *testing.T) {
 				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
 				{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
 				{[]model.ShortLink{{ID: "id5", URL: "url5"}, {ID: "id6", URL: "url6"}}, &userID2},
-			}},
+			}, nil, nil},
 			want{model.StatsData{CountShortLinks: 6, CountUsers: 2}, nil},
+		},
+		{
+			"excludes deleted links",
+			when{[]userItems{
+				{[]model.ShortLink{{ID: "id1", URL: "url1"}, {ID: "id2", URL: "url2"}}, nil},
+				{[]model.ShortLink{{ID: "id3", URL: "url3"}, {ID: "id4", URL: "url4"}}, &userID1},
+			}, []string{"id1"}, nil},
+			want{model.StatsData{CountShortLinks: 3, CountUsers: 1}, nil},
+		},
+		{
+			"excludes users with only deleted links",
+			when{[]userItems{
+				{[]model.ShortLink{{ID: "id1", URL: "url1"}}, &userID1},
+				{[]model.ShortLink{{ID: "id2", URL: "url2"}}, nil},
+			}, []string{"id1"}, &userID1},
+			want{model.StatsData{CountShortLinks: 1, CountUsers: 0}, nil},
 		},
 	}
 	for _, tc := range testCases {
@@ -477,6 +541,11 @@ func TestFileShortLinkRepository_Stats(t *testing.T) {
 				}
 			}
 
+			if len(tc.when.deleteIDs) > 0 {
+				err := repo.DeleteByShortIDs(t.Context(), tc.when.deleteIDs, tc.when.deleteUserID)
+				require.NoError(t, err)
+			}
+
 			stats, err := repo.Stats(t.Context())
 			if tc.want.err != nil {
 				require.Error(t, err)
@@ -488,39 +557,6 @@ func TestFileShortLinkRepository_Stats(t *testing.T) {
 			assert.Equal(t, tc.want.stats, stats)
 		})
 	}
-}
-
-func TestFileShortLinkRepository_Stats_ExcludesDeleted(t *testing.T) {
-	userID1 := uuid.New()
-
-	tempDir := t.TempDir()
-	filePath := filepath.Join(tempDir, "tmp-1.json")
-
-	l := logger.NewMockLogger(t)
-	repo, err := NewFileShortLinkRepository(filePath, l)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err = repo.Close()
-		require.NoError(t, err)
-	})
-
-	err = repo.Store(t.Context(), model.ShortLink{ID: "id1", URL: "url1"}, nil)
-	require.NoError(t, err)
-	err = repo.Store(t.Context(), model.ShortLink{ID: "id2", URL: "url2"}, &userID1)
-	require.NoError(t, err)
-	err = repo.Store(t.Context(), model.ShortLink{ID: "id3", URL: "url3"}, &userID1)
-	require.NoError(t, err)
-
-	stats, err := repo.Stats(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, model.StatsData{CountShortLinks: 3, CountUsers: 1}, stats)
-
-	err = repo.DeleteByShortIDs(t.Context(), []string{"id1", "id2"}, nil)
-	require.NoError(t, err)
-
-	stats, err = repo.Stats(t.Context())
-	require.NoError(t, err)
-	assert.Equal(t, model.StatsData{CountShortLinks: 2, CountUsers: 1}, stats)
 }
 
 func TestFileShortLinkRepository_DeleteByShortIDs(t *testing.T) {
@@ -609,6 +645,26 @@ func TestFileShortLinkRepository_DeleteByShortIDs(t *testing.T) {
 			},
 			want{[]string{"id1"}, []string{"id2", "id3", "id4", "id5", "id6"}, nil},
 		},
+		{
+			"non-existent ids",
+			on{[]string{"nonexistent1", "nonexistent2"}, nil},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}}, nil},
+				},
+			},
+			want{[]string{}, []string{"id1"}, nil},
+		},
+		{
+			"user mismatch",
+			on{[]string{"id1"}, &userID2},
+			when{
+				[]userItems{
+					{[]model.ShortLink{{ID: "id1", URL: "url1"}}, &userID1},
+				},
+			},
+			want{[]string{}, []string{"id1"}, nil},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -651,6 +707,200 @@ func TestFileShortLinkRepository_DeleteByShortIDs(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotNil(t, result, fmt.Sprintf("must be not deleted id: %s", notDeletedID))
 			}
+		})
+	}
+}
+
+func TestFileShortLinkRepository_DeleteByShortIDs_AlreadyDeleted(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{"already deleted"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+			defer repo.Close()
+
+			err = repo.Store(t.Context(), model.ShortLink{ID: "id1", URL: "url1"}, nil)
+			require.NoError(t, err)
+
+			err = repo.DeleteByShortIDs(t.Context(), []string{"id1"}, nil)
+			require.NoError(t, err)
+
+			err = repo.DeleteByShortIDs(t.Context(), []string{"id1"}, nil)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestFileShortLinkRepository_NewFileShortLinkRepository(t *testing.T) {
+	testCases := []struct {
+		name string
+		on   struct {
+			filePath string
+		}
+		want struct {
+			err bool
+		}
+	}{
+		{
+			"error on invalid file path",
+			struct{ filePath string }{filePath: "/nonexistent/directory/file.json"},
+			struct{ err bool }{err: true},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(tc.on.filePath, l)
+
+			if tc.want.err {
+				require.Error(t, err)
+				require.Nil(t, repo)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, repo)
+			require.NoError(t, repo.Close())
+		})
+	}
+}
+
+func TestFileShortLinkRepository_InitWithExistingFile(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{"init with existing file"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+
+			err = repo.Store(t.Context(), model.ShortLink{ID: "id1", URL: "url1"}, nil)
+			require.NoError(t, err)
+			err = repo.Store(t.Context(), model.ShortLink{ID: "id2", URL: "url2"}, nil)
+			require.NoError(t, err)
+
+			require.NoError(t, repo.Close())
+
+			repo2, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+			defer repo2.Close()
+
+			item, err := repo2.Find(t.Context(), "id1")
+			require.NoError(t, err)
+			require.NotNil(t, item)
+			assert.Equal(t, "id1", item.ID)
+			assert.Equal(t, "url1", item.URL)
+
+			item, err = repo2.Find(t.Context(), "id2")
+			require.NoError(t, err)
+			require.NotNil(t, item)
+			assert.Equal(t, "id2", item.ID)
+			assert.Equal(t, "url2", item.URL)
+		})
+	}
+}
+
+func TestFileShortLinkRepository_Store_VerifyPersistence(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{"store and verify persistence"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+			defer repo.Close()
+
+			err = repo.Store(t.Context(), model.ShortLink{ID: "id1", URL: "url1"}, nil)
+			require.NoError(t, err)
+
+			item, err := repo.Find(t.Context(), "id1")
+			require.NoError(t, err)
+			require.NotNil(t, item)
+			assert.Equal(t, "id1", item.ID)
+			assert.Equal(t, "url1", item.URL)
+		})
+	}
+}
+
+func TestFileShortLinkRepository_StoreAll_VerifyPersistence(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{"store all and verify persistence"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+			defer repo.Close()
+
+			items := []model.ShortLink{
+				{ID: "id1", URL: "url1"},
+				{ID: "id2", URL: "url2"},
+				{ID: "id3", URL: "url3"},
+			}
+
+			err = repo.StoreAll(t.Context(), items, nil)
+			require.NoError(t, err)
+
+			for _, item := range items {
+				found, err := repo.Find(t.Context(), item.ID)
+				require.NoError(t, err)
+				require.NotNil(t, found)
+				assert.Equal(t, item.ID, found.ID)
+				assert.Equal(t, item.URL, found.URL)
+			}
+		})
+	}
+}
+
+func TestFileShortLinkRepository_Close(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{"close success"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filePath := filepath.Join(tempDir, "tmp-1.json")
+
+			l := logger.NewMockLogger(t)
+			repo, err := NewFileShortLinkRepository(filePath, l)
+			require.NoError(t, err)
+
+			err = repo.Close()
+			require.NoError(t, err)
 		})
 	}
 }
