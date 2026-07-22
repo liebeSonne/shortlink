@@ -97,7 +97,7 @@ func runApp(
 
 	grpcListen, err := net.Listen("tcp", cfg.GRPCServerAddress)
 	if err != nil {
-		return fmt.Errorf("could not listen grpc on address '%s': %w", grpcListen.Addr().String(), err)
+		return fmt.Errorf("could not listen grpc on address '%s': %w", cfg.GRPCServerAddress, err)
 	}
 
 	grpcServer := grpc.NewServer([]grpc.ServerOption{
