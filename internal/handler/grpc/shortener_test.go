@@ -6,13 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	pb "github.com/liebeSonne/shortlink/api/proto"
 	"github.com/liebeSonne/shortlink/internal/auth"
 	"github.com/liebeSonne/shortlink/internal/handler/audit"
@@ -21,6 +14,11 @@ import (
 	"github.com/liebeSonne/shortlink/internal/provider"
 	"github.com/liebeSonne/shortlink/internal/repository"
 	"github.com/liebeSonne/shortlink/internal/service"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestShortenerGRPCServer_ShortenURL(t *testing.T) {
@@ -309,7 +307,7 @@ func TestShortenerGRPCServer_ListUserURLs(t *testing.T) {
 				ctx = auth.CreateTokenContext(ctx, auth.Token{UserID: tc.on.userID.String()})
 			}
 
-			resp, err := server.ListUserURLs(ctx, &emptypb.Empty{})
+			resp, err := server.ListUserURLs(ctx, &pb.UserURLsRequest{})
 
 			if tc.want.hasError {
 				require.Error(t, err)

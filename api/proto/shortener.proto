@@ -2,14 +2,12 @@ syntax = "proto3";
 
 package shortener;
 
-import "google/protobuf/empty.proto";
-
 option go_package = "shortener/proto";
 
 service ShortenerService {
   rpc ShortenURL (URLShortenRequest) returns (URLShortenResponse);
   rpc ExpandURL (URLExpandRequest) returns (URLExpandResponse);
-  rpc ListUserURLs (google.protobuf.Empty) returns (UserURLsResponse);
+  rpc ListUserURLs (UserURLsRequest) returns (UserURLsResponse);
 }
 
 message URLShortenRequest {
@@ -35,4 +33,8 @@ message UserURLsResponse {
 message URLData {
   string short_url = 1;
   string original_url = 2;
+}
+
+message UserURLsRequest {
+
 }

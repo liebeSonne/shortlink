@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/liebeSonne/shortlink/api/proto"
 	"github.com/liebeSonne/shortlink/internal/auth"
@@ -114,7 +113,7 @@ func (s *ShortenerGRPCServer) ExpandURL(ctx context.Context, r *pb.URLExpandRequ
 	return &response, nil
 }
 
-func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, r *emptypb.Empty) (*pb.UserURLsResponse, error) {
+func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, _ *pb.UserURLsRequest) (*pb.UserURLsResponse, error) {
 	userID, ok := auth.GetUserIDFromContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
