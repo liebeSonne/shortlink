@@ -134,7 +134,7 @@ func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, _ *pb.UserURLsRe
 	for _, item := range items {
 		url := s.createShortLinkURL(item.ID)
 		var responseItem pb.URLData
-		responseItem.SetShortUrl(item.ID)
+		responseItem.SetOriginalUrl(item.URL)
 		responseItem.SetShortUrl(url)
 		responseItems = append(responseItems, &responseItem)
 	}

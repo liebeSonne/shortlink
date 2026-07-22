@@ -188,7 +188,7 @@ func TestShortenerGRPCServer_ExpandURL(t *testing.T) {
 		{
 			"not found",
 			on{id1, nil},
-			want{"", codes.Internal, true},
+			want{"", codes.NotFound, true},
 			when{nil, nil},
 		},
 	}
@@ -246,10 +246,11 @@ func TestShortenerGRPCServer_ListUserURLs(t *testing.T) {
 		userID *uuid.UUID
 	}
 	type want struct {
-		grpcCode codes.Code
-		hasError bool
-		urlCount int
-		urls     []string
+		grpcCode     codes.Code
+		hasError     bool
+		urlCount     int
+		shortURLs    []string
+		originalURLS []string
 	}
 	type when struct {
 		items []model.ShortLink
@@ -264,25 +265,25 @@ func TestShortenerGRPCServer_ListUserURLs(t *testing.T) {
 		{
 			"unauthenticated",
 			on{nil},
-			want{codes.Unauthenticated, true, 0, nil},
+			want{codes.Unauthenticated, true, 0, nil, nil},
 			when{nil, nil},
 		},
 		{
 			"success",
 			on{&userID1},
-			want{codes.OK, false, 2, []string{urlAddress + "/id1", urlAddress + "/id2"}},
+			want{codes.OK, false, 2, []string{urlAddress + "/id1", urlAddress + "/id2"}, []string{"https://example1.com", "https://example2.com"}},
 			when{[]model.ShortLink{{ID: "id1", URL: "https://example1.com"}, {ID: "id2", URL: "https://example2.com"}}, nil},
 		},
 		{
 			"provider error",
 			on{&userID1},
-			want{codes.Internal, true, 0, nil},
+			want{codes.Internal, true, 0, nil, nil},
 			when{nil, errors.New("some provider error")},
 		},
 		{
 			"no content",
 			on{&userID1},
-			want{codes.NotFound, true, 0, nil},
+			want{codes.NotFound, true, 0, nil, nil},
 			when{nil, nil},
 		},
 	}
@@ -317,12 +318,19 @@ func TestShortenerGRPCServer_ListUserURLs(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tc.want.urlCount, len(resp.GetUrl()))
-				if len(tc.want.urls) > 0 {
+				if len(tc.want.shortURLs) > 0 {
+					gotShortURLs := make([]string, 0, len(resp.GetUrl()))
+					for _, item := range resp.GetUrl() {
+						gotShortURLs = append(gotShortURLs, item.GetShortUrl())
+					}
+					assert.Equal(t, tc.want.shortURLs, gotShortURLs)
+				}
+				if len(tc.want.originalURLS) > 0 {
 					gotURLs := make([]string, 0, len(resp.GetUrl()))
 					for _, item := range resp.GetUrl() {
-						gotURLs = append(gotURLs, item.GetShortUrl())
+						gotURLs = append(gotURLs, item.GetOriginalUrl())
 					}
-					assert.Equal(t, tc.want.urls, gotURLs)
+					assert.Equal(t, tc.want.originalURLS, gotURLs)
 				}
 			}
 		})
