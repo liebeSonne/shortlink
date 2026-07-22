@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	pb "github.com/liebeSonne/shortlink/api/proto"
 	"github.com/liebeSonne/shortlink/internal/config"
@@ -95,16 +97,31 @@ func runApp(
 		"trustedSubnet", cfg.TrustedSubnet,
 	)
 
+	// GRPC
 	grpcListen, err := net.Listen("tcp", cfg.GRPCServerAddress)
 	if err != nil {
 		return fmt.Errorf("could not listen grpc on address '%s': %w", cfg.GRPCServerAddress, err)
 	}
 
-	grpcServer := grpc.NewServer([]grpc.ServerOption{
+	grpcOptions := []grpc.ServerOption{
 		grpc.UnaryInterceptor(dependency.ShortenerGRPCAuthInterceptor),
-	}...)
+	}
+
+	if cfg.EnableHTTPS {
+		cert, err := tls.LoadX509KeyPair(cfg.TLSCertFile, cfg.TLSKeyFile)
+		if err != nil {
+			return fmt.Errorf("error on loading tls cert, key: %w", err)
+		}
+		tlsCredentials := credentials.NewTLS(&tls.Config{
+			Certificates: []tls.Certificate{cert},
+		})
+		grpcOptions = append(grpcOptions, grpc.Creds(tlsCredentials))
+	}
+
+	grpcServer := grpc.NewServer(grpcOptions...)
 	pb.RegisterShortenerServiceServer(grpcServer, dependency.ShortenerGRPCServer)
 
+	// HTTP
 	httpServer := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: dependency.HTTPHandler,
