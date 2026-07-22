@@ -100,7 +100,7 @@ func (s *ShortenerGRPCServer) ExpandURL(ctx context.Context, r *pb.URLExpandRequ
 		return nil, s.translateError(err)
 	}
 	if item == nil {
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
 	}
 
 	url := item.URL
