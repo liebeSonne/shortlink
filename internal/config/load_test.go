@@ -329,7 +329,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = configFileServerAddress1
 					c.GRPCServerAddress = configFileGRPCServerAddress1
 					c.BaseURL = configFileBaseURL1
@@ -349,7 +349,7 @@ func TestLoadConfig(t *testing.T) {
 				map[string]string{},
 			},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = configFileServerAddress1
 					c.GRPCServerAddress = configFileGRPCServerAddress1
 					c.BaseURL = configFileBaseURL1
@@ -378,7 +378,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.ServerAddress = "127.0.0.1:8787"
 					c.GRPCServerAddress = "127.0.0.1:3333"
 					c.BaseURL = "http://127.0.0.2:8888"

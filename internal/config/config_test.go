@@ -52,7 +52,7 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", ServerAddressEnvName): "127.0.0.1:8888",
 			}},
-			want{MakeModConfig(defaultConfig, func(c *Config) {
+			want{makeModConfig(defaultConfig, func(c *Config) {
 				c.ServerAddress = "127.0.0.1:8888"
 			}), nil},
 		},
@@ -62,7 +62,7 @@ func TestParseEnv(t *testing.T) {
 			when{map[string]string{
 				getEnvNameWithPrefix("", GRPCServerAddressEnvName): "127.0.0.1:3333",
 			}},
-			want{MakeModConfig(defaultConfig, func(c *Config) {
+			want{makeModConfig(defaultConfig, func(c *Config) {
 				c.GRPCServerAddress = "127.0.0.1:3333"
 			}), nil},
 		},
@@ -73,7 +73,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", BaseURLEnvName): "http://127.0.0.1:8888",
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.BaseURL = "http://127.0.0.1:8888"
 				}), nil},
 		},
@@ -84,7 +84,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", EnableLogsEnvName): "true",
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.EnableLogs = true
 				}), nil},
 		},
@@ -95,7 +95,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", EnableLogsEnvName): "false",
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.EnableLogs = false
 				}), nil},
 		},
@@ -106,7 +106,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", LogLevelEnvName): LogLevelError,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.LogLevel = LogLevelError
 				}), nil},
 		},
@@ -117,7 +117,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", LogFileEnvName): appLog,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.LogFile = &appLog
 				}), nil},
 		},
@@ -128,7 +128,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", FileStoragePathEnvName): fileStoragePath,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.FileStoragePath = &fileStoragePath
 				}), nil},
 		},
@@ -139,7 +139,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", DatabaseDSNEnvName): databaseDSN,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.DatabaseDSN = &databaseDSN
 				}), nil},
 		},
@@ -150,7 +150,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuditFileEnvName): auditFile1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.AuditFile = &auditFile1
 				}), nil},
 		},
@@ -161,7 +161,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", AuditURLEnvName): auditURL1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.AuditURL = &auditURL1
 				}), nil},
 		},
@@ -172,7 +172,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", EnableHTTPSEnvName): "true",
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.EnableHTTPS = true
 				}), nil},
 		},
@@ -183,7 +183,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", EnableHTTPSEnvName): "false",
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.EnableHTTPS = false
 				}), nil},
 		},
@@ -194,7 +194,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", TLSCertFileEnvName): tlsCertFile1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.TLSCertFile = tlsCertFile1
 				}), nil},
 		},
@@ -205,7 +205,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", TLSKeyFileEnvName): tlsKeyFile1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.TLSKeyFile = tlsKeyFile1
 				}), nil},
 		},
@@ -216,7 +216,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", ConfigFileEnvName): configFile1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.ConfigFile = &configFile1
 				}), nil},
 		},
@@ -227,7 +227,7 @@ func TestParseEnv(t *testing.T) {
 				getEnvNameWithPrefix("", TrustedSubnetEnvName): trustedSubnet1,
 			}},
 			want{
-				MakeModConfig(defaultConfig, func(c *Config) {
+				makeModConfig(defaultConfig, func(c *Config) {
 					c.TrustedSubnet = trustedSubnet1
 				}), nil},
 		},
